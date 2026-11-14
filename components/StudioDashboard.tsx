@@ -7,6 +7,8 @@ import {
   LayoutTemplate,
   Wand2,
   HardDrive,
+  Settings,
+  HelpCircle,
   Crown,
   Search,
   Bell,
@@ -27,7 +29,14 @@ import {
   Menu,
   X,
   Smartphone,
+  ChevronRight,
   Maximize2,
+  Share2,
+  Trash2,
+  Clock,
+  MoreVertical,
+  Activity,
+  ArrowRight,
 } from "lucide-react";
 import { ZClipLogo } from "@/components/ZClipLogo";
 
@@ -45,11 +54,46 @@ export function StudioDashboard({
   onSignOut,
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "projects" | "templates" | "ai-tools" | "storage" | "pricing"
+    "dashboard" | "projects" | "templates" | "ai-tools" | "storage" | "pricing" | "settings"
   >("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState("Cyber Blue");
+
+  // Sample recent projects matching the blueprint
+  const recentProjects = [
+    {
+      id: "1",
+      title: "Cyber_Night_Runner_4K",
+      thumbnail: "from-[#001AFF] to-[#00D4FF]",
+      duration: "00:45",
+      status: "Ready",
+      resolution: "9:16 (Shorts)",
+      date: "12 mins ago",
+      clips: 6,
+    },
+    {
+      id: "2",
+      title: "Gym_Beast_Motivation_Edit",
+      thumbnail: "from-[#FF416C] to-[#0075FF]",
+      duration: "00:30",
+      status: "Ready",
+      resolution: "9:16 (TikTok)",
+      date: "2 hours ago",
+      clips: 8,
+    },
+    {
+      id: "3",
+      title: "Tokyo_Drift_Cinematic_Sequence",
+      thumbnail: "from-[#8C7BFF] to-[#001AFF]",
+      duration: "01:20",
+      status: "Processing",
+      resolution: "16:9 (YouTube)",
+      date: "Yesterday",
+      clips: 12,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#080B11] text-[#F4F7FB] flex flex-col font-sans selection:bg-[#00D4FF] selection:text-black">
@@ -76,7 +120,7 @@ export function StudioDashboard({
           <div className="space-y-6">
             {/* Top Brand Logo & Close button on Mobile */}
             <div className="px-2 pt-2 flex items-center justify-between">
-              <ZClipLogo size={36} variant="horizontal" />
+              <ZClipLogo size={38} variant="horizontal" />
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="lg:hidden text-[#8A99AD] hover:text-white p-1"
@@ -106,7 +150,6 @@ export function StudioDashboard({
                 onClick={() => {
                   setActiveTab("projects");
                   setMobileMenuOpen(false);
-                  onNewProject();
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   activeTab === "projects"
@@ -146,7 +189,7 @@ export function StudioDashboard({
                 }`}
               >
                 <Wand2 size={18} className="text-[#00D4FF]" />
-                <span>AI Tools</span>
+                <span>AI Auto-Cut</span>
               </button>
 
               <button
@@ -161,7 +204,7 @@ export function StudioDashboard({
                 }`}
               >
                 <HardDrive size={18} />
-                <span>Storage</span>
+                <span>Storage (B2)</span>
               </button>
 
               <button
@@ -178,6 +221,21 @@ export function StudioDashboard({
                 <Crown size={18} className="text-[#F2B84B]" />
                 <span>Pricing Plans</span>
               </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("settings");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === "settings"
+                    ? "bg-gradient-to-r from-[#0075FF] to-[#001AFF] text-white shadow-[0_0_15px_rgba(0,117,255,0.4)]"
+                    : "text-[#8A99AD] hover:text-white hover:bg-[#151F33]"
+                }`}
+              >
+                <Settings size={18} />
+                <span>Settings</span>
+              </button>
             </nav>
           </div>
 
@@ -186,10 +244,10 @@ export function StudioDashboard({
             <div className="rounded-2xl bg-gradient-to-br from-[#101726] to-[#0D1424] border border-[#1C283F] p-4 text-center relative overflow-hidden">
               <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#00D4FF] mb-1">
                 <Crown size={14} className="text-[#F2B84B]" />
-                <span>Pro Plan Available</span>
+                <span>Pro Plan Active</span>
               </div>
               <p className="text-[11px] text-[#8A99AD] mb-3">
-                Unlock 4K Export, Unlimited AI Assembly & Priority Queue.
+                4K Rendering, Gemini Vision AI & Cloud Acceleration.
               </p>
               <button
                 onClick={() => {
@@ -198,7 +256,7 @@ export function StudioDashboard({
                 }}
                 className="w-full py-2 rounded-xl bg-gradient-to-r from-[#0075FF] to-[#00D4FF] text-black font-semibold text-xs shadow-[0_0_15px_rgba(0,212,255,0.4)] hover:brightness-110 transition"
               >
-                Upgrade to Pro
+                Manage Membership
               </button>
             </div>
 
@@ -223,15 +281,15 @@ export function StudioDashboard({
               >
                 <Menu size={18} />
               </button>
-              <ZClipLogo size={28} variant="icon" />
+              <ZClipLogo size={30} variant="icon" />
             </div>
 
             {/* Search (Responsive) */}
-            <div className="relative hidden md:block w-72 lg:w-80">
+            <div className="relative hidden md:block w-72 lg:w-96">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A99AD]" />
               <input
                 type="text"
-                placeholder="Search projects, clips..."
+                placeholder="Search projects, clips, templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-[#151F33] border border-[#1C283F] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder:text-[#8A99AD] outline-none focus:border-[#00D4FF] transition"
@@ -256,7 +314,7 @@ export function StudioDashboard({
                 </div>
                 <div className="text-left hidden sm:block">
                   <p className="text-xs font-semibold leading-none">Creator</p>
-                  <p className="text-[10px] text-[#00D4FF] font-mono leading-none mt-1">PRO</p>
+                  <p className="text-[10px] text-[#00D4FF] font-mono leading-none mt-1">PRO PLAN</p>
                 </div>
               </div>
             </div>
@@ -264,7 +322,7 @@ export function StudioDashboard({
 
           {/* Content Space */}
           <main className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full pb-20 lg:pb-8">
-            {/* Welcome Banner with Cosmic Earth Arc */}
+            {/* Cosmic Earth Arc Hero Banner */}
             <div className="relative rounded-3xl border border-[#1C283F] bg-gradient-to-r from-[#0D1424] via-[#101726] to-[#0A0E18] p-6 sm:p-8 overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
               {/* Cosmic Earth Arc graphic in background */}
               <div className="absolute right-0 top-0 bottom-0 w-2/5 pointer-events-none opacity-40 overflow-hidden hidden sm:block">
@@ -321,7 +379,7 @@ export function StudioDashboard({
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions (4 Glass Cards from Picture) */}
             <div>
               <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#8A99AD] mb-3">
                 Quick Actions
@@ -373,30 +431,81 @@ export function StudioDashboard({
               </div>
             </div>
 
-            {/* Editing Workspace Showcase (Responsive Mobile + Desktop) */}
+            {/* Recent Projects Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-[#8A99AD]">
+                  Recent Projects
+                </h2>
+                <button
+                  onClick={onNewProject}
+                  className="text-xs text-[#00D4FF] hover:underline flex items-center gap-1"
+                >
+                  <span>See all (24)</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {recentProjects.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={onNewProject}
+                    className="group rounded-2xl border border-[#1C283F] bg-[#101726] p-3.5 hover:border-[#00D4FF] cursor-pointer transition-all duration-200 hover:shadow-[0_0_20px_rgba(0,212,255,0.15)] flex flex-col justify-between"
+                  >
+                    <div className="relative rounded-xl overflow-hidden aspect-video bg-gradient-to-tr from-[#0D1424] to-[#151F33] mb-3 flex items-center justify-center">
+                      <div className={`absolute inset-0 bg-gradient-to-tr ${p.thumbnail} opacity-30`} />
+                      <Play size={24} className="text-white/80 group-hover:scale-110 group-hover:text-[#00D4FF] transition" />
+                      <span className="absolute bottom-2 right-2 bg-black/70 font-mono text-[10px] px-1.5 py-0.5 rounded text-white">
+                        {p.duration}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-xs text-white truncate max-w-[180px]">
+                          {p.title}
+                        </h4>
+                        <span className="text-[9px] font-mono text-[#00D4FF] bg-[#00D4FF]/10 px-1.5 py-0.5 rounded border border-[#00D4FF]/20">
+                          {p.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-[#8A99AD] mt-1.5">
+                        <span>{p.resolution}</span>
+                        <span>{p.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Editing Workspace Showcase (Exact Match to Picture) */}
             <div className="rounded-3xl border border-[#1C283F] bg-[#0A0E18] p-4 sm:p-6 shadow-2xl space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#1C283F] gap-2">
                 <div className="flex items-center gap-2.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#00D4FF] animate-pulse" />
                   <h3 className="font-display font-semibold text-white text-sm">
-                    Editing Workspace Preview
+                    Interactive Editing Workspace
                   </h3>
                   <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#151F33] text-[#00D4FF] border border-[#1C283F]">
-                    MULTITRACK
+                    MULTITRACK TIMELINE
                   </span>
                 </div>
 
-                <button
-                  onClick={onNewProject}
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-[#0075FF] to-[#00D4FF] text-black font-semibold text-xs shadow-[0_0_12px_rgba(0,212,255,0.4)] hover:brightness-110 transition text-center"
-                >
-                  Launch Full Editor
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onNewProject}
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-[#0075FF] to-[#00D4FF] text-black font-semibold text-xs shadow-[0_0_12px_rgba(0,212,255,0.4)] hover:brightness-110 transition text-center"
+                  >
+                    Open New Clip Project
+                  </button>
+                </div>
               </div>
 
               {/* Workspace Layout */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
-                {/* Tools bar (Horizontal on mobile, vertical on desktop) */}
+                {/* Tools bar */}
                 <div className="md:col-span-1 border-b md:border-b-0 md:border-r border-[#1C283F] pb-2 md:pb-0 md:pr-2 flex md:flex-col items-center justify-around md:justify-start gap-2 md:gap-4 text-[#8A99AD]">
                   <button className="p-2 rounded-xl bg-[#151F33] text-[#00D4FF]">
                     <Video size={16} />
@@ -444,7 +553,7 @@ export function StudioDashboard({
                 {/* Right Filter & Adjustments Palette */}
                 <div className="md:col-span-3 bg-[#101726] rounded-2xl border border-[#1C283F] p-3 space-y-2">
                   <div className="flex justify-between items-center text-xs font-semibold pb-1.5 border-b border-[#1C283F]">
-                    <span>Effects</span>
+                    <span>Effects Palette</span>
                     <span className="text-[#8A99AD] text-[11px]">Filters &rarr;</span>
                   </div>
                   <div className="grid grid-cols-3 md:grid-cols-2 gap-1.5 sm:gap-2 pt-1">
@@ -464,7 +573,7 @@ export function StudioDashboard({
                 <div className="col-span-1 md:col-span-12 rounded-2xl border border-[#1C283F] bg-[#101726] p-3 space-y-2 overflow-x-auto">
                   <div className="flex items-center justify-between text-[11px] text-[#8A99AD] font-mono px-1">
                     <span>TRACK 1: VIDEO CUTS (4 CLIPS)</span>
-                    <span className="text-[#00D4FF]">BEAT (128 BPM)</span>
+                    <span className="text-[#00D4FF]">BEAT DETECTED (128 BPM)</span>
                   </div>
 
                   {/* Cut Segments */}
@@ -497,7 +606,7 @@ export function StudioDashboard({
               </div>
             </div>
 
-            {/* Themes & Pricing Section (Exact to Picture) */}
+            {/* Themes & Pricing Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Themes Palette */}
               <div className="rounded-3xl border border-[#1C283F] bg-[#0A0E18] p-5 sm:p-6 space-y-4">
@@ -512,7 +621,10 @@ export function StudioDashboard({
                   ].map((t) => (
                     <div
                       key={t.name}
-                      className="rounded-2xl border border-[#1C283F] bg-[#101726] p-2 text-center hover:border-[#00D4FF] cursor-pointer transition group"
+                      onClick={() => setSelectedTheme(t.name)}
+                      className={`rounded-2xl border p-2 text-center cursor-pointer transition group ${
+                        selectedTheme === t.name ? "border-[#00D4FF] bg-[#151F33]" : "border-[#1C283F] bg-[#101726]"
+                      }`}
                     >
                       <div
                         className={`w-full h-10 sm:h-12 rounded-xl bg-gradient-to-tr ${t.color} mb-1.5 shadow-sm group-hover:scale-105 transition`}
@@ -589,7 +701,7 @@ export function StudioDashboard({
               </div>
             </div>
 
-            {/* Key Features Banner (From Picture) */}
+            {/* Key Features Banner */}
             <div className="rounded-2xl border border-[#1C283F] bg-[#0A0E18] p-4 sm:p-5">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 text-xs">
                 {[
@@ -609,7 +721,7 @@ export function StudioDashboard({
             </div>
           </main>
 
-          {/* Mobile Bottom Navigation Bar (Appears on Mobile only) */}
+          {/* Mobile Bottom Navigation Bar */}
           <nav className="fixed bottom-0 left-0 right-0 h-14 bg-[#0A0E18]/95 border-t border-[#1C283F] backdrop-blur-xl flex items-center justify-around z-30 lg:hidden px-2">
             <button
               onClick={() => setActiveTab("dashboard")}
