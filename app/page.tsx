@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Download, Film, Sparkles, Upload, X, ArrowLeft } from "lucide-react";
-import { ZLogo, SplashScreen } from "@/components/ZLogo";
+import { ZLogo } from "@/components/ZLogo";
+import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
 import { createClient } from "@/lib/supabase/browser";
 import { useOnline } from "@/lib/useOnline";
@@ -242,7 +243,7 @@ export default function Home() {
 
   return (
     <>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {showSplash && <NetflixSplash onFinish={() => setShowSplash(false)} />}
 
       {!inEditor ? (
         <StudioDashboard
