@@ -146,7 +146,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
 }
 
 // Validates and repairs a provider plan so the renderer never sees impossible values.
-function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, source: EditPlan["source"]): EditPlan {
+export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, source: EditPlan["source"]): EditPlan {
   const parsed = GeminiPlanSchema.parse(raw);
   const byId = new Map(assets.map((a) => [a.id, a]));
   const cap = PLATFORM_CAP_SECONDS[setup.platform];
