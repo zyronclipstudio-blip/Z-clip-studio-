@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Film } from "lucide-react";
+import { ZLogo } from "@/components/ZLogo";
 import { createClient } from "@/lib/supabase/browser";
+import { ArrowRight, Lock, Mail, Sparkles } from "lucide-react";
 
 export default function Login() {
   const [mode, setMode] = useState<"in" | "up">("in");
@@ -50,32 +51,143 @@ export default function Login() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <div className="flex items-center gap-2 text-cyan">
-        <Film size={22} />
-        <span className="text-lg font-semibold tracking-wide">ZClip</span>
-      </div>
-      <h1 className="mt-3 font-display text-2xl font-semibold">{mode === "in" ? "Welcome back" : "Create your account"}</h1>
-      <p className="mt-1 text-sm text-muted">Upload your footage. Let ZClip do the editing.</p>
+    <main className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-background">
+      {/* Blueprint Ambient Glows */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[250px] bg-violet/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <form onSubmit={submit} className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5">
-        <label className="block text-sm">
-          Email
-          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-surface-raised px-3 py-2 outline-none focus:border-cyan" />
-        </label>
-        <label className="block text-sm">
-          Password
-          <input type="password" required minLength={8} autoComplete={mode === "in" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-surface-raised px-3 py-2 outline-none focus:border-cyan" />
-        </label>
-        {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-        {notice && <p className="text-sm text-cyan">{notice}</p>}
-        <button disabled={busy} className="w-full rounded-xl bg-cyan px-4 py-3 font-semibold text-background transition hover:brightness-110 disabled:opacity-60">
-          {busy ? "One moment…" : mode === "in" ? "Sign in" : "Sign up"}
-        </button>
-      </form>
-      <button onClick={() => { setMode(mode === "in" ? "up" : "in"); setError(""); setNotice(""); }} className="mt-4 text-sm text-muted hover:text-ink">
-        {mode === "in" ? "New here? Create an account" : "Already have an account? Sign in"}
-      </button>
+      <div className="relative w-full max-w-md">
+        {/* Brand Header */}
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="mb-4">
+            <ZLogo size={64} animated />
+          </div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
+              Z<span className="text-cyan">CLIP</span>
+            </h1>
+            <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-cyan/40 bg-cyan/10 text-cyan">
+              STUDIO
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-muted max-w-xs font-sans">
+            Tell ZClip what you're creating. Upload your footage. Let ZClip do the editing.
+          </p>
+        </div>
+
+        {/* Card Container */}
+        <div className="relative rounded-2xl border border-border bg-surface/80 p-6 sm:p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          {/* Subtle Top Accent line */}
+          <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-cyan/50 to-transparent" />
+
+          <div className="flex items-center justify-between pb-6 mb-6 border-b border-border">
+            <div>
+              <h2 className="font-display text-xl font-semibold text-ink">
+                {mode === "in" ? "Studio Access" : "Join ZClip"}
+              </h2>
+              <p className="text-xs text-muted mt-0.5">
+                {mode === "in" ? "Sign in to access your projects" : "Create your creator studio account"}
+              </p>
+            </div>
+            <span className="flex items-center gap-1.5 text-xs font-mono text-cyan/90 bg-cyan/10 border border-cyan/20 px-2.5 py-1 rounded-lg">
+              <Sparkles size={13} />
+              AI Studio
+            </span>
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-ink/90 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative flex items-center">
+                <Mail size={16} className="absolute left-3.5 text-muted pointer-events-none" />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="creator@studio.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-cyan focus:ring-1 focus:ring-cyan/50"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-ink/90 mb-1.5">
+                Password
+              </label>
+              <div className="relative flex items-center">
+                <Lock size={16} className="absolute left-3.5 text-muted pointer-events-none" />
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete={mode === "in" ? "current-password" : "new-password"}
+                  placeholder="••••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-cyan focus:ring-1 focus:ring-cyan/50"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div role="alert" className="p-3 rounded-xl border border-danger/30 bg-danger/10 text-xs text-danger flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                {error}
+              </div>
+            )}
+
+            {notice && (
+              <div className="p-3 rounded-xl border border-cyan/30 bg-cyan/10 text-xs text-cyan flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+                {notice}
+              </div>
+            )}
+
+            <button
+              disabled={busy}
+              className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-cyan to-[#2dbbd4] p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(57,215,242,0.3)] transition duration-200 hover:shadow-[0_0_28px_rgba(57,215,242,0.5)] disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+            >
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 text-sm font-semibold text-[#080B11] transition duration-200 group-hover:bg-cyan/95">
+                {busy ? (
+                  <span>Authenticating...</span>
+                ) : (
+                  <>
+                    <span>{mode === "in" ? "Sign In to Studio" : "Create Account & Start"}</span>
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </div>
+            </button>
+          </form>
+
+          {/* Toggle Mode */}
+          <div className="mt-6 pt-5 border-t border-border/80 text-center">
+            <button
+              onClick={() => {
+                setMode(mode === "in" ? "up" : "in");
+                setError("");
+                setNotice("");
+              }}
+              className="text-xs text-muted hover:text-cyan transition duration-150 inline-flex items-center gap-1.5"
+            >
+              {mode === "in" ? (
+                <>New to ZClip? <span className="text-cyan font-medium underline underline-offset-4">Create account</span></>
+              ) : (
+                <>Already have an account? <span className="text-cyan font-medium underline underline-offset-4">Sign in</span></>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Studio Footer Info */}
+        <p className="mt-6 text-center font-mono text-[11px] text-muted/60 tracking-wider">
+          ZYRON CLIP STUDIO • PROTOCOL V0.5
+        </p>
+      </div>
     </main>
   );
 }
