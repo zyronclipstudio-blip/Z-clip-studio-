@@ -7,24 +7,47 @@
 }
 
 body {
-  /* Safe areas for notches and home indicators. */
+  background-color: #080B11;
+  color: #F4F7FB;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background-image:
-    radial-gradient(900px 500px at 85% -10%, rgba(140, 123, 255, 0.1), transparent 60%),
-    radial-gradient(800px 480px at 5% -5%, rgba(57, 215, 242, 0.07), transparent 60%);
+    radial-gradient(900px 500px at 85% -10%, rgba(140, 123, 255, 0.12), transparent 60%),
+    radial-gradient(800px 480px at 5% -5%, rgba(57, 215, 242, 0.09), transparent 60%);
   background-attachment: fixed;
+  min-height: 100vh;
 }
 
-/* Visible keyboard focus everywhere. */
 :focus-visible {
   outline: 2px solid #39d7f2;
   outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+/* Fallbacks to guarantee proper studio look even if utility purge delays */
+.bg-surface {
+  background-color: #101722;
+}
+
+.bg-surface-raised {
+  background-color: #172230;
+}
+
+.border-border {
+  border-color: #263345;
+}
+
+.text-ink {
+  color: #F4F7FB;
+}
+
+.text-muted {
+  color: #9AA8BA;
+}
+
+.text-cyan {
+  color: #39D7F2;
+}
+
+.bg-cyan {
+  background-color: #39D7F2;
 }

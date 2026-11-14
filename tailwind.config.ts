@@ -1,11 +1,10 @@
 import type { Config } from "tailwindcss";
 
-// ZClip design tokens (Master Builder Specification v1.2, section 08).
 const config: Config = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -16,16 +15,30 @@ const config: Config = {
         border: "#263345",
         ink: "#F4F7FB", // Primary text
         muted: "#9AA8BA", // Secondary text
-        cyan: { DEFAULT: "#39D7F2" }, // Primary actions, focus, active
-        violet: { DEFAULT: "#8C7BFF" }, // Secondary accent only
+        cyan: {
+          DEFAULT: "#39D7F2",
+          50: "#f0fbff",
+          100: "#e0f7fe",
+          200: "#b9f0fd",
+          300: "#7ce4fa",
+          400: "#39d7f2",
+          500: "#0ec1e1",
+          600: "#069bc1",
+          700: "#097c9c",
+          800: "#0f647d",
+          900: "#125368",
+        },
+        violet: {
+          DEFAULT: "#8C7BFF",
+        },
         success: "#30C98B",
         warning: "#F2B84B",
         danger: "#F26D75",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "-apple-system", "sans-serif"],
         display: ["var(--font-space)", "var(--font-inter)", "system-ui", "sans-serif"],
-        mono: ["var(--font-plex)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        mono: ["var(--font-plex)", "ui-monospace", "monospace"],
       },
     },
   },
