@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SetupSchema } from "@/lib/types/schema";
 
 export const runtime = "nodejs";
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 const BodySchema = z.object({
   projectId: z.string().uuid(),
