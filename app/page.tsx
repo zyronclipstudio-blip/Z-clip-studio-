@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Film, Sparkles, Upload, X } from "lucide-react";
+import { Check, Download, Film, Sparkles, Upload, X, ArrowLeft } from "lucide-react";
 import { ZLogo, SplashScreen } from "@/components/ZLogo";
+import { StudioDashboard } from "@/components/StudioDashboard";
 import { createClient } from "@/lib/supabase/browser";
 import { useOnline } from "@/lib/useOnline";
 import type { EditPlan, PublicAsset, QAReport, Setup } from "@/lib/types/schema";
@@ -117,6 +118,7 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
+  const [inEditor, setInEditor] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
@@ -241,35 +243,65 @@ export default function Home() {
   return (
     <>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-        <header className="mb-8">
-          <div className="flex items-center gap-3 text-cyan">
-            <ZLogo size={34} />
-            <div className="flex items-center gap-2">
-              <span className="font-display text-xl font-bold tracking-tight text-ink">
-                Z<span className="text-cyan">CLIP</span>
-              </span>
-              <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-cyan/40 bg-cyan/10 text-cyan">
-                STUDIO
-              </span>
-            </div>
-            {account && (
-              <span className="ml-auto flex items-center gap-3 text-sm text-muted">
-                <span className="rounded-full border border-border bg-surface px-3 py-1 text-ink">{account.credits} credit{account.credits === 1 ? "" : "s"} left</span>
-                <button onClick={signOut} className="hover:text-ink">Sign out</button>
-              </span>
-            )}
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-semibold sm:text-3xl text-ink">Upload your footage. Let ZClip do the editing.</h1>
-          <div className="mt-5 flex gap-2" aria-label="Progress">
-            {["Upload", "Setup", "Approve", "Edit", "Review"].map((label, i) => (
-              <div key={label} className="flex-1">
-                <div className={`h-1.5 rounded-full transition-all duration-300 ${i <= stepIdx ? "bg-gradient-to-r from-cyan to-[#2dbbd4] shadow-[0_0_8px_rgba(57,215,242,0.6)]" : "bg-border"}`} />
-                <span className={`mt-1.5 block text-xs font-medium ${i <= stepIdx ? "text-cyan" : "text-muted"}`}>{label}</span>
+
+      {!inEditor ? (
+        <StudioDashboard
+          userEmail={account?.email}
+          userCredits={account?.credits ?? 100}
+          onNewProject={() => setInEditor(true)}
+          onSignOut={signOut}
+        />
+      ) : (
+        <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+          <header className="mb-8">
+            <div className="flex items-center gap-3 text-cyan">
+              <button
+                onClick={() => setInEditor(false)}
+                className="flex items-center gap-1.5 text-xs font-mono text-muted hover:text-white bg-surface border border-border px-3 py-1.5 rounded-xl transition mr-2"
+              >
+                <ArrowLeft size={14} />
+                <span>Dashboard</span>
+              </button>
+              <ZLogo size={34} />
+              <div className="flex items-center gap-2">
+                <span className="font-display text-xl font-bold tracking-tight text-ink">
+                  Z<span className="text-cyan">CLIP</span>
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-cyan/40 bg-cyan/10 text-cyan">
+                  STUDIO
+                </span>
               </div>
-            ))}
-          </div>
-        </header>
+              {account && (
+                <span className="ml-auto flex items-center gap-3 text-sm text-muted">
+                  <span className="rounded-full border border-border bg-surface px-3 py-1 text-ink">
+                    {account.credits} credit{account.credits === 1 ? "" : "s"} left
+                  </span>
+                  <button onClick={signOut} className="hover:text-ink">
+                    Sign out
+                  </button>
+                </span>
+              )}
+            </div>
+            <h1 className="mt-4 font-display text-2xl font-semibold sm:text-3xl text-ink">
+              Upload your footage. Let ZClip do the editing.
+            </h1>
+            <div className="mt-5 flex gap-2" aria-label="Progress">
+              {["Upload", "Setup", "Approve", "Edit", "Review"].map((label, i) => (
+                <div key={label} className="flex-1">
+                  <div
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i <= stepIdx
+                        ? "bg-gradient-to-r from-cyan to-[#2dbbd4] shadow-[0_0_8px_rgba(57,215,242,0.6)]"
+                        : "bg-border"
+                    }`}
+                  />
+                  <span className={`mt-1.5 block text-xs font-medium ${i <= stepIdx ? "text-cyan" : "text-muted"}`}>
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </header>
 
       {error && (
         <div role="alert" className="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -513,6 +545,7 @@ export default function Home() {
         </section>
       )}
     </main>
+    )}
     </>
   );
 }
