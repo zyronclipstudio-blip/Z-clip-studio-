@@ -55,73 +55,16 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
           }`}
         >
           {/* Intense Glow Pod */}
-          <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-[#001AFF] via-[#00D4FF] to-[#0075FF] opacity-50 blur-3xl animate-pulse" />
+          <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-[#001AFF] via-[#00D4FF] to-[#0075FF] opacity-60 blur-3xl animate-pulse" />
 
-          {/* SVG 3D Emblem (Exact match to Reference Picture with Crown & Play Triangle) */}
-          <svg
-            width="140"
-            height="140"
-            viewBox="0 0 140 140"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="relative drop-shadow-[0_0_30px_rgba(0,212,255,0.9)]"
-          >
-            <defs>
-              <linearGradient id="netflixZGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFFFFF" />
-                <stop offset="20%" stopColor="#00D4FF" />
-                <stop offset="60%" stopColor="#0075FF" />
-                <stop offset="100%" stopColor="#001AFF" />
-              </linearGradient>
-
-              <linearGradient id="crownGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00D4FF" />
-                <stop offset="50%" stopColor="#FFFFFF" />
-                <stop offset="100%" stopColor="#0075FF" />
-              </linearGradient>
-
-              <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-
-            {/* Orbit Ring */}
-            <ellipse
-              cx="70"
-              cy="70"
-              rx="62"
-              ry="42"
-              stroke="#00D4FF"
-              strokeWidth="4"
-              transform="rotate(-28 70 70)"
-              strokeDasharray="210 40"
-              className="opacity-90 drop-shadow-[0_0_15px_#00D4FF]"
+          {/* High-Resolution Structural 3D Z Emblem */}
+          <div className="relative w-36 h-36 rounded-3xl overflow-hidden border border-[#00D4FF]/60 shadow-[0_0_40px_rgba(0,212,255,0.85)]">
+            <img
+              src="/icons/zclip-hero-logo.jpg"
+              alt="ZClip Official 3D Structural Logo"
+              className="w-full h-full object-cover"
             />
-
-            {/* Glowing Crown Accent */}
-            <path
-              d="M58 20 L63 27 L70 18 L77 27 L82 20 L78 30 H62 Z"
-              fill="url(#crownGrad)"
-              filter="url(#glowEffect)"
-            />
-
-            {/* Metallic 3D Dimensional "Z" */}
-            <path
-              d="M32 38 H108 L48 98 H108 V110 H32 L92 50 H32 V38 Z"
-              fill="url(#netflixZGrad)"
-              stroke="#E0F7FE"
-              strokeWidth="2.5"
-              strokeLinejoin="round"
-            />
-
-            {/* Video Play Triangle Embossed */}
-            <path
-              d="M90 68 L110 80 L90 92 Z"
-              fill="#FFFFFF"
-              className="drop-shadow-[0_0_10px_#00D4FF]"
-            />
-          </svg>
+          </div>
         </div>
 
         {/* Title reveal with letter-spacing tracking animation */}
