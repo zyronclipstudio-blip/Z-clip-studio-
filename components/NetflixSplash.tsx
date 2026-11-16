@@ -86,7 +86,7 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
   return (
     <div
       onPointerDown={playMechanicalCue}
-      className={`zclip-intro fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden select-none bg-[#050505] text-white ${leaving ? "is-leaving" : ""}`}
+      className={`zclip-intro fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden select-none bg-[#09060D] text-white ${leaving ? "is-leaving" : ""}`}
       role="img"
       aria-label="ZClip cinematic mechanical logo assembly"
     >
@@ -99,15 +99,15 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
           <svg viewBox="0 0 240 180" className="intro-z" fill="none">
             <defs>
               <linearGradient id="zclipGold" x1="25" y1="18" x2="205" y2="160" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#FFF0B5" />
-                <stop offset="0.28" stopColor="#D4AF37" />
-                <stop offset="0.68" stopColor="#9A741F" />
-                <stop offset="1" stopColor="#F6D978" />
+                <stop stopColor="#FFEAF3" />
+                <stop offset="0.28" stopColor="#EC8CBA" />
+                <stop offset="0.68" stopColor="#A64E7B" />
+                <stop offset="1" stopColor="#FFC3DE" />
               </linearGradient>
               <linearGradient id="zclipTitanium" x1="0" y1="0" x2="1" y2="1">
-                <stop stopColor="#E8E1D1" />
-                <stop offset="0.45" stopColor="#77736A" />
-                <stop offset="1" stopColor="#211F1A" />
+                <stop stopColor="#FFF7FB" />
+                <stop offset="0.45" stopColor="#968392" />
+                <stop offset="1" stopColor="#211825" />
               </linearGradient>
               <filter id="zclipGlow" x="-60%" y="-60%" width="220%" height="220%">
                 <feGaussianBlur stdDeviation="5" result="blur" />
@@ -116,17 +116,17 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
             </defs>
             <g className="z-piece z-piece-top" filter="url(#zclipGlow)">
               <path d="M30 28 H210 V54 H30 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
-              <path d="M40 34 H198" stroke="#FFF0B5" strokeOpacity=".8" strokeWidth="2" />
+              <path d="M40 34 H198" stroke="#FFEAF3" strokeOpacity=".8" strokeWidth="2" />
             </g>
             <g className="z-piece z-piece-diagonal" filter="url(#zclipGlow)">
               <path d="M178 42 L202 62 L62 152 L38 132 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
-              <path d="M181 53 L54 137" stroke="#F7D978" strokeOpacity=".85" strokeWidth="2" />
+              <path d="M181 53 L54 137" stroke="#FFC3DE" strokeOpacity=".85" strokeWidth="2" />
             </g>
             <g className="z-piece z-piece-bottom" filter="url(#zclipGlow)">
               <path d="M30 126 H210 V152 H30 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
-              <path d="M42 133 H199" stroke="#FFF0B5" strokeOpacity=".8" strokeWidth="2" />
+              <path d="M42 133 H199" stroke="#FFEAF3" strokeOpacity=".8" strokeWidth="2" />
             </g>
-            <path className="z-core-line" d="M30 28 H210 L30 152 H210" stroke="#FFF0B5" strokeWidth="1.5" strokeOpacity=".9" />
+            <path className="z-core-line" d="M30 28 H210 L30 152 H210" stroke="#FFEAF3" strokeWidth="1.5" strokeOpacity=".9" />
           </svg>
           <div className="intro-lock-flash" />
         </div>
@@ -151,8 +151,8 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
       <style jsx>{`
         .zclip-intro { isolation: isolate; transition: opacity 650ms ease, transform 850ms cubic-bezier(.22,.8,.22,1); }
         .zclip-intro.is-leaving { opacity: 0; transform: scale(1.025); pointer-events: none; }
-        .intro-atmosphere { position:absolute; inset:0; z-index:-2; background: radial-gradient(ellipse at 50% 48%, rgba(212,175,55,.13), transparent 32%), radial-gradient(ellipse at 50% 100%, rgba(212,175,55,.08), transparent 45%), #050505; }
-        .intro-floor { position:absolute; left:-20%; right:-20%; bottom:9%; height:1px; background:linear-gradient(90deg,transparent,rgba(212,175,55,.7),transparent); box-shadow:0 0 38px 8px rgba(212,175,55,.14); transform:perspective(260px) rotateX(62deg); animation: floor-in 1.4s ease-out both; }
+        .intro-atmosphere { position:absolute; inset:0; z-index:-2; background: radial-gradient(ellipse at 50% 48%, rgba(236,140,186,.13), transparent 32%), radial-gradient(ellipse at 50% 100%, rgba(236,140,186,.08), transparent 45%), #09060D; }
+        .intro-floor { position:absolute; left:-20%; right:-20%; bottom:9%; height:1px; background:linear-gradient(90deg,transparent,rgba(236,140,186,.7),transparent); box-shadow:0 0 38px 8px rgba(236,140,186,.14); transform:perspective(260px) rotateX(62deg); animation: floor-in 1.4s ease-out both; }
         .intro-stage { position:relative; display:flex; flex-direction:column; align-items:center; transform:translateY(-2vh); }
         .intro-emblem { position:relative; width:min(64vw,340px); filter:drop-shadow(0 18px 35px rgba(0,0,0,.8)); }
         .intro-z { width:100%; overflow:visible; }
@@ -161,16 +161,16 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
         .z-piece-diagonal { animation: assemble-diagonal 1.68s cubic-bezier(.18,.78,.18,1) .12s both; }
         .z-piece-bottom { animation: assemble-bottom 1.5s cubic-bezier(.18,.78,.18,1) .16s both; }
         .z-core-line { opacity:0; animation: core-reveal .55s ease-out 1.7s both; }
-        .intro-orbit { position:absolute; left:50%; top:50%; width:118%; height:36%; border:1px solid rgba(212,175,55,.2); border-radius:50%; transform:translate(-50%,-50%) rotate(-16deg) scale(.72); opacity:0; }
+        .intro-orbit { position:absolute; left:50%; top:50%; width:118%; height:36%; border:1px solid rgba(236,140,186,.2); border-radius:50%; transform:translate(-50%,-50%) rotate(-16deg) scale(.72); opacity:0; }
         .orbit-one { animation: orbit-settle 1.65s cubic-bezier(.2,.7,.2,1) .15s both; }
-        .orbit-two { width:108%; height:48%; transform:translate(-50%,-50%) rotate(18deg) scale(.8); border-color:rgba(235,207,125,.12); animation: orbit-settle 1.8s cubic-bezier(.2,.7,.2,1) .24s both; }
-        .intro-lock-flash { position:absolute; left:8%; right:8%; top:50%; height:2px; background:linear-gradient(90deg,transparent,#FFF0B5,#D4AF37,transparent); box-shadow:0 0 22px 5px rgba(212,175,55,.5); opacity:0; animation: lock-flash .55s ease-out 1.78s both; }
+        .orbit-two { width:108%; height:48%; transform:translate(-50%,-50%) rotate(18deg) scale(.8); border-color:rgba(255,195,222,.12); animation: orbit-settle 1.8s cubic-bezier(.2,.7,.2,1) .24s both; }
+        .intro-lock-flash { position:absolute; left:8%; right:8%; top:50%; height:2px; background:linear-gradient(90deg,transparent,#FFEAF3,#EC8CBA,transparent); box-shadow:0 0 22px 5px rgba(236,140,186,.5); opacity:0; animation: lock-flash .55s ease-out 1.78s both; }
         .intro-wordmark { margin-top:14px; text-align:center; opacity:0; transform:translateY(12px); animation: wordmark-in .75s cubic-bezier(.2,.75,.2,1) 2.05s both; }
         .intro-wordmark h1 { margin:0; font:800 clamp(28px,6vw,42px)/1 var(--font-space),sans-serif; letter-spacing:.24em; padding-left:.24em; }
-        .intro-wordmark h1 span { color:#D4AF37; }
-        .intro-wordmark p { margin:10px 0 0; color:#B6A16C; font:500 9px/1 var(--font-plex),monospace; letter-spacing:.38em; }
-        .intro-sound { position:absolute; bottom:max(28px,env(safe-area-inset-bottom)); border:1px solid rgba(212,175,55,.3); border-radius:999px; padding:9px 14px; background:rgba(12,11,8,.65); color:#BFA15A; font:10px var(--font-plex),monospace; letter-spacing:.12em; cursor:pointer; }
-        .intro-sound:focus-visible { outline:2px solid #F3E3B3; outline-offset:4px; }
+        .intro-wordmark h1 span { color:#EC8CBA; }
+        .intro-wordmark p { margin:10px 0 0; color:#B786A2; font:500 9px/1 var(--font-plex),monospace; letter-spacing:.38em; }
+        .intro-sound { position:absolute; bottom:max(28px,env(safe-area-inset-bottom)); border:1px solid rgba(236,140,186,.3); border-radius:999px; padding:9px 14px; background:rgba(12,11,8,.65); color:#C777A6; font:10px var(--font-plex),monospace; letter-spacing:.12em; cursor:pointer; }
+        .intro-sound:focus-visible { outline:2px solid #FFEAF3; outline-offset:4px; }
         @keyframes assemble-top { 0% { opacity:0; transform:translate(-72px,-46px) rotate(-22deg) scale(.82); } 58% { opacity:1; transform:translate(5px,3px) rotate(2deg); } 78% { transform:translate(-1px,0) rotate(-.4deg); } 100% { opacity:1; transform:translate(0,0) rotate(0); } }
         @keyframes assemble-diagonal { 0% { opacity:0; transform:translate(72px,-58px) rotate(26deg) scale(.84); } 52% { opacity:1; transform:translate(-4px,3px) rotate(-2deg); } 80% { transform:translate(1px,-1px) rotate(.4deg); } 100% { opacity:1; transform:translate(0,0) rotate(0); } }
         @keyframes assemble-bottom { 0% { opacity:0; transform:translate(-68px,54px) rotate(18deg) scale(.84); } 60% { opacity:1; transform:translate(4px,-3px) rotate(-1.5deg); } 82% { transform:translate(-1px,1px) rotate(.3deg); } 100% { opacity:1; transform:translate(0,0) rotate(0); } }
