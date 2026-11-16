@@ -23,7 +23,7 @@ You are the implementation engineer for **ZClip (Zyron Clip Studio)**. This file
 - Guided automatic editing first; manual editing is optional and simple.
 - Technical quality (hard gate) is separate from creative preference. Inspect the real rendered file before delivering it.
 - Long FFmpeg renders must not run in short-lived serverless request handlers; the current in-request render is a known prototype limit.
-- Design tokens are in `tailwind.config.ts` (obsidian `#080B11`, cyan `#39D7F2`, violet `#8C7BFF` restrained). Fonts: Space Grotesk, Inter, IBM Plex Mono. Dark by default, visible focus, reduced motion respected, status never by colour alone.
+- Design direction is obsidian black and metallic gold (obsidian `#08080A`, gold `#D4AF37`, champagne `#F3E3B3`, raised surface `#111114`). Do not reintroduce blue, cyan or violet accents. Fonts: Space Grotesk for display, Inter for body, IBM Plex Mono for technical labels. Dark by default, visible focus, reduced motion respected, status never by colour alone.
 
 ## Definition of done (for every task)
 - Run `npm test` and `npm run build`. Both must pass. Paste the real output; do not say "should work".
