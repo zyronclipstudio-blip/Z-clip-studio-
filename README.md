@@ -22,7 +22,7 @@ Sign in, upload clips, answer three optional questions, get an edited MP4.
 - Rendering still runs inside the API request; move it to a worker before deploying to a host with short timeouts.
 - Not built yet: correction controls, billing/subscription checkout, cost-budget enforcement, inactive-account workflow, captions/music in the plan.
 - Cleanup runs when projects are created; schedule it as well.
-- No automated JS tests yet. Database rules were tested with rolled-back SQL (RLS isolation, ledger, reservations, render slots, signup cap).
+- Automated Node tests live in `tests/` and run with `npm test`; install FFmpeg and FFprobe first because the render tests exercise real MP4 output. The GitHub verification workflow runs the tests and production build on pushes to `main` and pull requests.
 - The sign-up rate limit and request rate limit are per server instance.
 
 ## PWA and design system (v0.4)
