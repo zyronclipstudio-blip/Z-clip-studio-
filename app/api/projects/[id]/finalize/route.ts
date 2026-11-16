@@ -7,6 +7,7 @@ import { checkDurations, logEvent } from "@/lib/guardian";
 import { probeMedia, type ProbeResult } from "@/lib/media";
 import { deleteObjects, B2_BUCKET_CLIPS } from "@/lib/storage";
 import { admin } from "@/lib/supabase/admin";
+import { getSettings, num } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -59,6 +60,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const issues = checkDurations(metas.map((m) => m.meta.durationSec));
   if (issues.length) return rejectAll(issues.join(" "));
 
+  const settings = await getSettings();
+  const sourceRetentionExpiresAt = new Date(Date.now() + num(settings.retention_hours, 24) * 3600_000).toISOString();
   const rows = metas.map((m) => ({
     id: crypto.randomUUID(),
     project_id: id,
@@ -72,7 +75,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     codec: m.meta.codec,
     has_audio: m.meta.hasAudio,
     size_bytes: m.size,
-    retention_expires_at: project.expires_at,
+    retention_expires_at: sourceRetentionExpiresAt,
   }));
   const { error } = await db.from("media_assets").insert(rows);
   await removeLocal(allPaths.map((p) => path.basename(p))); // processing re-downloads when needed
