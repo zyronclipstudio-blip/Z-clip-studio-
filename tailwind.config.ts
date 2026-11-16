@@ -31,8 +31,8 @@ const config: Config = {
         charcoal: "#211825",
         silver: "#E2CFDA",
         cyan: {
-          DEFAULT: "#D4AF37",
-          glow: "rgba(212, 175, 55, 0.32)",
+          DEFAULT: "#EC8CBA",
+          glow: "rgba(236, 140, 186, 0.32)",
         },
         success: "#30C98B",
         warning: "#F2B84B",
