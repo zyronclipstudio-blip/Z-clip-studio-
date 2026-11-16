@@ -18,7 +18,7 @@ export async function cleanupExpired(): Promise<{ clips: number; exports: number
     out.clips = assets.length;
   }
 
-  const { data: expiredProjects } = await db.from("projects").select("id").lt("expires_at", now).neq("status", "expired").limit(200);
+  const { data: expiredProjects } = await db.from("projects").select("id").lt("expires_at", now).neq("status", "expired").neq("status", "ready").limit(200);
   if (expiredProjects?.length) {
     const ids = expiredProjects.map((p) => p.id as string);
     const { data: jobs } = await db.from("render_jobs").select("id, output_object_key").in("project_id", ids).not("output_object_key", "is", null);
