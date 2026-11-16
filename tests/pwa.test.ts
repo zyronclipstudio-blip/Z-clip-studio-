@@ -104,36 +104,36 @@ test("old caches are removed on activate", async () => {
   let done: Promise<unknown> = Promise.resolve();
   sw.handlers.activate({ waitUntil: (p: Promise<unknown>) => (done = p) });
   await done;
-  assert.deepEqual([...sw.stores.keys()], ["zclip-shell-v3"]);
+  assert.deepEqual([...sw.stores.keys()], ["zclip-shell-v4"]);
 });
 
 // ---------- manifest and icons ----------
-test("manifest uses the approved gold SVG for install and maskable icons", async () => {
+test("manifest uses the rose-pink SVG for install and maskable icons", async () => {
   const mod = await import("../app/manifest");
   const m = mod.default();
   assert.equal(m.short_name, "ZClip");
   assert.equal(m.display, "standalone");
   assert.equal(m.start_url, "/");
-  assert.equal(m.background_color, "#050505");
-  assert.equal(m.theme_color, "#050505");
+  assert.equal(m.background_color, "#0B0810");
+  assert.equal(m.theme_color, "#0B0810");
   assert.ok(m.icons!.some((i) => i.purpose === "any"), "has a normal app icon");
   assert.ok(m.icons!.some((i) => i.purpose === "maskable"), "has a maskable icon");
   assert.ok(m.icons!.every((i) => i.src === "/icons/zclip-gold.svg" && i.type === "image/svg+xml" && i.sizes === "any"));
   const svgPath = path.join(ROOT, "public/icons/zclip-gold.svg");
-  assert.ok(fs.existsSync(svgPath), "gold app artwork exists");
+  assert.ok(fs.existsSync(svgPath), "rose-pink app artwork exists");
   const svg = fs.readFileSync(svgPath, "utf8");
   assert.match(svg, /viewBox="0 0 512 512"/);
-  assert.match(svg, /#D4AF37/i, "brand gold is present");
+  assert.match(svg, /#EC8CBA/i, "rose-pink brand accent is present");
   assert.ok(fs.existsSync(path.join(ROOT, "public/offline.html")));
 });
 
-test("PWA shell version changes with the gold icon and no legacy blue offline palette remains", () => {
+test("PWA shell version changes with the rose-pink icon and matching offline palette", () => {
   const sw = fs.readFileSync(path.join(ROOT, "public/sw.js"), "utf8");
   const offline = fs.readFileSync(path.join(ROOT, "public/offline.html"), "utf8");
   assert.match(sw, /zclip-shell-v3/);
   assert.match(sw, /\/icons\/zclip-gold\.svg/);
   assert.doesNotMatch(offline, /#080B11|#39D7F2|#F4F7FB/i);
-  assert.match(offline, /#D4AF37/i);
+  assert.match(offline, /#EC8CBA/i);
 });
 
 // ---------- middleware must not intercept PWA files ----------
