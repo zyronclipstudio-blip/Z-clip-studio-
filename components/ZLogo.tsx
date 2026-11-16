@@ -1,19 +1,16 @@
 "use client";
 
+import { ZClipMark } from "@/components/ZClipMark";
+
 export function ZLogo({ size = 48, animated = false }: { size?: number; animated?: boolean }) {
+  const baseClass = "relative inline-flex shrink-0 select-none items-center justify-center rounded-[24%] border border-[#D4AF37]/45 bg-[linear-gradient(145deg,#211D14_0%,#101011_72%)] shadow-[0_0_18px_rgba(212,175,55,0.16),inset_0_1px_0_rgba(255,240,181,0.12)]";
   return (
-    <div
-      className={`relative flex items-center justify-center select-none ${animated ? "animate-pulse" : ""}`}
+    <span
+      className={animated ? baseClass + " animate-pulse" : baseClass}
       style={{ width: size, height: size }}
     >
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-gold/30 via-gold-muted/20 to-gold/10 blur-md pointer-events-none" />
-      <div className="relative flex items-center justify-center w-full h-full rounded-xl border border-gold/40 bg-surface-raised/90 shadow-[0_0_15px_rgba(212,175,55,0.25)] backdrop-blur-md">
-        <svg viewBox="0 0 100 100" className="w-3/5 h-3/5 drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 25 H80 L35 75 H80" stroke="#D4AF37" strokeWidth="12" strokeLinecap="square" strokeLinejoin="miter" />
-          <circle cx="22" cy="75" r="4.5" fill="#BFA15A" />
-          <circle cx="78" cy="25" r="4.5" fill="#F3E3B3" />
-        </svg>
-      </div>
-    </div>
+      <span className="absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_30%_12%,rgba(255,240,181,0.16),transparent_55%)]" />
+      <ZClipMark className="relative h-[72%] w-[72%] text-[#D4AF37] drop-shadow-[0_2px_6px_rgba(212,175,55,0.34)]" />
+    </span>
   );
 }
