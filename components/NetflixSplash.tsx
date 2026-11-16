@@ -25,7 +25,7 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#05070B] overflow-hidden select-none transition-all duration-700 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#08080A] overflow-hidden select-none transition-all duration-700 ${
         stage === "exit" ? "opacity-0 scale-105 pointer-events-none" : "opacity-100 scale-100"
       }`}
     >
@@ -58,7 +58,7 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
           <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#D4AF37] to-[#8B6A22] opacity-60 blur-3xl animate-pulse" />
 
           {/* High-Resolution Structural 3D Z Emblem */}
-          <div className="relative w-36 h-36 rounded-3xl overflow-hidden border border-[#D4AF37]/60 shadow-[0_0_40px_rgba(0,212,255,0.85)]">
+          <div className="relative w-36 h-36 rounded-3xl overflow-hidden border border-[#D4AF37]/60 shadow-[0_0_40px_rgba(212,175,55,0.55)]">
             <img
               src="/icons/zclip-hero-logo.jpg"
               alt="ZClip Official 3D Structural Logo"

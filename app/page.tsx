@@ -292,7 +292,7 @@ export default function Home() {
                   <div
                     className={`h-1.5 rounded-full transition-all duration-300 ${
                       i <= stepIdx
-                        ? "bg-gradient-to-r from-cyan to-[#2dbbd4] shadow-[0_0_8px_rgba(57,215,242,0.6)]"
+                        ? "bg-gradient-to-r from-cyan to-[#E5C76B] shadow-[0_0_8px_rgba(212,175,55,0.6)]"
                         : "bg-border"
                     }`}
                   />

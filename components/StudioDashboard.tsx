@@ -105,7 +105,7 @@ export function StudioDashboard({
               <button
                 type="button"
                 onClick={onNewProject}
-                className="group inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#8BEAF7]/50 bg-gradient-to-r from-[#D4AF37] to-[#E5C76B] px-6 py-3 text-sm font-bold text-[#06101B] shadow-[0_0_28px_rgba(212,175,55,0.18)] transition hover:brightness-110 hover:shadow-[0_0_34px_rgba(212,175,55,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto"
+                className="group inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#F3E3B3]/50 bg-gradient-to-r from-[#D4AF37] to-[#E5C76B] px-6 py-3 text-sm font-bold text-[#17130A] shadow-[0_0_28px_rgba(212,175,55,0.18)] transition hover:brightness-110 hover:shadow-[0_0_34px_rgba(212,175,55,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto"
               >
                 <Sparkles size={17} />
                 Create a new edit
