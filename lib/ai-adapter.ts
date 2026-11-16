@@ -174,6 +174,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
     });
     if (total >= cap) break;
   }
+  fitSegmentsToCap(segments, cap);
   if (segments.length === 0) throw new Error("The AI plan contained no usable segments");
 
   return EditPlanSchema.parse({
@@ -181,7 +182,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
     source,
     aspectRatio: aspectFor(setup.platform),
     pacing: parsed.pacing,
-    targetDurationSec: round(total),
+    targetDurationSec: round(segments.reduce((sum, segment) => sum + segment.endSec - segment.startSec, 0)),
     summary: parsed.summary || "Automatic edit.",
     segments,
   });
@@ -239,12 +240,14 @@ export function planDeterministic(assets: MediaAsset[], setup: Setup): PlanResul
     transition,
   }));
 
+  fitSegmentsToCap(segments, cap);
+
   const plan = EditPlanSchema.parse({
     version: 1,
     source: "deterministic",
     aspectRatio: aspectFor(setup.platform),
     pacing,
-    targetDurationSec: round(segments.reduce((s, x) => s + (x.endSec - x.startSec), 0)),
+    targetDurationSec: round(segments.reduce((sum, segment) => sum + segment.endSec - segment.startSec, 0)),
     summary: `Basic automatic assembly of ${assets.length} clip${assets.length === 1 ? "" : "s"} in upload order with ${pacing} pacing.`,
     segments,
   });
@@ -256,6 +259,32 @@ function moodFromPurpose(purpose: Setup["purpose"]): Setup["mood"] {
   if (purpose === "cinematic") return "cinematic";
   if (purpose === "business") return "professional";
   return "auto";
+}
+
+function fitSegmentsToCap(segments: CutSegment[], capSeconds: number): void {
+  const capMs = Math.floor(capSeconds * 1000);
+  let totalMs = segments.reduce(
+    (sum, segment) => sum + Math.round(segment.endSec * 1000) - Math.round(segment.startSec * 1000),
+    0,
+  );
+
+  // Work in integer milliseconds so rounding individual cuts cannot push the
+  // finished timeline a few milliseconds over the platform's hard duration cap.
+  for (let i = segments.length - 1; totalMs > capMs && i >= 0; i--) {
+    const segment = segments[i];
+    const startMs = Math.round(segment.startSec * 1000);
+    const endMs = Math.round(segment.endSec * 1000);
+    const durationMs = Math.max(0, endMs - startMs);
+    const overflowMs = totalMs - capMs;
+
+    if (durationMs <= overflowMs) {
+      segments.splice(i, 1);
+      totalMs -= durationMs;
+    } else {
+      segment.endSec = (endMs - overflowMs) / 1000;
+      totalMs = capMs;
+    }
+  }
 }
 
 function round(n: number): number {
