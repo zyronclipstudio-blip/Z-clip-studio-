@@ -87,7 +87,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 // Create project -> get server-approved upload paths -> upload straight to private storage -> server verifies.
 async function uploadClips(files: File[], onProgress: (pct: number) => void): Promise<{ projectId: string; assets: PublicAsset[] }> {
   const { projectId } = await postJson<{ projectId: string }>("/api/projects", {});
-  const { uploads } = await postJson<{ uploads: { path: string; token?: string; url?: string; name: string }[] }>(
+  const { uploads } = await postJson<{ uploads: { path: string; token?: string; url?: string; name: string; contentType: string }[] }>(
     `/api/projects/${projectId}/sign`,
     { files: files.map((f) => ({ name: f.name, size: f.size })) },
   );
@@ -99,7 +99,7 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
       // Direct presigned S3 / Backblaze B2 PUT upload
       const res = await fetch(upload.url, {
         method: "PUT",
-        headers: { "Content-Type": files[i].type || "video/mp4" },
+        headers: { "Content-Type": upload.contentType },
         body: files[i],
       });
       if (!res.ok) throw new Error(`Could not upload "${files[i].name}". Please try again.`);
@@ -107,7 +107,7 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
       // Fallback: Supabase Storage uploadToSignedUrl
       const sb = createClient();
       const { error } = await sb.storage.from("clips").uploadToSignedUrl(upload.path, upload.token || "", files[i], {
-        contentType: files[i].type || "video/mp4",
+        contentType: upload.contentType,
       });
       if (error) throw new Error(`Could not upload "${files[i].name}". Please try again.`);
     }
