@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const DATA_DIR = path.join(process.cwd(), "data");
+export const DATA_DIR = process.env.ZCLIP_DATA_DIR || path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 export const EXPORT_DIR = path.join(DATA_DIR, "exports");
 export const PROJECTS_FILE = path.join(DATA_DIR, "projects.json");
