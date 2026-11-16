@@ -130,7 +130,7 @@ test("manifest uses the rose-pink SVG for install and maskable icons", async () 
 test("PWA shell version changes with the rose-pink icon and matching offline palette", () => {
   const sw = fs.readFileSync(path.join(ROOT, "public/sw.js"), "utf8");
   const offline = fs.readFileSync(path.join(ROOT, "public/offline.html"), "utf8");
-  assert.match(sw, /zclip-shell-v3/);
+  assert.match(sw, /zclip-shell-v4/);
   assert.match(sw, /\/icons\/zclip-gold\.svg/);
   assert.doesNotMatch(offline, /#080B11|#39D7F2|#F4F7FB/i);
   assert.match(offline, /#EC8CBA/i);
