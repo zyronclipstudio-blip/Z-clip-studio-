@@ -104,33 +104,36 @@ test("old caches are removed on activate", async () => {
   let done: Promise<unknown> = Promise.resolve();
   sw.handlers.activate({ waitUntil: (p: Promise<unknown>) => (done = p) });
   await done;
-  assert.deepEqual([...sw.stores.keys()], ["zclip-shell-v1"]);
+  assert.deepEqual([...sw.stores.keys()], ["zclip-shell-v3"]);
 });
 
 // ---------- manifest and icons ----------
-function pngSize(file: string) {
-  const b = fs.readFileSync(file);
-  return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
-}
-
-test("manifest is installable and its icons exist with the declared sizes", async () => {
+test("manifest uses the approved gold SVG for install and maskable icons", async () => {
   const mod = await import("../app/manifest");
   const m = mod.default();
   assert.equal(m.short_name, "ZClip");
   assert.equal(m.display, "standalone");
   assert.equal(m.start_url, "/");
-  assert.equal(m.background_color, "#080B11");
-  assert.equal(m.theme_color, "#080B11");
+  assert.equal(m.background_color, "#050505");
+  assert.equal(m.theme_color, "#050505");
+  assert.ok(m.icons!.some((i) => i.purpose === "any"), "has a normal app icon");
   assert.ok(m.icons!.some((i) => i.purpose === "maskable"), "has a maskable icon");
-  for (const icon of m.icons!) {
-    const file = path.join(ROOT, "public", icon.src);
-    assert.ok(fs.existsSync(file), `${icon.src} exists`);
-    const [w, h] = icon.sizes!.split("x").map(Number);
-    assert.deepEqual(pngSize(file), { w, h }, `${icon.src} dimensions`);
-  }
-  assert.ok(m.icons!.some((i) => i.sizes === "192x192") && m.icons!.some((i) => i.sizes === "512x512"));
-  assert.ok(fs.existsSync(path.join(ROOT, "public/icons/apple-touch-icon.png")));
+  assert.ok(m.icons!.every((i) => i.src === "/icons/zclip-gold.svg" && i.type === "image/svg+xml" && i.sizes === "any"));
+  const svgPath = path.join(ROOT, "public/icons/zclip-gold.svg");
+  assert.ok(fs.existsSync(svgPath), "gold app artwork exists");
+  const svg = fs.readFileSync(svgPath, "utf8");
+  assert.match(svg, /viewBox="0 0 512 512"/);
+  assert.match(svg, /#D4AF37/i, "brand gold is present");
   assert.ok(fs.existsSync(path.join(ROOT, "public/offline.html")));
+});
+
+test("PWA shell version changes with the gold icon and no legacy blue offline palette remains", () => {
+  const sw = fs.readFileSync(path.join(ROOT, "public/sw.js"), "utf8");
+  const offline = fs.readFileSync(path.join(ROOT, "public/offline.html"), "utf8");
+  assert.match(sw, /zclip-shell-v3/);
+  assert.match(sw, /\/icons\/zclip-gold\.svg/);
+  assert.doesNotMatch(offline, /#080B11|#39D7F2|#F4F7FB/i);
+  assert.match(offline, /#D4AF37/i);
 });
 
 // ---------- middleware must not intercept PWA files ----------
