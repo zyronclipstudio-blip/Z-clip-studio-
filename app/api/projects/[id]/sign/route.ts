@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
-import { LIMITS } from "@/lib/config";
+import { LIMITS, MIME_BY_EXT } from "@/lib/config";
 import { checkBatch, logEvent } from "@/lib/guardian";
 import { getUploadPresignedUrl, B2_BUCKET_CLIPS } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
@@ -46,15 +46,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return Response.json({ error: `"${path.basename(f.name)}" is not a supported video type (use MP4, MOV, M4V, WebM or AVI).` }, { status: 400 });
   }
 
-  const uploads: { path: string; token: string; url: string; name: string }[] = [];
+  const uploads: { path: string; token: string; url: string; name: string; contentType: string }[] = [];
   for (const f of body.files) {
-    const objectPath = `${user.id}/${id}/${crypto.randomUUID()}${path.extname(f.name).toLowerCase()}`;
-    const uploadUrl = await getUploadPresignedUrl(B2_BUCKET_CLIPS, objectPath, "video/mp4", 900);
+    const ext = path.extname(f.name).toLowerCase();
+    const contentType = MIME_BY_EXT[ext];
+    if (!contentType) return Response.json({ error: `Unsupported video type: ${ext || "unknown"}.` }, { status: 400 });
+    const objectPath = `${user.id}/${id}/${crypto.randomUUID()}${ext}`;
+    const uploadUrl = await getUploadPresignedUrl(B2_BUCKET_CLIPS, objectPath, contentType, 900);
     uploads.push({
       path: objectPath,
       token: "", // Kept for backwards compatibility with front-end contract
       url: uploadUrl,
       name: path.basename(f.name).replace(/[^\w .()-]/g, "_").slice(0, 120),
+      contentType,
     });
   }
   return Response.json({ uploads });
