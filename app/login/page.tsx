@@ -149,9 +149,9 @@ export default function Login() {
 
             <button
               disabled={busy}
-              className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-gold to-gold-light p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(212,175,55,0.22)] transition duration-200 hover:shadow-[0_0_28px_rgba(212,175,55,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-gold to-gold-light p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(236,140,186,0.22)] transition duration-200 hover:shadow-[0_0_28px_rgba(236,140,186,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-[#17130A] transition duration-200 group-hover:bg-gold/95">
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-[#291521] transition duration-200 group-hover:bg-gold/95">
                 {busy ? (
                   <span>Authenticating...</span>
                 ) : (
