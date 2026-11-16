@@ -12,8 +12,8 @@ const region = process.env.B2_REGION || "us-east-005";
 const accessKeyId = process.env.B2_KEY_ID;
 const secretAccessKey = process.env.B2_APPLICATION_KEY;
 
-export const B2_BUCKET_CLIPS = process.env.B2_BUCKET_CLIPS || "zclip-clips";
-export const B2_BUCKET_EXPORTS = process.env.B2_BUCKET_EXPORTS || "zclip-exports";
+export const B2_BUCKET_CLIPS = process.env.B2_BUCKET_CLIPS || "zclip-private-media-2026";
+export const B2_BUCKET_EXPORTS = process.env.B2_BUCKET_EXPORTS || "zclip-private-media-2026";
 
 let s3Client: S3Client | null = null;
 
