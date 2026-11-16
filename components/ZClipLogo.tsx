@@ -13,7 +13,7 @@ export function ZClipLogo({
 }) {
   const icon = (
     <div
-      className="relative flex items-center justify-center shrink-0 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(0,212,255,0.45)]"
+      className="relative flex items-center justify-center shrink-0 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(212,175,55,0.45)]"
       style={{ width: size, height: size }}
     >
       <img
@@ -33,9 +33,9 @@ export function ZClipLogo({
       <div className={`flex flex-col items-center gap-1.5 text-center ${className}`}>
         {icon}
         <div className="font-display font-extrabold tracking-tight text-white flex items-center text-xl">
-          Z<span className="text-[#00D4FF]">Clip</span>
+          Z<span className="text-[#D4AF37]">Clip</span>
         </div>
-        <p className="text-[10px] tracking-widest text-[#9AA8BA] uppercase font-sans">
+        <p className="text-[10px] tracking-widest text-[#A39A86] uppercase font-sans">
           Edit. Create. Share.
         </p>
       </div>
@@ -47,9 +47,9 @@ export function ZClipLogo({
       {icon}
       <div className="flex flex-col">
         <div className="font-display font-extrabold tracking-tight text-white flex items-center text-2xl leading-none">
-          Z<span className="text-[#00D4FF]">Clip</span>
+          Z<span className="text-[#D4AF37]">Clip</span>
         </div>
-        <span className="text-[10px] font-sans tracking-widest text-[#9AA8BA] uppercase mt-1 leading-none">
+        <span className="text-[10px] font-sans tracking-widest text-[#A39A86] uppercase mt-1 leading-none">
           Edit. Create. Share.
         </span>
       </div>

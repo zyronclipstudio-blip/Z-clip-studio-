@@ -38,9 +38,9 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
           stage === "rays" ? "opacity-100 scale-125" : "opacity-0 scale-90"
         }`}
       >
-        <div className="w-[120vw] h-[2px] bg-gradient-to-r from-transparent via-[#00D4FF] to-transparent blur-sm shadow-[0_0_40px_#00D4FF]" />
-        <div className="absolute w-[2px] h-[120vh] bg-gradient-to-b from-transparent via-[#0075FF] to-transparent blur-sm shadow-[0_0_40px_#0075FF]" />
-        <div className="absolute w-[500px] h-[500px] rounded-full bg-[#00D4FF]/20 blur-[130px] animate-pulse" />
+        <div className="w-[120vw] h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent blur-sm shadow-[0_0_40px_#D4AF37]" />
+        <div className="absolute w-[2px] h-[120vh] bg-gradient-to-b from-transparent via-[#8B6A22] to-transparent blur-sm shadow-[0_0_40px_#8B6A22]" />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37]/20 blur-[130px] animate-pulse" />
       </div>
 
       {/* Hero Z Emblem with 3D Cinematic Anamorphic Zoom */}
@@ -55,10 +55,10 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
           }`}
         >
           {/* Intense Glow Pod */}
-          <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-[#001AFF] via-[#00D4FF] to-[#0075FF] opacity-60 blur-3xl animate-pulse" />
+          <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-[#D4AF37] via-[#D4AF37] to-[#8B6A22] opacity-60 blur-3xl animate-pulse" />
 
           {/* High-Resolution Structural 3D Z Emblem */}
-          <div className="relative w-36 h-36 rounded-3xl overflow-hidden border border-[#00D4FF]/60 shadow-[0_0_40px_rgba(0,212,255,0.85)]">
+          <div className="relative w-36 h-36 rounded-3xl overflow-hidden border border-[#D4AF37]/60 shadow-[0_0_40px_rgba(0,212,255,0.85)]">
             <img
               src="/icons/zclip-hero-logo.jpg"
               alt="ZClip Official 3D Structural Logo"
@@ -77,17 +77,17 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
         >
           <div className="flex items-center justify-center gap-1">
             <h1 className="font-display text-4xl sm:text-5xl font-extrabold tracking-wider text-white drop-shadow-[0_0_20px_rgba(0,117,255,0.7)]">
-              Z<span className="text-[#00D4FF]">Clip</span>
+              Z<span className="text-[#D4AF37]">Clip</span>
             </h1>
           </div>
-          <p className="text-xs sm:text-sm font-sans tracking-[0.35em] uppercase text-[#8A99AD] mt-1.5 font-medium">
+          <p className="text-xs sm:text-sm font-sans tracking-[0.35em] uppercase text-[#A39A86] mt-1.5 font-medium">
             Edit. Create. Share.
           </p>
         </div>
       </div>
 
       {/* Cinematic bottom credit */}
-      <div className="absolute bottom-8 font-mono text-[10px] tracking-widest text-[#8A99AD]/50 uppercase">
+      <div className="absolute bottom-8 font-mono text-[10px] tracking-widest text-[#A39A86]/50 uppercase">
         A Zyron Studio Product • AI Video Engine
       </div>
     </div>

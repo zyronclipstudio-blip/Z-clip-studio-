@@ -9,24 +9,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#080B11",
-        obsidian: "#0A0A0E",
-        surface: "#101726",
-        "surface-raised": "#151F33",
-        "surface-card": "#0D1424",
-        border: "#1C283F",
-        "border-glow": "#0075FF",
-        ink: "#F4F7FB",
-        muted: "#8A99AD",
-        // The Master Blueprint Palette:
-        electric: "#00D4FF", // Electric Blue #001AFF / #00D4FF
-        deepblue: "#0075FF", // Deep Blue #0075FF
-        royalblue: "#001AFF", // Royal Blue #001AFF
-        charcoal: "#1A1A1A",
-        silver: "#B0B6C9",
+        background: "#08080A",
+        obsidian: "#08080A",
+        surface: "#111114",
+        "surface-raised": "#1B1914",
+        "surface-card": "#100F0D",
+        border: "#302817",
+        "border-glow": "#D4AF37",
+        ink: "#F5F1E6",
+        muted: "#A39A86",
+        gold: {
+          DEFAULT: "#D4AF37",
+          light: "#E5C76B",
+          champagne: "#F3E3B3",
+          muted: "#BFA15A",
+        },
+        // Backward-compatible aliases for existing workflow components.
+        electric: "#D4AF37",
+        deepblue: "#8B6A22",
+        royalblue: "#D4AF37",
+        charcoal: "#1A1915",
+        silver: "#C8BEA8",
         cyan: {
-          DEFAULT: "#00D4FF",
-          glow: "rgba(0, 212, 255, 0.4)",
+          DEFAULT: "#D4AF37",
+          glow: "rgba(212, 175, 55, 0.32)",
         },
         success: "#30C98B",
         warning: "#F2B84B",
@@ -39,9 +45,9 @@ const config: Config = {
         mono: ["var(--font-plex)", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        glow: "0 0 25px rgba(0, 212, 255, 0.35)",
-        "glow-card": "0 8px 32px 0 rgba(0, 26, 255, 0.25)",
-        "glow-btn": "0 0 20px rgba(0, 117, 255, 0.5)",
+        glow: "0 0 25px rgba(212, 175, 55, 0.24)",
+        "glow-card": "0 8px 32px 0 rgba(139, 106, 34, 0.18)",
+        "glow-btn": "0 0 20px rgba(212, 175, 55, 0.32)",
       },
     },
   },
