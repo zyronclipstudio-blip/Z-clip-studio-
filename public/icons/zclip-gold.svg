@@ -2,25 +2,25 @@
   <defs>
     <linearGradient id="panel" x1="72" y1="44" x2="446" y2="472" gradientUnits="userSpaceOnUse">
       <stop stop-color="#272218"/>
-      <stop offset=".58" stop-color="#111114"/>
+      <stop offset=".58" stop-color="#17121B"/>
       <stop offset="1" stop-color="#080808"/>
     </linearGradient>
     <linearGradient id="gold" x1="104" y1="118" x2="405" y2="394" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFF0B5"/>
-      <stop offset=".28" stop-color="#D4AF37"/>
-      <stop offset=".68" stop-color="#9A741F"/>
-      <stop offset="1" stop-color="#F6D978"/>
+      <stop stop-color="#FFEAF3"/>
+      <stop offset=".28" stop-color="#EC8CBA"/>
+      <stop offset=".68" stop-color="#A64E7B"/>
+      <stop offset="1" stop-color="#FFC3DE"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#050505"/>
+  <rect width="512" height="512" rx="112" fill="#09060D"/>
   <rect x="18" y="18" width="476" height="476" rx="98" fill="url(#panel)" stroke="#8D681A" stroke-width="5"/>
-  <rect x="30" y="30" width="452" height="452" rx="88" fill="none" stroke="#FFF0B5" stroke-opacity=".08" stroke-width="2"/>
-  <g transform="translate(52 103) scale(1.7)" fill="url(#gold)" stroke="#755719" stroke-width="1.8" stroke-linejoin="bevel">
+  <rect x="30" y="30" width="452" height="452" rx="88" fill="none" stroke="#FFEAF3" stroke-opacity=".08" stroke-width="2"/>
+  <g transform="translate(52 103) scale(1.7)" fill="url(#gold)" stroke="#A75C83" stroke-width="1.8" stroke-linejoin="bevel">
     <path d="M30 28H210V54H30Z"/>
     <path d="M178 42L202 62L62 152L38 132Z"/>
     <path d="M30 126H210V152H30Z"/>
   </g>
-  <g transform="translate(52 103) scale(1.7)" fill="none" stroke="#FFF0B5" stroke-linecap="square">
+  <g transform="translate(52 103) scale(1.7)" fill="none" stroke="#FFEAF3" stroke-linecap="square">
     <path d="M40 34H198" stroke-opacity=".72" stroke-width="2"/>
     <path d="M181 53L54 137" stroke-opacity=".55" stroke-width="1.8"/>
     <path d="M42 133H199" stroke-opacity=".5" stroke-width="2"/>
