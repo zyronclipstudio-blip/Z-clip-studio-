@@ -248,42 +248,42 @@ export default function Home() {
       {!inEditor ? (
         <StudioDashboard
           userEmail={account?.email}
-          userCredits={account?.credits ?? 100}
+          userCredits={account?.credits}
           onNewProject={() => setInEditor(true)}
           onSignOut={signOut}
         />
       ) : (
-        <main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+        <main className="relative mx-auto min-h-screen w-full max-w-[1600px] overflow-hidden bg-[#08080A] px-4 py-6 text-[#F5F1E6] sm:px-6 sm:py-8 lg:px-10">
           <header className="mb-8">
-            <div className="flex items-center gap-3 text-cyan">
+            <div className="flex items-center gap-3 text-[#D4AF37]">
               <button
                 onClick={() => setInEditor(false)}
-                className="flex items-center gap-1.5 text-xs font-mono text-muted hover:text-white bg-surface border border-border px-3 py-1.5 rounded-xl transition mr-2"
+                className="flex items-center gap-1.5 text-xs font-mono text-[#A39A86] hover:text-white bg-[#111114] border border-white/10 px-3 py-1.5 rounded-xl transition mr-2"
               >
                 <ArrowLeft size={14} />
                 <span>Dashboard</span>
               </button>
               <ZLogo size={34} />
               <div className="flex items-center gap-2">
-                <span className="font-display text-xl font-bold tracking-tight text-ink">
-                  Z<span className="text-cyan">CLIP</span>
+                <span className="font-display text-xl font-bold tracking-tight text-[#F5F1E6]">
+                  Z<span className="text-[#D4AF37]">CLIP</span>
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-cyan/40 bg-cyan/10 text-cyan">
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-[#D4AF37]">
                   STUDIO
                 </span>
               </div>
               {account && (
-                <span className="ml-auto flex items-center gap-3 text-sm text-muted">
-                  <span className="rounded-full border border-border bg-surface px-3 py-1 text-ink">
+                <span className="ml-auto flex items-center gap-3 text-sm text-[#A39A86]">
+                  <span className="rounded-full border border-white/10 bg-[#111114] px-3 py-1 text-[#F5F1E6]">
                     {account.credits} credit{account.credits === 1 ? "" : "s"} left
                   </span>
-                  <button onClick={signOut} className="hover:text-ink">
+                  <button onClick={signOut} className="hover:text-[#F5F1E6]">
                     Sign out
                   </button>
                 </span>
               )}
             </div>
-            <h1 className="mt-4 font-display text-2xl font-semibold sm:text-3xl text-ink">
+            <h1 className="mt-4 font-display text-2xl font-semibold sm:text-3xl text-[#F5F1E6]">
               Upload your footage. Let ZClip do the editing.
             </h1>
             <div className="mt-5 flex gap-2" aria-label="Progress">
@@ -292,11 +292,11 @@ export default function Home() {
                   <div
                     className={`h-1.5 rounded-full transition-all duration-300 ${
                       i <= stepIdx
-                        ? "bg-gradient-to-r from-cyan to-[#2dbbd4] shadow-[0_0_8px_rgba(57,215,242,0.6)]"
+                        ? "bg-gradient-to-r from-[#D4AF37] to-[#E5C76B] shadow-[0_0_8px_rgba(212,175,55,0.6)]"
                         : "bg-border"
                     }`}
                   />
-                  <span className={`mt-1.5 block text-xs font-medium ${i <= stepIdx ? "text-cyan" : "text-muted"}`}>
+                  <span className={`mt-1.5 block text-xs font-medium ${i <= stepIdx ? "text-[#D4AF37]" : "text-[#A39A86]"}`}>
                     {label}
                   </span>
                 </div>
@@ -305,13 +305,13 @@ export default function Home() {
           </header>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+        <div role="alert" className="mb-4 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
         </div>
       )}
 
       {step === "upload" && (
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-2xl border border-white/10 bg-[#111114] p-5">
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -319,11 +319,11 @@ export default function Home() {
               addFiles(e.dataTransfer.files);
             }}
             onClick={() => inputRef.current?.click()}
-            className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-cyan/40 bg-surface-raised px-4 py-10 text-center transition hover:border-cyan"
+            className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-[#D4AF37]/40 bg-[#19191D] px-4 py-10 text-center transition hover:border-[#D4AF37]"
           >
-            <Upload className="text-cyan" />
+            <Upload className="text-[#D4AF37]" />
             <p className="mt-3 font-medium">Drop your clips here, or tap to choose</p>
-            <p className="mt-1 text-sm text-muted">Up to {MAX_CLIPS} clips, 500 MB total. MP4, MOV, WebM, AVI.</p>
+            <p className="mt-1 text-sm text-[#A39A86]">Up to {MAX_CLIPS} clips, 500 MB total. MP4, MOV, WebM, AVI.</p>
             <input ref={inputRef} type="file" accept="video/*" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
           </div>
 
@@ -333,24 +333,24 @@ export default function Home() {
                 {files.map((f, i) => (
                   <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-3 py-2 text-sm">
                     <span className="truncate">{f.name}</span>
-                    <span className="flex shrink-0 items-center gap-3 text-muted">
+                    <span className="flex shrink-0 items-center gap-3 text-[#A39A86]">
                       {fmtMB(f.size)}
-                      <button aria-label={`Remove ${f.name}`} disabled={busy} onClick={() => setFiles(files.filter((_, j) => j !== i))} className="rounded p-1 hover:bg-surface-raised">
+                      <button aria-label={`Remove ${f.name}`} disabled={busy} onClick={() => setFiles(files.filter((_, j) => j !== i))} className="rounded p-1 hover:bg-[#19191D]">
                         <X size={16} />
                       </button>
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-sm text-muted">
+              <p className="mt-2 text-sm text-[#A39A86]">
                 {files.length} clip{files.length > 1 ? "s" : ""} · {fmtMB(totalBytes)}
               </p>
               {busy && (
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-border">
-                  <div className="h-full bg-cyan transition-all" style={{ width: `${progress}%` }} />
+                  <div className="h-full bg-[#D4AF37] transition-all" style={{ width: `${progress}%` }} />
                 </div>
               )}
-              <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full rounded-xl bg-cyan px-4 py-3 font-semibold text-background transition hover:brightness-110 disabled:opacity-60">
+              <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full rounded-xl bg-[#D4AF37] px-4 py-3 font-semibold text-[#08080A] transition hover:brightness-110 disabled:opacity-60">
                 {busy ? `Uploading… ${progress}%` : "Continue"}
               </button>
             </>
@@ -359,8 +359,8 @@ export default function Home() {
       )}
 
       {step === "setup" && project && (
-        <section className="rounded-2xl border border-border bg-surface p-5">
-          <p className="text-sm text-muted">
+        <section className="rounded-2xl border border-white/10 bg-[#111114] p-5">
+          <p className="text-sm text-[#A39A86]">
             {project.assets.length} clip{project.assets.length > 1 ? "s" : ""} ready · {fmtSec(project.assets.reduce((s, a) => s + a.durationSec, 0))} of footage. Every question is optional.
           </p>
           {QUESTIONS.map((q) => (
@@ -375,7 +375,7 @@ export default function Home() {
                       type="button"
                       aria-pressed={active}
                       onClick={() => setSetup({ ...setup, [q.key]: value })}
-                      className={`rounded-full border px-3 py-1.5 text-sm transition ${active ? "border-cyan bg-cyan/15 text-cyan" : "border-border bg-surface-raised text-ink hover:border-muted"}`}
+                      className={`rounded-full border px-3 py-1.5 text-sm transition ${active ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#D4AF37]" : "border-white/10 bg-[#19191D] text-[#F5F1E6] hover:border-muted"}`}
                     >
                       {label}
                     </button>
@@ -384,19 +384,19 @@ export default function Home() {
               </div>
             </fieldset>
           ))}
-          <button onClick={goPreflight} disabled={!online} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 font-semibold text-background transition hover:brightness-110 disabled:opacity-60">
+          <button onClick={goPreflight} disabled={!online} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-4 py-3 font-semibold text-[#08080A] transition hover:brightness-110 disabled:opacity-60">
             <Sparkles size={18} /> Review cost and edit
           </button>
-          <button onClick={goPreflight} disabled={!online} className="mt-2 w-full py-2 text-sm text-muted hover:text-ink">
+          <button onClick={goPreflight} disabled={!online} className="mt-2 w-full py-2 text-sm text-[#A39A86] hover:text-[#F5F1E6]">
             Skip questions and let ZClip decide
           </button>
         </section>
       )}
 
       {step === "preflight" && estimate && (
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-2xl border border-white/10 bg-[#111114] p-5">
           <h2 className="font-display text-lg font-medium">Review your edit</h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm text-[#A39A86]">
             Based on {fmtSec(estimate.totalSeconds)} of footage. You approve the cost before anything starts.
           </p>
           <dl className="mt-4 divide-y divide-border text-sm">
@@ -407,32 +407,32 @@ export default function Home() {
               ["Remaining after (expected)", `${estimate.afterEstimate} credits`],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between py-2">
-                <dt className="text-muted">{k}</dt>
+                <dt className="text-[#A39A86]">{k}</dt>
                 <dd className="font-mono">{v}</dd>
               </div>
             ))}
           </dl>
-          <ul className="mt-4 space-y-1 text-sm text-muted">
+          <ul className="mt-4 space-y-1 text-sm text-[#A39A86]">
             <li>We hold the maximum while the edit runs, and release whatever isn&apos;t used.</li>
             <li>You are never charged above the maximum without asking again.</li>
             <li>If the edit fails or is withheld by our checks, the credits are returned.</li>
           </ul>
           {!estimate.sufficient && (
-            <p role="alert" className="mt-4 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
+            <p role="alert" className="mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
               Not enough credits: this edit needs {estimate.ceiling} available and you have {estimate.available}. Try fewer or shorter clips.
             </p>
           )}
-          <button onClick={handleProcess} disabled={!estimate.sufficient || !online} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 font-semibold text-background transition hover:brightness-110 disabled:opacity-60">
+          <button onClick={handleProcess} disabled={!estimate.sufficient || !online} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-4 py-3 font-semibold text-[#08080A] transition hover:brightness-110 disabled:opacity-60">
             <Sparkles size={18} /> Approve and start edit
           </button>
-          <button onClick={() => setStep("setup")} className="mt-2 w-full py-2 text-sm text-muted hover:text-ink">
+          <button onClick={() => setStep("setup")} className="mt-2 w-full py-2 text-sm text-[#A39A86] hover:text-[#F5F1E6]">
             Cancel
           </button>
         </section>
       )}
 
       {step === "processing" && (
-        <section className="rounded-2xl border border-border bg-surface p-5">
+        <section className="rounded-2xl border border-white/10 bg-[#111114] p-5">
           <p className="font-medium">ZClip is editing your video</p>
           <ol className="mt-4 space-y-3">
             {STAGES.map((s, i) => {
@@ -441,29 +441,29 @@ export default function Home() {
               const active = i === cur;
               return (
                 <li key={s.id} className="flex items-center gap-3 text-sm">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full border ${done ? "border-cyan bg-cyan text-background" : active ? "border-cyan" : "border-border"}`}>
-                    {done ? <Check size={14} /> : active ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-cyan border-t-transparent" /> : null}
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-full border ${done ? "border-[#D4AF37] bg-[#D4AF37] text-[#08080A]" : active ? "border-[#D4AF37]" : "border-white/10"}`}>
+                    {done ? <Check size={14} /> : active ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" /> : null}
                   </span>
-                  <span className={done || active ? "text-ink" : "text-muted"}>{s.label}</span>
+                  <span className={done || active ? "text-[#F5F1E6]" : "text-[#A39A86]"}>{s.label}</span>
                 </li>
               );
             })}
           </ol>
-          <p className="mt-4 text-xs text-muted">Keep this tab open. Longer footage takes longer.</p>
+          <p className="mt-4 text-xs text-[#A39A86]">Keep this tab open. Longer footage takes longer.</p>
         </section>
       )}
 
       {step === "review" && result && (
         <section className="space-y-4">
           {result.status === "ready" && result.outputUrl ? (
-            <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="rounded-2xl border border-white/10 bg-[#111114] p-4">
               <video src={result.outputUrl} controls playsInline className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
-              <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 font-semibold text-background transition hover:brightness-110">
+              <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-4 py-3 font-semibold text-[#08080A] transition hover:brightness-110">
                 <Download size={18} /> Download MP4
               </a>
             </div>
           ) : (
-            <div role="alert" className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
+            <div role="alert" className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-200">
               <p className="font-medium">This video didn&apos;t pass ZClip&apos;s technical checks, so it was withheld.</p>
               <ul className="mt-2 list-disc pl-5">
                 {result.qa.hardChecks.filter((c) => !c.ok).map((c) => (
@@ -473,8 +473,8 @@ export default function Home() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-border bg-surface p-4 text-sm">
-            <p className="text-ink">{result.plan.summary}</p>
+          <div className="rounded-2xl border border-white/10 bg-[#111114] p-4 text-sm">
+            <p className="text-[#F5F1E6]">{result.plan.summary}</p>
             <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 ["Length", fmtSec(result.metrics.outputDurationSec)],
@@ -483,16 +483,16 @@ export default function Home() {
                 ["Render time", `${(result.metrics.renderMs / 1000).toFixed(0)}s`],
               ].map(([k, v]) => (
                 <div key={k}>
-                  <dt className="text-xs text-muted">{k}</dt>
+                  <dt className="text-xs text-[#A39A86]">{k}</dt>
                   <dd className="font-medium">{v}</dd>
                 </div>
               ))}
             </dl>
             {result.metrics.fallbackReason && (
-              <p className="mt-3 text-xs text-warning">AI step failed, so the basic editor was used instead: {result.metrics.fallbackReason}</p>
+              <p className="mt-3 text-xs text-amber-200">AI step failed, so the basic editor was used instead: {result.metrics.fallbackReason}</p>
             )}
             {result.qa.warnings.length > 0 && (
-              <ul className="mt-3 list-disc pl-5 text-xs text-warning">
+              <ul className="mt-3 list-disc pl-5 text-xs text-amber-200">
                 {result.qa.warnings.map((w) => (
                   <li key={w}>{w}</li>
                 ))}
@@ -501,7 +501,7 @@ export default function Home() {
           </div>
 
           {result.receipt && (
-            <div className="rounded-2xl border border-border bg-surface p-4 text-sm">
+            <div className="rounded-2xl border border-white/10 bg-[#111114] p-4 text-sm">
               <h2 className="font-display font-medium">Receipt</h2>
               <dl className="mt-3 divide-y divide-border">
                 {[
@@ -511,35 +511,35 @@ export default function Home() {
                   ["Available now", `${result.receipt.available} credits`],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between py-2">
-                    <dt className="text-muted">{k}</dt>
+                    <dt className="text-[#A39A86]">{k}</dt>
                     <dd className="font-mono">{v}</dd>
                   </div>
                 ))}
               </dl>
-              <p className="mt-2 text-xs text-muted">Job {result.receipt.jobId.slice(0, 8)}</p>
+              <p className="mt-2 text-xs text-[#A39A86]">Job {result.receipt.jobId.slice(0, 8)}</p>
             </div>
           )}
 
-          <div className="rounded-2xl border border-border bg-surface p-4">
+          <div className="rounded-2xl border border-white/10 bg-[#111114] p-4">
             <h2 className="font-display font-medium">Why each cut was made</h2>
             <ol className="mt-3 space-y-2">
               {result.plan.segments.map((s, i) => (
-                <li key={i} className="rounded-lg border border-border bg-surface-raised p-3 text-sm">
-                  <div className="flex justify-between gap-2 text-xs text-muted">
+                <li key={i} className="rounded-lg border border-white/10 bg-[#19191D] p-3 text-sm">
+                  <div className="flex justify-between gap-2 text-xs text-[#A39A86]">
                     <span className="truncate">{i + 1}. {nameOf(s.assetId)}</span>
                     <span className="shrink-0 font-mono">{s.startSec.toFixed(1)}s to {s.endSec.toFixed(1)}s</span>
                   </div>
-                  <p className="mt-1 text-ink">{s.reason}</p>
+                  <p className="mt-1 text-[#F5F1E6]">{s.reason}</p>
                 </li>
               ))}
             </ol>
           </div>
 
           <div className="flex gap-3">
-            <button onClick={() => setStep("preflight")} className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:border-muted">
+            <button onClick={() => setStep("preflight")} className="flex-1 rounded-xl border border-white/10 bg-[#111114] px-4 py-3 text-sm font-medium hover:border-muted">
               Try different settings
             </button>
-            <button onClick={reset} className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:border-muted">
+            <button onClick={reset} className="flex-1 rounded-xl border border-white/10 bg-[#111114] px-4 py-3 text-sm font-medium hover:border-muted">
               Start a new video
             </button>
           </div>

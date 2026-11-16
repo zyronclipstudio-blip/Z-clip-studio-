@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
+import { ZClipMark } from "@/components/ZClipMark";
 
 export function ZClipLogo({
   size = 48,
-  variant = "horizontal", // "icon" | "horizontal" | "vertical" | "badge"
+  variant = "horizontal",
   className = "",
 }: {
   size?: number;
@@ -12,47 +13,46 @@ export function ZClipLogo({
   className?: string;
 }) {
   const icon = (
-    <div
-      className="relative flex items-center justify-center shrink-0 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(0,212,255,0.45)]"
+    <span
+      className="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[22%] border border-[#D4AF37]/50 bg-[linear-gradient(145deg,#242017_0%,#0D0D0E_72%)] shadow-[0_0_22px_rgba(212,175,55,0.2),inset_0_1px_0_rgba(255,240,181,0.12)]"
       style={{ width: size, height: size }}
     >
-      <img
-        src="/icons/zclip-hero-logo.jpg"
-        alt="ZClip 3D Structural Logo"
-        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-      />
-    </div>
+      <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_12%,rgba(255,240,181,0.16),transparent_54%)]" />
+      <ZClipMark className="relative h-[76%] w-[76%] text-[#D4AF37] drop-shadow-[0_2px_5px_rgba(212,175,55,0.32)]" />
+    </span>
   );
 
   if (variant === "icon") {
-    return <div className={`inline-flex items-center ${className}`}>{icon}</div>;
+    return <span className={`inline-flex items-center ${className}`}>{icon}</span>;
   }
 
   if (variant === "vertical") {
     return (
-      <div className={`flex flex-col items-center gap-1.5 text-center ${className}`}>
+      <span className={`inline-flex flex-col items-center gap-2 text-center ${className}`}>
         {icon}
-        <div className="font-display font-extrabold tracking-tight text-white flex items-center text-xl">
-          Z<span className="text-[#00D4FF]">Clip</span>
-        </div>
-        <p className="text-[10px] tracking-widest text-[#9AA8BA] uppercase font-sans">
-          Edit. Create. Share.
-        </p>
-      </div>
+        <span className="flex flex-col items-center">
+          <span className="font-display text-xl font-bold leading-none tracking-tight text-white">
+            Z<span className="text-[#D4AF37]">Clip</span>
+          </span>
+          <span className="mt-1 font-mono text-[8px] tracking-[0.2em] text-[#A39A86]">
+            ZYRON CLIP STUDIO
+          </span>
+        </span>
+      </span>
     );
   }
 
   return (
-    <div className={`inline-flex items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
       {icon}
-      <div className="flex flex-col">
-        <div className="font-display font-extrabold tracking-tight text-white flex items-center text-2xl leading-none">
-          Z<span className="text-[#00D4FF]">Clip</span>
-        </div>
-        <span className="text-[10px] font-sans tracking-widest text-[#9AA8BA] uppercase mt-1 leading-none">
-          Edit. Create. Share.
+      <span className="flex min-w-0 flex-col">
+        <span className="font-display text-2xl font-bold leading-none tracking-tight text-white">
+          Z<span className="text-[#D4AF37]">Clip</span>
         </span>
-      </div>
-    </div>
+        <span className="mt-1 font-mono text-[8px] leading-none tracking-[0.18em] text-[#A39A86]">
+          ZYRON CLIP STUDIO
+        </span>
+      </span>
+    </span>
   );
 }

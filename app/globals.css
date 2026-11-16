@@ -7,47 +7,47 @@
 }
 
 body {
-  background-color: #080B11;
-  color: #F4F7FB;
+  background-color: #08080A;
+  color: #F5F1E6;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background-image:
-    radial-gradient(900px 500px at 85% -10%, rgba(140, 123, 255, 0.12), transparent 60%),
-    radial-gradient(800px 480px at 5% -5%, rgba(57, 215, 242, 0.09), transparent 60%);
+    radial-gradient(900px 500px at 85% -10%, rgba(191, 161, 90, 0.10), transparent 60%),
+    radial-gradient(800px 480px at 5% -5%, rgba(212, 175, 55, 0.08), transparent 60%);
   background-attachment: fixed;
   min-height: 100vh;
 }
 
 :focus-visible {
-  outline: 2px solid #39d7f2;
+  outline: 2px solid #D4AF37;
   outline-offset: 2px;
 }
 
-/* Fallbacks to guarantee proper studio look even if utility purge delays */
+/* Fallbacks for the obsidian-and-gold studio surfaces. */
 .bg-surface {
-  background-color: #101722;
+  background-color: #111114;
 }
 
 .bg-surface-raised {
-  background-color: #172230;
+  background-color: #1B1914;
 }
 
 .border-border {
-  border-color: #263345;
+  border-color: #302817;
 }
 
 .text-ink {
-  color: #F4F7FB;
+  color: #F5F1E6;
 }
 
 .text-muted {
-  color: #9AA8BA;
+  color: #A39A86;
 }
 
 .text-cyan {
-  color: #39D7F2;
+  color: #D4AF37;
 }
 
 .bg-cyan {
-  background-color: #39D7F2;
+  background-color: #D4AF37;
 }

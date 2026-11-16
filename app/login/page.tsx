@@ -52,9 +52,9 @@ export default function Login() {
 
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-background">
-      {/* Blueprint Ambient Glows */}
+      {/* Studio Ambient Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[250px] bg-violet/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[250px] bg-gold-muted/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">
         {/* Brand Header */}
@@ -149,9 +149,9 @@ export default function Login() {
 
             <button
               disabled={busy}
-              className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-cyan to-[#2dbbd4] p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(57,215,242,0.3)] transition duration-200 hover:shadow-[0_0_28px_rgba(57,215,242,0.5)] disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-cyan to-[#E5C76B] p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(212,175,55,0.22)] transition duration-200 hover:shadow-[0_0_28px_rgba(212,175,55,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 text-sm font-semibold text-[#080B11] transition duration-200 group-hover:bg-cyan/95">
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 text-sm font-semibold text-[#17130A] transition duration-200 group-hover:bg-cyan/95">
                 {busy ? (
                   <span>Authenticating...</span>
                 ) : (
