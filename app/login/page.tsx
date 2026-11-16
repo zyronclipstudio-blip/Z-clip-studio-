@@ -53,7 +53,7 @@ export default function Login() {
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-background">
       {/* Studio Ambient Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-cyan/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gold/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[250px] bg-gold-muted/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative w-full max-w-md">
@@ -64,9 +64,9 @@ export default function Login() {
           </div>
           <div className="flex items-center gap-2">
             <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
-              Z<span className="text-cyan">CLIP</span>
+              Z<span className="text-gold">CLIP</span>
             </h1>
-            <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-cyan/40 bg-cyan/10 text-cyan">
+            <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-gold/40 bg-gold/10 text-gold">
               STUDIO
             </span>
           </div>
@@ -78,7 +78,7 @@ export default function Login() {
         {/* Card Container */}
         <div className="relative rounded-2xl border border-border bg-surface/80 p-6 sm:p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           {/* Subtle Top Accent line */}
-          <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-cyan/50 to-transparent" />
+          <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
           <div className="flex items-center justify-between pb-6 mb-6 border-b border-border">
             <div>
@@ -89,7 +89,7 @@ export default function Login() {
                 {mode === "in" ? "Sign in to access your projects" : "Create your creator studio account"}
               </p>
             </div>
-            <span className="flex items-center gap-1.5 text-xs font-mono text-cyan/90 bg-cyan/10 border border-cyan/20 px-2.5 py-1 rounded-lg">
+            <span className="flex items-center gap-1.5 text-xs font-mono text-gold/90 bg-gold/10 border border-gold/20 px-2.5 py-1 rounded-lg">
               <Sparkles size={13} />
               AI Studio
             </span>
@@ -109,7 +109,7 @@ export default function Login() {
                   placeholder="creator@studio.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-cyan focus:ring-1 focus:ring-cyan/50"
+                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-gold focus:ring-1 focus:ring-gold/50"
                 />
               </div>
             </div>
@@ -128,7 +128,7 @@ export default function Login() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-cyan focus:ring-1 focus:ring-cyan/50"
+                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-gold focus:ring-1 focus:ring-gold/50"
                 />
               </div>
             </div>
@@ -141,17 +141,17 @@ export default function Login() {
             )}
 
             {notice && (
-              <div className="p-3 rounded-xl border border-cyan/30 bg-cyan/10 text-xs text-cyan flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+              <div className="p-3 rounded-xl border border-gold/30 bg-gold/10 text-xs text-gold flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
                 {notice}
               </div>
             )}
 
             <button
               disabled={busy}
-              className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-cyan to-[#E5C76B] p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(212,175,55,0.22)] transition duration-200 hover:shadow-[0_0_28px_rgba(212,175,55,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-gold to-gold-light p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(212,175,55,0.22)] transition duration-200 hover:shadow-[0_0_28px_rgba(212,175,55,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-cyan px-4 py-3 text-sm font-semibold text-[#17130A] transition duration-200 group-hover:bg-cyan/95">
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-[#17130A] transition duration-200 group-hover:bg-gold/95">
                 {busy ? (
                   <span>Authenticating...</span>
                 ) : (
@@ -172,12 +172,12 @@ export default function Login() {
                 setError("");
                 setNotice("");
               }}
-              className="text-xs text-muted hover:text-cyan transition duration-150 inline-flex items-center gap-1.5"
+              className="text-xs text-muted hover:text-gold transition duration-150 inline-flex items-center gap-1.5"
             >
               {mode === "in" ? (
-                <>New to ZClip? <span className="text-cyan font-medium underline underline-offset-4">Create account</span></>
+                <>New to ZClip? <span className="text-gold font-medium underline underline-offset-4">Create account</span></>
               ) : (
-                <>Already have an account? <span className="text-cyan font-medium underline underline-offset-4">Sign in</span></>
+                <>Already have an account? <span className="text-gold font-medium underline underline-offset-4">Sign in</span></>
               )}
             </button>
           </div>
