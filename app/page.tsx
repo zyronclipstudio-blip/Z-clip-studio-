@@ -248,7 +248,7 @@ export default function Home() {
       {!inEditor ? (
         <StudioDashboard
           userEmail={account?.email}
-          userCredits={account?.credits ?? 100}
+          userCredits={account?.credits}
           onNewProject={() => setInEditor(true)}
           onSignOut={signOut}
         />
