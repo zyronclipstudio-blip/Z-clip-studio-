@@ -27,12 +27,12 @@ Sign in, upload clips, answer three optional questions, get an edited MP4.
 
 ## PWA and design system (v0.4)
 
-- Installable: `app/manifest.ts` (standalone display, gold SVG app icon for normal and maskable use), `public/sw.js` (versioned service worker), `public/offline.html`, `components/PwaShell.tsx` (registration, install button, offline banner). The old blue raster placeholder icons have been removed. The in-app animated intro is separate from the operating system's static PWA install/splash artwork.
+- Installable: `app/manifest.ts` (standalone display, rose-pink SVG app icon for normal and maskable use), `public/sw.js` (versioned service worker), `public/offline.html`, `components/PwaShell.tsx` (registration, install button, offline banner). The old blue raster placeholder icons have been removed. The in-app animated intro is separate from the operating system's static PWA install/splash artwork.
 - The service worker caches only the offline page and immutable static assets. It never caches API calls, auth, pages, videos, signed URLs or anything cross-origin.
 - The service worker registers only in production: test with `npm run build && npm start`, not `npm run dev`.
 - iOS Safari has no install prompt: use Share, then Add to Home Screen.
-- Design tokens (colours, Space Grotesk / Inter / IBM Plex Mono via `next/font`) are in `tailwind.config.ts` and `app/layout.tsx`.
-- Android/Chromium installation uses `public/icons/zclip-gold.svg`; use a separately approved PNG for the iOS Apple touch icon when that platform is prepared.
+- Design tokens (obsidian, rose-pink accents, Space Grotesk / Inter / IBM Plex Mono via `next/font`) are in `tailwind.config.ts` and `app/layout.tsx`.
+- Android/Chromium installation uses `public/icons/zclip-gold.svg` (rose-pink artwork); use a separately approved PNG for the iOS Apple touch icon when that platform is prepared.
 - Not yet tested on real devices (Android Chrome install, desktop Chromium install, offline behaviour).
 
 ## Credit estimates, ceilings and receipts (v0.5)
