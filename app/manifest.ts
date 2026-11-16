@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "any",
-    background_color: "#09060D",
-    theme_color: "#09060D",
+    background_color: "#0B0810",
+    theme_color: "#0B0810",
     categories: ["video", "productivity"],
     icons: [
       { src: "/icons/zclip-gold.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
