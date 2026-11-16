@@ -8,31 +8,31 @@ export function ZLogo({ size = 48, animated = false }: { size?: number; animated
       className={`relative flex items-center justify-center select-none ${animated ? "animate-pulse" : ""}`}
       style={{ width: size, height: size }}
     >
-      {/* Outer Cyan Glow Ring */}
+      {/* Outer Gold Glow Ring */}
       <div
-        className="absolute inset-0 rounded-xl bg-gradient-to-tr from-cyan/30 via-violet/20 to-cyan/10 blur-md pointer-events-none"
+        className="absolute inset-0 rounded-xl bg-gradient-to-tr from-gold/30 via-gold-muted/20 to-gold/10 blur-md pointer-events-none"
       />
       
       {/* Emblem Container */}
-      <div className="relative flex items-center justify-center w-full h-full rounded-xl border border-cyan/40 bg-surface-raised/90 shadow-[0_0_15px_rgba(57,215,242,0.25)] backdrop-blur-md">
+      <div className="relative flex items-center justify-center w-full h-full rounded-xl border border-gold/40 bg-surface-raised/90 shadow-[0_0_15px_rgba(212,175,55,0.25)] backdrop-blur-md">
         <svg
           viewBox="0 0 100 100"
-          className="w-3/5 h-3/5 drop-shadow-[0_0_8px_rgba(57,215,242,0.8)]"
+          className="w-3/5 h-3/5 drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           {/* Futuristic Cyber-Angular "Z" */}
           <path
             d="M20 25 H80 L35 75 H80"
-            stroke="#39D7F2"
+            stroke="#D4AF37"
             strokeWidth="12"
             strokeLinecap="round"
             strokeLinejoin="miter"
             className={animated ? "animate-[dash_2s_ease-in-out_infinite]" : ""}
           />
           {/* Subtle Accent cut dot */}
-          <circle cx="22" cy="75" r="4.5" fill="#8C7BFF" />
-          <circle cx="78" cy="25" r="4.5" fill="#39D7F2" />
+          <circle cx="22" cy="75" r="4.5" fill="#BFA15A" />
+          <circle cx="78" cy="25" r="4.5" fill="#F3E3B3" />
         </svg>
       </div>
     </div>
@@ -52,13 +52,13 @@ export function SplashScreen({ onFinish }: { onFinish: () => void }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#080B11] transition-opacity duration-700 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#08080A] transition-opacity duration-700 ${
         fade ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
       {/* Ambient background glows */}
       <div className="absolute w-[500px] h-[500px] rounded-full bg-cyan/10 blur-[120px] pointer-events-none animate-pulse" />
-      <div className="absolute w-[400px] h-[400px] rounded-full bg-violet/10 blur-[100px] pointer-events-none" />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-gold-muted/10 blur-[100px] pointer-events-none" />
 
       {/* Hero Z Emblem */}
       <div className="relative transform transition-transform duration-1000 scale-125 mb-6">
