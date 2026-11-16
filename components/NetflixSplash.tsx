@@ -7,14 +7,17 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
   const [leaving, setLeaving] = useState(false);
   const audioPlayed = useRef(false);
 
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
+
   useEffect(() => {
     const exitTimer = window.setTimeout(() => setLeaving(true), 3000);
-    const finishTimer = window.setTimeout(onFinish, 3400);
+    const finishTimer = window.setTimeout(() => onFinishRef.current(), 3400);
     return () => {
       window.clearTimeout(exitTimer);
       window.clearTimeout(finishTimer);
     };
-  }, [onFinish]);
+  }, []);
 
   // Original, synthesized mechanical cue. Browsers require a user gesture before audio.
   const playMechanicalCue = useCallback(() => {
@@ -98,7 +101,7 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
               <linearGradient id="zclipGold" x1="25" y1="18" x2="205" y2="160" gradientUnits="userSpaceOnUse">
                 <stop stopColor="#FFF0B5" />
                 <stop offset="0.28" stopColor="#D4AF37" />
-                <stop offset="0.62" stopColor="#8D681A" />
+                <stop offset="0.68" stopColor="#9A741F" />
                 <stop offset="1" stopColor="#F6D978" />
               </linearGradient>
               <linearGradient id="zclipTitanium" x1="0" y1="0" x2="1" y2="1">
@@ -112,18 +115,18 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
               </filter>
             </defs>
             <g className="z-piece z-piece-top" filter="url(#zclipGlow)">
-              <path d="M42 34 H198 L181 57 H42 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
-              <path d="M52 40 H181" stroke="#FFF0B5" strokeOpacity=".8" strokeWidth="2" />
+              <path d="M30 28 H210 V54 H30 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
+              <path d="M40 34 H198" stroke="#FFF0B5" strokeOpacity=".8" strokeWidth="2" />
             </g>
             <g className="z-piece z-piece-diagonal" filter="url(#zclipGlow)">
-              <path d="M174 48 L198 66 L69 148 L45 130 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
-              <path d="M177 60 L70 129" stroke="#F7D978" strokeOpacity=".85" strokeWidth="2" />
+              <path d="M178 42 L202 62 L62 152 L38 132 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
+              <path d="M181 53 L54 137" stroke="#F7D978" strokeOpacity=".85" strokeWidth="2" />
             </g>
             <g className="z-piece z-piece-bottom" filter="url(#zclipGlow)">
-              <path d="M42 123 H198 L181 146 H42 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
-              <path d="M58 132 H178" stroke="#FFF0B5" strokeOpacity=".8" strokeWidth="2" />
+              <path d="M30 126 H210 V152 H30 Z" fill="url(#zclipTitanium)" stroke="url(#zclipGold)" strokeWidth="2.5" />
+              <path d="M42 133 H199" stroke="#FFF0B5" strokeOpacity=".8" strokeWidth="2" />
             </g>
-            <path className="z-core-line" d="M42 34 H198 L42 146 H198" stroke="#FFF0B5" strokeWidth="1.5" strokeOpacity=".9" />
+            <path className="z-core-line" d="M30 28 H210 L30 152 H210" stroke="#FFF0B5" strokeWidth="1.5" strokeOpacity=".9" />
           </svg>
           <div className="intro-lock-flash" />
         </div>
