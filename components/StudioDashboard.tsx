@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { MyEdits } from "@/components/MyEdits";
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -25,6 +28,7 @@ export function StudioDashboard({
   onNewProject,
   onSignOut,
 }: DashboardProps) {
+  const [showMyEdits, setShowMyEdits] = useState(false);
   const hasBalance = typeof userCredits === "number" && Number.isFinite(userCredits);
   const balanceLabel = hasBalance
     ? new Intl.NumberFormat("en-NG").format(userCredits)
@@ -48,6 +52,7 @@ export function StudioDashboard({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <button type="button" onClick={() => setShowMyEdits(true)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/[0.06] px-3 text-xs font-medium text-[#E5D09A] transition hover:border-[#D4AF37]/50 hover:text-white"><Film size={15} /> My Edits</button>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 sm:px-4">
               <p className="font-mono text-[9px] tracking-[0.16em] text-[#A39A86]">
                 ACCOUNT CREDITS
@@ -81,7 +86,8 @@ export function StudioDashboard({
           </div>
         </header>
 
-        <section className="grid flex-1 items-center gap-8 py-10 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-20">
+        {showMyEdits ? <MyEdits onBack={() => setShowMyEdits(false)} /> : null}
+        <section className={`grid flex-1 items-center gap-8 py-10 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-20 ${showMyEdits ? "hidden" : ""}`}>
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/[0.07] px-3 py-1.5 font-mono text-[10px] tracking-[0.16em] text-[#F3E3B3]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#D4AF37] shadow-[0_0_10px_rgba(212,175,55,0.9)]" />
@@ -205,7 +211,7 @@ export function StudioDashboard({
           </aside>
         </section>
 
-        <section className="grid gap-3 border-t border-white/10 py-6 sm:grid-cols-3 sm:gap-5">
+        <section className={`grid gap-3 border-t border-white/10 py-6 sm:grid-cols-3 sm:gap-5 ${showMyEdits ? "hidden" : ""}`}>
           <div className="flex gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#D4AF37]/[0.08] text-[#F3E3B3]">
               <Wand2 size={16} />
