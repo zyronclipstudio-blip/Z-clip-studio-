@@ -2,6 +2,8 @@
 
 Sign in, upload clips, answer three optional questions, get an edited MP4.
 
+Docs: [Architecture](docs/ARCHITECTURE.md) · [Deploying](docs/DEPLOY.md) · [Roadmap](docs/ROADMAP.md)
+
 ## Run it
 
 1. Install **FFmpeg** (includes `ffprobe`) and check `ffmpeg -version` works in a terminal.
