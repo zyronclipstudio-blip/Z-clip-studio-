@@ -23,7 +23,7 @@ You are the implementation engineer for **ZClip (Zyron Clip Studio)**. This file
 - Guided automatic editing first; manual editing is optional and simple.
 - Technical quality (hard gate) is separate from creative preference. Inspect the real rendered file before delivering it.
 - Long FFmpeg renders must not run in short-lived serverless request handlers; the current in-request render is a known prototype limit.
-- Design direction is obsidian black and metallic gold (obsidian `#08080A`, gold `#D4AF37`, champagne `#F3E3B3`, raised surface `#111114`). Do not reintroduce blue, cyan or violet accents. Fonts: Space Grotesk for display, Inter for body, IBM Plex Mono for technical labels. Dark by default, visible focus, reduced motion respected, status never by colour alone.
+- Design direction: exactly the Zyron Studio look (owner decision, 17 Nov 2026). Obsidian background `#05060a`, surfaces `#11141b` and `#181c25`, lines `#242a35`, text `#eceff4`, muted `#8d97a8`, gold `#d9b45b` with gradient `#ecd083` to `#b88f38`, text on gold `#17120a`. Font: Geist, with Geist Mono for technical labels. Cards radius 20px, buttons 12px, gold gradient primary buttons. Do not reintroduce blue, cyan, violet or pink accents. Dark by default. Visible keyboard focus and 44px minimum touch targets.
 
 ## Definition of done (for every task)
 - Run `npm test` and `npm run build`. Both must pass. Paste the real output; do not say "should work".
