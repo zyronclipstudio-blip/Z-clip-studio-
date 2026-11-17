@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ZLogo } from "@/components/ZLogo";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { createClient } from "@/lib/supabase/browser";
-import { ArrowRight, Lock, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, Lock, Mail } from "lucide-react";
 
 export default function Login() {
   const [mode, setMode] = useState<"in" | "up">("in");
@@ -76,42 +76,36 @@ export default function Login() {
             <ZLogo size={64} animated />
           </div>
           <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
+            <h1 className="text-2xl font-extrabold tracking-[0.24em] pl-[0.24em] text-[#f3eee2]">
               Z<span className="text-gold">CLIP</span>
             </h1>
-            <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-gold/40 bg-gold/10 text-gold">
-              STUDIO
-            </span>
           </div>
+          <p className="mt-2 font-mono text-[10px] tracking-[0.3em] text-[#8d97a8]">ZYRON CLIP STUDIO</p>
           <p className="mt-2 text-sm text-muted max-w-xs font-sans">
             Tell ZClip what you're creating. Upload your footage. Let ZClip do the editing.
           </p>
         </div>
 
         {/* Card Container */}
-        <div className="relative rounded-2xl border border-border bg-surface/80 p-6 sm:p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="relative rounded-[20px] border border-border bg-surface/80 p-6 sm:p-8 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           {/* Subtle Top Accent line */}
           <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
           <div className="flex items-center justify-between pb-6 mb-6 border-b border-border">
             <div>
               <h2 className="font-display text-xl font-semibold text-ink">
-                {mode === "in" ? "Studio Access" : "Join ZClip"}
+                {mode === "in" ? "Welcome back" : "Join ZClip"}
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                {mode === "in" ? "Sign in to access your projects" : "Create your creator studio account"}
+                {mode === "in" ? "Sign in to your projects" : "Create your creator studio account"}
               </p>
             </div>
-            <span className="flex items-center gap-1.5 text-xs font-mono text-gold/90 bg-gold/10 border border-gold/20 px-2.5 py-1 rounded-lg">
-              <Sparkles size={13} />
-              AI Studio
-            </span>
           </div>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-ink/90 mb-1.5">
-                Email Address
+                Email
               </label>
               <div className="relative flex items-center">
                 <Mail size={16} className="absolute left-3.5 text-muted pointer-events-none" />
@@ -119,10 +113,10 @@ export default function Login() {
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="creator@studio.com"
+                  placeholder="you@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-gold focus:ring-1 focus:ring-gold/50"
+                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-3 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-gold focus:ring-1 focus:ring-gold/50"
                 />
               </div>
             </div>
@@ -141,7 +135,7 @@ export default function Login() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-gold focus:ring-1 focus:ring-gold/50"
+                  className="w-full rounded-xl border border-border bg-surface-raised/90 pl-10 pr-3.5 py-3 text-sm text-ink placeholder:text-muted/60 outline-none transition duration-200 focus:border-gold focus:ring-1 focus:ring-gold/50"
                 />
               </div>
             </div>
@@ -162,18 +156,16 @@ export default function Login() {
 
             <button
               disabled={busy}
-              className="group relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-gold to-gold-light p-[1px] font-semibold text-background shadow-[0_0_20px_rgba(217,180,91,0.22)] transition duration-200 hover:shadow-[0_0_28px_rgba(217,180,91,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[12px] bg-[linear-gradient(180deg,#ecd083,#b88f38)] px-4 text-[15px] font-bold text-[#17120a] shadow-[0_0_28px_rgba(217,180,91,0.22)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-semibold text-[#17130A] transition duration-200 group-hover:bg-gold/95">
-                {busy ? (
-                  <span>Authenticating...</span>
-                ) : (
-                  <>
-                    <span>{mode === "in" ? "Sign In to Studio" : "Create Account & Start"}</span>
-                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-                  </>
-                )}
-              </div>
+              {busy ? (
+                <span>One moment…</span>
+              ) : (
+                <>
+                  <span>{mode === "in" ? "Sign in" : "Create account"}</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </form>
 
@@ -198,7 +190,7 @@ export default function Login() {
 
         {/* Studio Footer Info */}
         <p className="mt-6 text-center font-mono text-[11px] text-muted/60 tracking-wider">
-          ZYRON CLIP STUDIO • PROTOCOL V0.5
+          Proudly by Zyron
         </p>
       </div>
     </main>

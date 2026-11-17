@@ -125,7 +125,7 @@ export function StudioDashboard({
             <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-5 text-[10px] font-mono tracking-[0.12em] text-[#8d97a8]">
               <span className="inline-flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d9b45b]" />
-                NO TEMPLATE MAZE
+                AUTOMATIC OR MANUAL
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#b88f38]" />
@@ -234,22 +234,11 @@ export function StudioDashboard({
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#d9b45b]/[0.08] text-[#ecd083]">
-              <Film size={16} />
-            </div>
-            <div>
-              <h2 className="text-xs font-semibold text-white">Focused prototype</h2>
-              <p className="mt-1 text-[11px] leading-5 text-[#8d97a8]">
-                Built around turning your clips into one finished video—not a template catalogue.
-              </p>
-            </div>
-          </div>
         </section>
 
         <footer className="flex flex-col gap-2 border-t border-white/10 pt-5 text-[10px] text-[#7b8596] sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono tracking-[0.12em]">ZYRON CLIP STUDIO</span>
-          <span>Prototype 1 · Guided automatic video editing</span>
+          <span>Proudly by Zyron</span>
         </footer>
       </div>
     </main>

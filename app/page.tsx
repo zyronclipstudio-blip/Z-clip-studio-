@@ -264,14 +264,9 @@ export default function Home() {
                 <span>Dashboard</span>
               </button>
               <ZLogo size={34} />
-              <div className="flex items-center gap-2">
-                <span className="font-display text-xl font-bold tracking-tight text-[#eceff4]">
-                  Z<span className="text-[#d9b45b]">CLIP</span>
-                </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-[#d9b45b]/40 bg-[#d9b45b]/10 text-[#d9b45b]">
-                  STUDIO
-                </span>
-              </div>
+              <span className="text-lg font-extrabold tracking-[0.2em] text-[#f3eee2]">
+                Z<span className="text-[#d9b45b]">CLIP</span>
+              </span>
               {account && (
                 <span className="ml-auto flex items-center gap-3 text-sm text-[#8d97a8]">
                   <span className="rounded-full border border-white/10 bg-[#11141b] px-3 py-1 text-[#eceff4]">
