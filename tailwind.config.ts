@@ -24,24 +24,13 @@ const config: Config = {
           champagne: "#F3E3B3",
           muted: "#BFA15A",
         },
-        // Backward-compatible aliases for existing workflow components.
-        electric: "#D4AF37",
-        deepblue: "#8B6A22",
-        royalblue: "#D4AF37",
-        charcoal: "#1A1915",
-        silver: "#C8BEA8",
-        cyan: {
-          DEFAULT: "#D4AF37",
-          glow: "rgba(212, 175, 55, 0.32)",
-        },
         success: "#30C98B",
         warning: "#F2B84B",
         danger: "#F26D75",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
-        display: ["var(--font-space)", "Orbitron", "-apple-system", "sans-serif"],
-        orbitron: ["Orbitron", "sans-serif"],
+        display: ["var(--font-space)", "-apple-system", "sans-serif"],
         mono: ["var(--font-plex)", "ui-monospace", "monospace"],
       },
       boxShadow: {
