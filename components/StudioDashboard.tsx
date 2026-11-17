@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Film, LogOut, Plus, ShieldCheck, Upload, Wand2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Film, Home, LogOut, Plus, ShieldCheck, Upload, Wand2 } from "lucide-react";
 import { MyEdits } from "@/components/MyEdits";
 import { ZClipLogo } from "@/components/ZClipLogo";
 
@@ -20,6 +20,23 @@ const STEPS = [
 
 export function StudioDashboard({ userEmail, userCredits, onNewProject, onSignOut }: DashboardProps) {
   const [showMyEdits, setShowMyEdits] = useState(false);
+  const [counts, setCounts] = useState<{ ready: number; working: number; total: number } | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/projects", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!live || !d || !Array.isArray(d.projects)) return;
+        const list = d.projects as { status: string }[];
+        const ready = list.filter((p) => p.status === "ready").length;
+        const failed = list.filter((p) => ["failed", "qa_failed", "unavailable"].includes(p.status)).length;
+        setCounts({ ready, working: list.length - ready - failed, total: list.length });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
   const hasBalance = typeof userCredits === "number" && Number.isFinite(userCredits);
   const balanceLabel = hasBalance ? new Intl.NumberFormat("en-NG").format(userCredits) : "—";
 
@@ -48,44 +65,42 @@ export function StudioDashboard({ userEmail, userCredits, onNewProject, onSignOu
         {showMyEdits ? (
           <MyEdits onBack={() => setShowMyEdits(false)} />
         ) : (
-          <>
-            <section className="mt-2 flex flex-col gap-2">
+          <div className="zy-pop flex flex-col gap-5">
+            <section className="mt-1 flex flex-col gap-2">
               <h1 className="text-[30px] font-semibold leading-[1.15] text-balance">
                 Upload your footage.
-                <span className="block text-[#d9b45b]">Let ZClip edit it.</span>
+                <span className="block bg-gradient-to-r from-[#f6dc92] to-[#d9b45b] bg-clip-text text-transparent">Let ZClip edit it.</span>
               </h1>
               <p className="max-w-sm text-[15px] leading-6 text-[#8d97a8]">
                 Add your clips, answer a few quick questions if you like, and get a finished video to review. Fix anything yourself, or let ZClip do it.
               </p>
             </section>
 
-            <button
-              type="button"
-              onClick={onNewProject}
-              className="flex min-h-16 w-full items-center justify-center gap-3 rounded-[14px] bg-[linear-gradient(180deg,#ecd083,#b88f38)] text-[17px] font-bold text-[#17120a] shadow-[0_0_32px_rgba(217,180,91,0.28)] transition active:scale-[0.99]"
-            >
+            <button type="button" onClick={onNewProject} className="zy-btn-gold flex min-h-16 w-full items-center justify-center gap-3 rounded-[14px] text-[17px] transition active:scale-[0.99]">
               <Plus size={20} />
               Create a video
             </button>
 
-            <button
-              type="button"
-              onClick={() => setShowMyEdits(true)}
-              className="flex min-h-14 w-full items-center gap-3 rounded-[16px] border border-[#242a35] bg-[#11141b] px-4 text-left transition hover:border-[#d9b45b]/40"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#d9b45b]/10 text-[#ecd083]"><Film size={18} /></span>
+            <div className="grid grid-cols-3 gap-2.5">
+              <div className="zy-kpi"><small>Credits</small><b>{balanceLabel}</b></div>
+              <div className="zy-kpi"><small>Ready</small><b>{counts ? counts.ready : "—"}</b></div>
+              <div className="zy-kpi"><small>In progress</small><b>{counts ? counts.working : "—"}</b></div>
+            </div>
+
+            <button type="button" onClick={() => setShowMyEdits(true)} className="zy-card flex min-h-16 w-full items-center gap-3 text-left transition hover:brightness-110">
+              <span className="zy-icon h-11 w-11 rounded-[14px]"><Film size={19} /></span>
               <span className="flex-1">
                 <b className="block text-[15px] font-semibold">My Edits</b>
-                <span className="text-[13px] text-[#8d97a8]">Your finished and in-progress videos</span>
+                <span className="text-[13px] text-[#8d97a8]">{counts && counts.total ? `${counts.total} video${counts.total === 1 ? "" : "s"} saved` : "Your finished and in-progress videos"}</span>
               </span>
             </button>
 
-            <section className="flex flex-col gap-3 rounded-[20px] border border-[#242a35] bg-[#11141b] p-4">
+            <section className="zy-card flex flex-col gap-3">
               <h2 className="text-[16px] font-semibold">How it works</h2>
               <ol className="flex flex-col gap-4">
                 {STEPS.map(({ icon: Icon, title, text }) => (
                   <li key={title} className="flex gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#d9b45b]/10 text-[#ecd083]"><Icon size={18} /></span>
+                    <span className="zy-icon h-10 w-10 shrink-0 rounded-[12px]"><Icon size={18} /></span>
                     <div>
                       <b className="block text-[15px] font-semibold">{title}</b>
                       <p className="text-[13px] leading-5 text-[#8d97a8]">{text}</p>
@@ -94,11 +109,16 @@ export function StudioDashboard({ userEmail, userCredits, onNewProject, onSignOu
                 ))}
               </ol>
             </section>
-          </>
+          </div>
         )}
 
-        <p className="mt-auto text-center text-xs tracking-[0.04em] text-[#7b8596]">Proudly by Zyron</p>
+        <p className="mt-auto pb-20 text-center text-xs tracking-[0.04em] text-[#7b8596]">Proudly by Zyron</p>
       </div>
+      <nav className="zy-nav" aria-label="Main">
+        <button type="button" aria-current={showMyEdits ? undefined : "page"} onClick={() => setShowMyEdits(false)}><Home size={22} />Home</button>
+        <button type="button" className="fab" onClick={onNewProject} aria-label="Create a video"><span className="disc"><Plus size={26} strokeWidth={2.4} /></span></button>
+        <button type="button" aria-current={showMyEdits ? "page" : undefined} onClick={() => setShowMyEdits(true)}><Film size={22} />My Edits</button>
+      </nav>
     </main>
   );
 }
