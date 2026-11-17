@@ -54,7 +54,7 @@ export function NetflixSplash({ onFinish }: { onFinish: () => void }) {
         @keyframes gleam{from{stroke-dashoffset:1;opacity:1}70%{stroke-dashoffset:0;opacity:1}to{stroke-dashoffset:0;opacity:0}}
         .word{position:relative;font:800 18px var(--font-geist),sans-serif;letter-spacing:.32em;padding-left:.32em;animation:word calc(.5s*var(--s)) ease calc(.75s*var(--s)) backwards}
         @keyframes word{from{opacity:0;letter-spacing:.8em;filter:blur(3px)}}
-        .tag{position:relative;font:500 11px var(--font-geist-mono),monospace;letter-spacing:.14em;color:#b88f38;animation:word calc(.5s*var(--s)) ease calc(.95s*var(--s)) backwards}
+        .tag{position:relative;font:500 11px var(--font-geist-mono),monospace;letter-spacing:.08em;color:#b88f38;animation:word calc(.5s*var(--s)) ease calc(.95s*var(--s)) backwards}
         .skip{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;font:11px var(--font-geist-mono),monospace;letter-spacing:.1em;color:#5d6676}
         @media (prefers-reduced-motion:reduce){.bloom,.mk,.mk :global(.pc),.mk :global(.gleam),.word,.tag{animation:none!important}.mk :global(.gleam){opacity:0}}
       `}</style>

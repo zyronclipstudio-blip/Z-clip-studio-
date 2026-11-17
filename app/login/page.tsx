@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ZLogo } from "@/components/ZLogo";
+import { NetflixSplash } from "@/components/NetflixSplash";
 import { createClient } from "@/lib/supabase/browser";
 import { ArrowRight, Lock, Mail, Sparkles } from "lucide-react";
 
@@ -16,6 +17,17 @@ export default function Login() {
       : "",
   );
   const [notice, setNotice] = useState("");
+  const [splash, setSplash] = useState(false);
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem("zc_splash")) {
+        sessionStorage.setItem("zc_splash", "1");
+        setSplash(true);
+      }
+    } catch {
+      setSplash(true);
+    }
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,6 +64,7 @@ export default function Login() {
 
   return (
     <main className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-background">
+      {splash && <NetflixSplash onFinish={() => setSplash(false)} />}
       {/* Studio Ambient Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gold/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[250px] bg-gold-muted/10 rounded-full blur-[120px] pointer-events-none" />
