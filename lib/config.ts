@@ -36,4 +36,4 @@ export const MIME_BY_EXT: Record<string, string> = {
 };
 
 // Maximum finished length per destination. ZClip never pads to reach this.
-export const PLATFORM_CAP_SECONDS = { auto: 90, shorts: 60, youtube: 180, other: 90 } as const;
+export { PLATFORM_CAP_SECONDS } from "./caps";

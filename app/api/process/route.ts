@@ -5,7 +5,7 @@ import { createEditPlan } from "@/lib/ai-adapter";
 import { downloadToWorkDir, removeLocal, rowToAsset } from "@/lib/assets";
 import { estimateCredits } from "@/lib/credits";
 import { EXPORT_DIR, LIMITS } from "@/lib/config";
-import { logEvent, rateLimit } from "@/lib/guardian";
+import { logEvent, rateLimitDb } from "@/lib/guardian";
 import { renderPlan } from "@/lib/renderer";
 import { flag, getSettings, num } from "@/lib/settings";
 import { uploadBuffer, getDownloadPresignedUrl, B2_BUCKET_EXPORTS } from "@/lib/storage";
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     return fail("Invalid request.", 400);
   }
 
-  if (!rateLimit(`process:${user.id}`, LIMITS.maxProcessPerHour, 3_600_000)) {
+  if (!(await rateLimitDb(`process:${user.id}`, LIMITS.maxProcessPerHour, 3_600_000))) {
     await logEvent("rate_limited", "block", "Process rate limit hit", {}, user.id);
     return fail("You have started too many edits this hour. Please try again later.", 429);
   }

@@ -53,3 +53,19 @@ export function rateLimit(key: string, max: number, windowMs: number): boolean {
   hits.set(key, recent);
   return true;
 }
+
+// Durable limit (database). Falls back to the per-instance limiter if the database call fails,
+// so a database hiccup never locks everyone out and never leaves an endpoint unprotected.
+export async function rateLimitDb(key: string, max: number, windowMs: number): Promise<boolean> {
+  try {
+    const { data, error } = await admin().rpc("rate_limit_hit", {
+      p_key: key,
+      p_max: max,
+      p_window_seconds: Math.max(1, Math.round(windowMs / 1000)),
+    });
+    if (error || typeof data !== "boolean") return rateLimit(key, max, windowMs);
+    return data;
+  } catch {
+    return rateLimit(key, max, windowMs);
+  }
+}

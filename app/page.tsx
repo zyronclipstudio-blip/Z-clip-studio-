@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Film, Sparkles, Upload, X, ArrowLeft } from "lucide-react";
+import { Check, Download, Film, Share2, Sparkles, Upload, X, ArrowLeft } from "lucide-react";
 import { ZLogo } from "@/components/ZLogo";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
+import { ManualEditor } from "@/components/ManualEditor";
+import { PLATFORM_CAP_SECONDS } from "@/lib/caps";
 import { createClient } from "@/lib/supabase/browser";
 import { useOnline } from "@/lib/useOnline";
 import type { EditPlan, PublicAsset, QAReport, Setup } from "@/lib/types/schema";
@@ -238,7 +240,29 @@ export default function Home() {
     setSetup({ purpose: "auto", mood: "auto", platform: "auto" });
   }
 
-  const nameOf = (id: string) => project?.assets.find((a) => a.id === id)?.originalName ?? "clip";
+  const [rerendering, setRerendering] = useState(false);
+  const [rerenderError, setRerenderError] = useState("");
+
+  async function handleRerender(plan: EditPlan) {
+    if (!project) return;
+    setRerendering(true);
+    setRerenderError("");
+    try {
+      const res = await fetch("/api/rerender", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: project.projectId, idempotencyKey: crypto.randomUUID(), plan }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not render that change.");
+      setResult((prev) => (prev ? { ...prev, status: data.status, plan: data.plan, qa: data.qa, outputUrl: data.outputUrl ?? prev.outputUrl, downloadUrl: data.downloadUrl ?? prev.downloadUrl, metrics: { ...prev.metrics, ...data.metrics } } : prev));
+    } catch (e) {
+      setRerenderError(e instanceof Error ? e.message : "Could not render that change.");
+    } finally {
+      setRerendering(false);
+    }
+  }
+
   const stepIdx = ["upload", "setup", "preflight", "processing", "review"].indexOf(step);
 
   return (
@@ -455,6 +479,17 @@ export default function Home() {
               <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99]">
                 <Download size={18} /> Download MP4
               </a>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = result.downloadUrl ?? result.outputUrl ?? "";
+                  if (navigator.share) void navigator.share({ title: "My ZClip video", text: "Made with ZClip (Zyron Clip Studio)", url }).catch(() => undefined);
+                  else void navigator.clipboard?.writeText(url).catch(() => undefined);
+                }}
+                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] border border-[#242a35] bg-[#11141b] px-4 text-sm font-medium transition hover:border-[#d9b45b]/50"
+              >
+                <Share2 size={17} className="text-[#d9b45b]" /> Share
+              </button>
             </div>
           ) : (
             <div role="alert" className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-200">
@@ -514,20 +549,17 @@ export default function Home() {
             </div>
           )}
 
-          <div className="zy-card p-4">
-            <h2 className="font-display font-medium">Why each cut was made</h2>
-            <ol className="mt-3 space-y-2">
-              {result.plan.segments.map((s, i) => (
-                <li key={i} className="rounded-lg border border-white/10 bg-[#181c25] p-3 text-sm">
-                  <div className="flex justify-between gap-2 text-xs text-[#8d97a8]">
-                    <span className="truncate">{i + 1}. {nameOf(s.assetId)}</span>
-                    <span className="shrink-0 font-mono">{s.startSec.toFixed(1)}s to {s.endSec.toFixed(1)}s</span>
-                  </div>
-                  <p className="mt-1 text-[#eceff4]">{s.reason}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
+          {project && (
+            <ManualEditor
+              key={result.outputUrl ?? "plan"}
+              plan={result.plan}
+              assets={project.assets}
+              capSec={PLATFORM_CAP_SECONDS[setup.platform]}
+              busy={rerendering}
+              error={rerenderError}
+              onRender={handleRerender}
+            />
+          )}
 
           <div className="flex gap-3">
             <button onClick={() => setStep("preflight")} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
