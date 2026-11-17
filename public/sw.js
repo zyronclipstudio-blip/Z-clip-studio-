@@ -1,7 +1,7 @@
 /* ZClip service worker.
  * Cache only the offline shell and immutable static assets. Never cache API, auth, HTML or media.
  * Bump VERSION whenever the shell/icon set changes so installed clients discard old cached icons. */
-const VERSION = "zclip-shell-v3";
+const VERSION = "zclip-shell-v4";
 const SHELL = ["/offline.html", "/icons/zclip-gold.svg"];
 
 self.addEventListener("install", (event) => {
