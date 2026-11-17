@@ -253,7 +253,7 @@ export default function Home() {
           onSignOut={signOut}
         />
       ) : (
-        <main className="relative mx-auto min-h-screen w-full max-w-[1600px] overflow-hidden bg-[#05060a] px-4 py-6 text-[#eceff4] sm:px-6 sm:py-8 lg:px-10">
+        <main className="relative mx-auto min-h-screen w-full max-w-xl overflow-hidden bg-[#05060a] px-4 py-6 text-[#eceff4] sm:px-6 sm:py-8 lg:px-10">
           <header className="mb-8">
             <div className="flex items-center gap-3 text-[#d9b45b]">
               <button
@@ -305,7 +305,7 @@ export default function Home() {
       )}
 
       {step === "upload" && (
-        <section className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+        <section className="zy-card p-5">
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
@@ -341,10 +341,10 @@ export default function Home() {
               </p>
               {busy && (
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-border">
-                  <div className="h-full bg-[#d9b45b] transition-all" style={{ width: `${progress}%` }} />
+                  <div className="h-full bg-gradient-to-r from-[#ecd083] to-[#b88f38] transition-all" style={{ width: `${progress}%` }} />
                 </div>
               )}
-              <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full rounded-xl bg-[#d9b45b] px-4 py-3 font-semibold text-[#05060a] transition hover:brightness-110 disabled:opacity-60">
+              <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
                 {busy ? `Uploading… ${progress}%` : "Continue"}
               </button>
             </>
@@ -353,7 +353,7 @@ export default function Home() {
       )}
 
       {step === "setup" && project && (
-        <section className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+        <section className="zy-card p-5">
           <p className="text-sm text-[#8d97a8]">
             {project.assets.length} clip{project.assets.length > 1 ? "s" : ""} ready · {fmtSec(project.assets.reduce((s, a) => s + a.durationSec, 0))} of footage. Every question is optional.
           </p>
@@ -378,7 +378,7 @@ export default function Home() {
               </div>
             </fieldset>
           ))}
-          <button onClick={goPreflight} disabled={!online} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#d9b45b] px-4 py-3 font-semibold text-[#05060a] transition hover:brightness-110 disabled:opacity-60">
+          <button onClick={goPreflight} disabled={!online} className="mt-6 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
             <Sparkles size={18} /> Review cost and edit
           </button>
           <button onClick={goPreflight} disabled={!online} className="mt-2 w-full py-2 text-sm text-[#8d97a8] hover:text-[#eceff4]">
@@ -388,7 +388,7 @@ export default function Home() {
       )}
 
       {step === "preflight" && estimate && (
-        <section className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+        <section className="zy-card p-5">
           <h2 className="font-display text-lg font-medium">Review your edit</h2>
           <p className="mt-1 text-sm text-[#8d97a8]">
             Based on {fmtSec(estimate.totalSeconds)} of footage. You approve the cost before anything starts.
@@ -416,7 +416,7 @@ export default function Home() {
               Not enough credits: this edit needs {estimate.ceiling} available and you have {estimate.available}. Try fewer or shorter clips.
             </p>
           )}
-          <button onClick={handleProcess} disabled={!estimate.sufficient || !online} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#d9b45b] px-4 py-3 font-semibold text-[#05060a] transition hover:brightness-110 disabled:opacity-60">
+          <button onClick={handleProcess} disabled={!estimate.sufficient || !online} className="mt-5 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
             <Sparkles size={18} /> Approve and start edit
           </button>
           <button onClick={() => setStep("setup")} className="mt-2 w-full py-2 text-sm text-[#8d97a8] hover:text-[#eceff4]">
@@ -426,7 +426,7 @@ export default function Home() {
       )}
 
       {step === "processing" && (
-        <section className="rounded-2xl border border-white/10 bg-[#11141b] p-5">
+        <section className="zy-card p-5">
           <p className="font-medium">ZClip is editing your video</p>
           <ol className="mt-4 space-y-3">
             {STAGES.map((s, i) => {
@@ -450,9 +450,9 @@ export default function Home() {
       {step === "review" && result && (
         <section className="space-y-4">
           {result.status === "ready" && result.outputUrl ? (
-            <div className="rounded-2xl border border-white/10 bg-[#11141b] p-4">
+            <div className="zy-card p-4">
               <video src={result.outputUrl} controls playsInline className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
-              <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#d9b45b] px-4 py-3 font-semibold text-[#05060a] transition hover:brightness-110">
+              <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99]">
                 <Download size={18} /> Download MP4
               </a>
             </div>
@@ -467,7 +467,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/10 bg-[#11141b] p-4 text-sm">
+          <div className="zy-card p-4 text-sm">
             <p className="text-[#eceff4]">{result.plan.summary}</p>
             <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -495,7 +495,7 @@ export default function Home() {
           </div>
 
           {result.receipt && (
-            <div className="rounded-2xl border border-white/10 bg-[#11141b] p-4 text-sm">
+            <div className="zy-card p-4 text-sm">
               <h2 className="font-display font-medium">Receipt</h2>
               <dl className="mt-3 divide-y divide-border">
                 {[
@@ -514,7 +514,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/10 bg-[#11141b] p-4">
+          <div className="zy-card p-4">
             <h2 className="font-display font-medium">Why each cut was made</h2>
             <ol className="mt-3 space-y-2">
               {result.plan.segments.map((s, i) => (
@@ -530,10 +530,10 @@ export default function Home() {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={() => setStep("preflight")} className="flex-1 rounded-xl border border-white/10 bg-[#11141b] px-4 py-3 text-sm font-medium hover:border-muted">
+            <button onClick={() => setStep("preflight")} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
               Try different settings
             </button>
-            <button onClick={reset} className="flex-1 rounded-xl border border-white/10 bg-[#11141b] px-4 py-3 text-sm font-medium hover:border-muted">
+            <button onClick={reset} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
               Start a new video
             </button>
           </div>
