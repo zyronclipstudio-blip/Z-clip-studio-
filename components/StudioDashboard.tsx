@@ -4,12 +4,11 @@ import { useState } from "react";
 import { MyEdits } from "@/components/MyEdits";
 
 import {
-  ArrowRight,
   CheckCircle2,
   Film,
   LogOut,
+  Plus,
   ShieldCheck,
-  Sparkles,
   Upload,
   Wand2,
 } from "lucide-react";
@@ -43,93 +42,59 @@ export function StudioDashboard({
       </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-8 pt-5 sm:px-6 sm:pt-7 lg:px-10">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <ZClipLogo size={42} variant="horizontal" />
-            <span className="hidden rounded-full border border-[#d9b45b]/25 bg-[#d9b45b]/[0.07] px-3 py-1.5 font-mono text-[9px] tracking-[0.2em] text-[#ecd083] sm:inline-flex">
-              PROTOTYPE 01
+        <header className="flex items-center justify-between gap-3 pb-4">
+          <ZClipLogo size={34} variant="horizontal" />
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setShowMyEdits(true)} className="inline-flex min-h-11 items-center gap-2 rounded-[14px] border border-[#242a35] bg-[#11141b] px-3.5 text-sm font-medium text-[#eceff4] transition hover:border-[#d9b45b]/50"><Film size={16} className="text-[#d9b45b]" /> My Edits</button>
+            <span className="inline-flex min-h-11 items-center rounded-full border border-[#242a35] bg-[#11141b] px-3.5 text-sm text-[#8d97a8]">
+              <b className="mr-1 font-semibold text-[#ecd083]">{balanceLabel}</b> {hasBalance ? "credits" : ""}
             </span>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button type="button" onClick={() => setShowMyEdits(true)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#d9b45b]/25 bg-[#d9b45b]/[0.06] px-3 text-xs font-medium text-[#ecd083] transition hover:border-[#d9b45b]/50 hover:text-white"><Film size={15} /> My Edits</button>
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 sm:px-4">
-              <p className="font-mono text-[9px] tracking-[0.16em] text-[#8d97a8]">
-                ACCOUNT CREDITS
-              </p>
-              <p className="mt-0.5 flex items-baseline gap-1.5 font-mono text-sm font-semibold text-white">
-                {balanceLabel}
-                <span className="font-sans text-[10px] font-normal text-[#8d97a8]">
-                  {hasBalance ? "available" : "not loaded"}
-                </span>
-              </p>
-            </div>
-
-            <div className="hidden max-w-[190px] sm:block">
-              <p className="truncate text-xs font-medium text-white">
-                {userEmail ?? "Your account"}
-              </p>
-              <p className="mt-1 font-mono text-[9px] tracking-[0.14em] text-[#8d97a8]">
-                SIGNED IN
-              </p>
-            </div>
-
             <button
               type="button"
               onClick={onSignOut}
               aria-label="Sign out"
               title="Sign out"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[#c3cad6] transition hover:border-[#d9b45b]/40 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d9b45b]"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-[14px] border border-[#242a35] bg-[#11141b] text-[#c3cad6] transition hover:border-[#d9b45b]/40 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d9b45b]"
             >
-              <LogOut size={16} />
+              <LogOut size={17} />
             </button>
           </div>
         </header>
 
         {showMyEdits ? <MyEdits onBack={() => setShowMyEdits(false)} /> : null}
-        <section className={`grid flex-1 items-center gap-8 py-10 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-20 ${showMyEdits ? "hidden" : ""}`}>
+        <section className={`grid flex-1 items-center gap-8 py-6 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:py-20 ${showMyEdits ? "hidden" : ""}`}>
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#d9b45b]/25 bg-[#d9b45b]/[0.07] px-3 py-1.5 font-mono text-[10px] tracking-[0.16em] text-[#ecd083]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#d9b45b] shadow-[0_0_10px_rgba(217,180,91,0.9)]" />
-              GUIDED AUTOMATIC EDITING
-            </div>
-
-            <h1 className="mt-6 font-display text-[clamp(2.7rem,7vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.055em] text-white">
-              Your footage.
-              <span className="mt-2 block bg-gradient-to-r from-[#d9b45b] via-[#ecd083] to-[#b88f38] bg-clip-text text-transparent">
-                Without the busywork.
-              </span>
+            <h1 className="font-display text-[30px] font-semibold leading-[1.15] text-[#eceff4] sm:text-5xl">
+              Upload your footage.
+              <span className="block text-[#d9b45b]">Let ZClip edit it.</span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-sm leading-7 text-[#c3cad6] sm:text-base">
-              Add your clips, tell ZClip what you are making, and let it plan and
-              render the edit. You stay in control of the direction and approve
-              the cost before processing begins.
+            <p className="mt-4 max-w-md text-[15px] leading-6 text-[#8d97a8]">
+              Add your clips, answer a few quick questions if you like, and get a finished video to review. Fix anything yourself, or let ZClip do it.
             </p>
 
             <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={onNewProject}
-                className="group inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#ecd083]/50 bg-gradient-to-r from-[#d9b45b] to-[#ecd083] px-6 py-3 text-sm font-bold text-[#17130A] shadow-[0_0_28px_rgba(217,180,91,0.18)] transition hover:brightness-110 hover:shadow-[0_0_34px_rgba(217,180,91,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto"
+                className="group inline-flex min-h-16 w-full items-center justify-center gap-3 rounded-[14px] bg-[linear-gradient(180deg,#ecd083,#b88f38)] px-6 py-3 text-[17px] font-bold text-[#17130A] shadow-[0_0_28px_rgba(217,180,91,0.18)] transition hover:brightness-110 hover:shadow-[0_0_34px_rgba(217,180,91,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto"
               >
-                <Sparkles size={17} />
-                Create a new edit
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                <Plus size={20} />
+                Create a video
               </button>
               <p className="text-xs leading-5 text-[#8d97a8]">
                 Up to 20 clips · 500 MB per upload batch
               </p>
             </div>
 
-            <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-5 text-[10px] font-mono tracking-[0.12em] text-[#8d97a8]">
+            <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-5 text-xs tracking-[0.06em] text-[#8d97a8]">
               <span className="inline-flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d9b45b]" />
-                AUTOMATIC OR MANUAL
+                Automatic or manual
               </span>
               <span className="inline-flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#b88f38]" />
-                COST APPROVAL FIRST
+                You approve cost first
               </span>
             </div>
           </div>
@@ -140,7 +105,7 @@ export function StudioDashboard({
               <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
                   <p className="font-mono text-[9px] tracking-[0.2em] text-[#8d97a8]">
-                    THE WORKFLOW
+                    HOW IT WORKS
                   </p>
                   <h2 className="mt-1 text-base font-semibold text-white">
                     Three steps. One finished edit.

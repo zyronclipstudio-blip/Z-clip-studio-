@@ -258,19 +258,18 @@ export default function Home() {
             <div className="flex items-center gap-3 text-[#d9b45b]">
               <button
                 onClick={() => setInEditor(false)}
-                className="flex items-center gap-1.5 text-xs font-mono text-[#8d97a8] hover:text-white bg-[#11141b] border border-white/10 px-3 py-1.5 rounded-xl transition mr-2"
+                aria-label="Back to dashboard" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-[#242a35] bg-[#11141b] text-[#eceff4] transition hover:border-[#d9b45b]/50 mr-1"
               >
-                <ArrowLeft size={14} />
-                <span>Dashboard</span>
+                <ArrowLeft size={20} />
               </button>
-              <ZLogo size={34} />
+              <ZLogo size={30} />
               <span className="text-lg font-extrabold tracking-[0.2em] text-[#f3eee2]">
                 Z<span className="text-[#d9b45b]">CLIP</span>
               </span>
               {account && (
                 <span className="ml-auto flex items-center gap-3 text-sm text-[#8d97a8]">
-                  <span className="rounded-full border border-white/10 bg-[#11141b] px-3 py-1 text-[#eceff4]">
-                    {account.credits} credit{account.credits === 1 ? "" : "s"} left
+                  <span className="whitespace-nowrap rounded-full border border-[#242a35] bg-[#11141b] px-3 py-2 text-sm text-[#eceff4]">
+                    {account.credits} credit{account.credits === 1 ? "" : "s"}
                   </span>
                   <button onClick={signOut} className="hover:text-[#eceff4]">
                     Sign out
@@ -278,7 +277,7 @@ export default function Home() {
                 </span>
               )}
             </div>
-            <h1 className="mt-4 font-display text-2xl font-semibold sm:text-3xl text-[#eceff4]">
+            <h1 className="mt-5 font-display text-[24px] font-semibold leading-tight sm:text-3xl text-[#eceff4]">
               Upload your footage. Let ZClip do the editing.
             </h1>
             <div className="mt-5 flex gap-2" aria-label="Progress">
@@ -291,7 +290,7 @@ export default function Home() {
                         : "bg-border"
                     }`}
                   />
-                  <span className={`mt-1.5 block text-xs font-medium ${i <= stepIdx ? "text-[#d9b45b]" : "text-[#8d97a8]"}`}>
+                  <span className={`mt-1.5 block text-[11px] font-medium ${i <= stepIdx ? "text-[#d9b45b]" : "text-[#8d97a8]"}`}>
                     {label}
                   </span>
                 </div>
