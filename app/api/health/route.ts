@@ -33,6 +33,19 @@ async function storageLink(): Promise<{ ok: boolean; host?: string; pathStart?: 
   }
 }
 
+// Shape of the storage key only (length, first 3 characters of the public key ID, stray spaces). Never the secret.
+function keyShape() {
+  const id = process.env.B2_KEY_ID ?? "";
+  const key = process.env.B2_APPLICATION_KEY ?? "";
+  return {
+    idLength: id.length,
+    idStart: id.trim().slice(0, 3),
+    idHasSpaceOrQuote: /[\s"'`]/.test(id),
+    secretLength: key.length,
+    secretHasSpaceOrQuote: /[\s"'`]/.test(key),
+  };
+}
+
 // Reports which settings and tools are present. It never returns a value, only yes or no.
 export async function GET() {
   const checks = {
@@ -51,7 +64,7 @@ export async function GET() {
   const required = ["supabaseUrl", "supabasePublishableKey", "supabaseSecretKey", "storageKeyId", "storageApplicationKey", "ffmpeg"] as const;
   const missing = required.filter((k) => !checks[k]);
   return Response.json(
-    { ok: missing.length === 0 && database.ok, missing, checks, database, storage, cors, time: new Date().toISOString() },
+    { ok: missing.length === 0 && database.ok, missing, checks, database, storage, cors, keyShape: keyShape(), time: new Date().toISOString() },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }
