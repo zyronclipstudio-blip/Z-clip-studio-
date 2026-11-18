@@ -49,7 +49,7 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
     <div className="zy-pop flex flex-col gap-5">
             <section className="relative flex flex-col gap-2 overflow-hidden rounded-[24px] border border-[#242a35] p-5 [background:linear-gradient(160deg,rgba(246,220,146,.12),rgba(246,220,146,.02)_45%),#0d1017]">
               <ZClipMark className="pointer-events-none absolute -right-8 -top-6 h-44 w-44 opacity-[0.07]" />
-              <h1 className="text-[30px] font-semibold leading-[1.15] text-balance">
+              <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.01em] text-balance">
                 Upload your footage.
                 <span className="block bg-gradient-to-r from-[#f6dc92] to-[#d9b45b] bg-clip-text text-transparent">Let ZClip edit it.</span>
               </h1>

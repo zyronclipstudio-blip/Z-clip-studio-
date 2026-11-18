@@ -36,7 +36,7 @@ export function ZClipTile({ size = 40, className = "" }: { size?: number; classN
         boxShadow: "inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(226,187,98,.28), 0 6px 16px -6px rgba(0,0,0,.8), 0 0 18px -6px rgba(226,187,98,.35)",
       }}
     >
-      <ZClipMark className="block h-[60%] w-[60%]" />
+      <ZClipMark className="block h-[66%] w-[66%]" />
     </span>
   );
 }
