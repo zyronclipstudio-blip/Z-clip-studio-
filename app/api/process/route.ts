@@ -48,6 +48,10 @@ export async function POST(req: Request) {
     await logEvent("rate_limited", "block", "Process rate limit hit", {}, user.id);
     return fail("You have started too many edits this hour. Please try again later.", 429);
   }
+  if (!(await rateLimitDb(`process-day:${user.id}`, LIMITS.maxProcessPerDay, 86_400_000))) {
+    await logEvent("daily_cap", "block", "Daily edit cap hit", {}, user.id);
+    return fail("You have reached today's edit limit. Please come back tomorrow.", 429);
+  }
 
   const settings = await getSettings();
   if (flag(settings.kill_switch_render)) {

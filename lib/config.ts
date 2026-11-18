@@ -22,6 +22,7 @@ export const LIMITS = {
   maxClipSeconds: 600,
   maxTotalSeconds: 1800,
   maxProcessPerHour: 10,
+  maxProcessPerDay: 30,
   maxConcurrentRenders: 1,
   renderTimeoutMs: 10 * 60 * 1000,
   allowedExtensions: [".mp4", ".mov", ".m4v", ".webm", ".avi"],
