@@ -9,6 +9,9 @@ interface DashboardProps {
   userEmail?: string;
   userCredits?: number;
   onNewProject: () => void;
+  onOpenProject?: (id: string) => void;
+  opening?: boolean;
+  openError?: string;
   onSignOut: () => void;
 }
 
@@ -18,19 +21,19 @@ const STEPS = [
   { icon: ShieldCheck, title: "Review and fix", text: "Check the result, then change anything yourself or let ZClip redo it." },
 ];
 
-export function StudioDashboard({ userEmail, userCredits, onNewProject, onSignOut }: DashboardProps) {
+export function StudioDashboard({ userEmail, userCredits, onNewProject, onOpenProject, opening, openError, onSignOut }: DashboardProps) {
   const [showMyEdits, setShowMyEdits] = useState(false);
-  const [counts, setCounts] = useState<{ ready: number; working: number; total: number } | null>(null);
+  const [counts, setCounts] = useState<{ ready: number; working: number; total: number; lastReadyId?: string } | null>(null);
   useEffect(() => {
     let live = true;
     fetch("/api/projects", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!live || !d || !Array.isArray(d.projects)) return;
-        const list = d.projects as { status: string }[];
+        const list = d.projects as { id: string; status: string }[];
         const ready = list.filter((p) => p.status === "ready").length;
         const failed = list.filter((p) => ["failed", "qa_failed", "unavailable"].includes(p.status)).length;
-        setCounts({ ready, working: list.length - ready - failed, total: list.length });
+        setCounts({ ready, working: list.length - ready - failed, total: list.length, lastReadyId: list.find((p) => p.status === "ready")?.id });
       })
       .catch(() => {});
     return () => {
@@ -63,7 +66,7 @@ export function StudioDashboard({ userEmail, userCredits, onNewProject, onSignOu
         </header>
 
         {showMyEdits ? (
-          <MyEdits onBack={() => setShowMyEdits(false)} />
+          <MyEdits onBack={() => setShowMyEdits(false)} onOpen={onOpenProject} />
         ) : (
           <div className="zy-pop flex flex-col gap-5">
             <section className="mt-1 flex flex-col gap-2">
@@ -80,6 +83,17 @@ export function StudioDashboard({ userEmail, userCredits, onNewProject, onSignOu
               <Plus size={20} />
               Create a video
             </button>
+
+            {counts?.lastReadyId && onOpenProject && (
+              <button type="button" disabled={opening} onClick={() => onOpenProject(counts.lastReadyId!)} className="zy-card flex min-h-16 w-full items-center gap-3 text-left transition hover:brightness-110 disabled:opacity-60">
+                <span className="zy-icon h-11 w-11 rounded-[14px]"><Wand2 size={19} /></span>
+                <span className="flex-1">
+                  <b className="block text-[15px] font-semibold">{opening ? "Opening…" : "Continue your last edit"}</b>
+                  <span className="text-[13px] text-[#8d97a8]">Fix it by hand, or try a different shape</span>
+                </span>
+              </button>
+            )}
+            {openError && <p role="alert" className="text-[13px] text-[#ff8a96]">{openError}</p>}
 
             <div className="grid grid-cols-3 gap-2.5">
               <div className="zy-kpi"><small>Credits</small><b>{balanceLabel}</b></div>

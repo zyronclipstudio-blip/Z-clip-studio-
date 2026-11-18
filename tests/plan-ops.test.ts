@@ -10,6 +10,8 @@ import {
   moveSegment,
   redo,
   removeSegment,
+  setAspect,
+  setVolume,
   splitSegment,
   startHistory,
   trimSegment,
@@ -125,4 +127,17 @@ test("500 random manual edits never produce an invalid plan", () => {
       for (const seg of p.segments) assert.ok(seg.endSec - seg.startSec >= MIN_SEGMENT_SEC - 0.001);
     }
   }
+});
+
+test("volume and aspect changes are validated and keep the plan valid", () => {
+  const { assets, plan, cap } = base();
+  const loud = setVolume(plan, 0, 1.5);
+  assert.equal(loud.segments[0].volume, 1.5);
+  validatePlan(loud, assets, cap);
+  assert.equal(setVolume(plan, 0, 0).segments[0].volume, 0);
+  assert.throws(() => setVolume(plan, 0, 3), PlanOpError);
+  assert.throws(() => setVolume(plan, 0, -0.1), PlanOpError);
+  assert.throws(() => setVolume(plan, 0, Number.NaN), PlanOpError);
+  assert.equal(setAspect(plan, "1:1").aspectRatio, "1:1");
+  assert.throws(() => setAspect(plan, "4:3" as never), PlanOpError);
 });

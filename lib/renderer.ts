@@ -50,7 +50,7 @@ export async function renderPlan(
       expected += dur;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
-      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade"), LIMITS.renderTimeoutMs);
+      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1), LIMITS.renderTimeoutMs);
       partFiles.push(out);
     }
 
@@ -82,9 +82,11 @@ function segmentArgs(
   h: number,
   hasAudio: boolean,
   fade: boolean,
+  volume = 1,
 ): string[] {
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
+  if (volume !== 1) af += `,volume=${Math.min(2, Math.max(0, volume)).toFixed(2)}`;
   if (fade) {
     const f = Math.min(0.2, dur / 4).toFixed(3);
     const out_st = (dur - Number(f)).toFixed(3);

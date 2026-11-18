@@ -236,8 +236,40 @@ export default function Home() {
     setFiles([]);
     setProject(null);
     setResult(null);
+    setVersions([]);
     setError("");
     setSetup({ purpose: "auto", mood: "auto", platform: "auto" });
+  }
+
+  const [versions, setVersions] = useState<{ version: number; createdAt: string; plan: EditPlan }[]>([]);
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState("");
+
+  async function handleOpen(projectId: string) {
+    setOpening(true);
+    setOpenError("");
+    try {
+      const res = await fetch(`/api/projects/${projectId}/open`, { cache: "no-store" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Could not open this edit.");
+      setProject({ projectId: d.projectId, assets: d.assets });
+      setSetup((prev) => ({ ...prev, purpose: d.purpose ?? prev.purpose, mood: d.mood ?? prev.mood, platform: d.platform ?? "auto" }));
+      setVersions(d.versions ?? []);
+      setResult({
+        status: "ready",
+        plan: d.plan,
+        qa: { passed: true, hardChecks: [], warnings: [] },
+        outputUrl: d.outputUrl,
+        downloadUrl: d.downloadUrl,
+        metrics: { provider: "deterministic", renderMs: 0, outputDurationSec: d.plan.targetDurationSec, clipCount: d.assets.length },
+      } as Result);
+      setStep("review");
+      setInEditor(true);
+    } catch (e) {
+      setOpenError(e instanceof Error ? e.message : "Could not open this edit.");
+    } finally {
+      setOpening(false);
+    }
   }
 
   const [rerendering, setRerendering] = useState(false);
@@ -255,6 +287,7 @@ export default function Home() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not render that change.");
+      setVersions((v) => [{ version: (v[0]?.version ?? 0) + 1, createdAt: new Date().toISOString(), plan: data.plan }, ...v].slice(0, 15));
       setResult((prev) => (prev ? { ...prev, status: data.status, plan: data.plan, qa: data.qa, outputUrl: data.outputUrl ?? prev.outputUrl, downloadUrl: data.downloadUrl ?? prev.downloadUrl, metrics: { ...prev.metrics, ...data.metrics } } : prev));
     } catch (e) {
       setRerenderError(e instanceof Error ? e.message : "Could not render that change.");
@@ -274,6 +307,9 @@ export default function Home() {
           userEmail={account?.email}
           userCredits={account?.credits}
           onNewProject={() => setInEditor(true)}
+          onOpenProject={handleOpen}
+          opening={opening}
+          openError={openError}
           onSignOut={signOut}
         />
       ) : (
@@ -558,6 +594,7 @@ export default function Home() {
               busy={rerendering}
               error={rerenderError}
               onRender={handleRerender}
+              versions={versions}
             />
           )}
 

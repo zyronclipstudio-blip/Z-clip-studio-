@@ -32,6 +32,7 @@ export const CutSegmentSchema = z.object({
   reason: z.string().max(400),
   confidence: z.number().min(0).max(1).default(0.7),
   transition: z.enum(["cut", "fade"]).default("cut"),
+  volume: z.number().min(0).max(2).optional(), // 1 = original loudness, 0 = muted
 });
 export type CutSegment = z.infer<typeof CutSegmentSchema>;
 

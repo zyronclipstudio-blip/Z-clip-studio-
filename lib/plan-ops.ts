@@ -1,4 +1,4 @@
-import type { CutSegment, EditPlan, MediaAsset } from "./types/schema";
+import type { AspectRatio, CutSegment, EditPlan, MediaAsset } from "./types/schema";
 
 // Manual editing as pure functions over the same EditPlan the automatic editor writes.
 // Every operation returns a NEW plan or throws PlanOpError with a message safe to show the user.
@@ -89,6 +89,20 @@ export function splitSegment(plan: EditPlan, index: number, atSec: number): Edit
   const next = plan.segments.slice();
   next.splice(index, 1, { ...s, endSec: cut }, { ...s, startSec: cut, transition: "cut" });
   return rebuild(plan, next);
+}
+
+/** Loudness of one piece: 0 (muted) to 2 (double). 1 is the original. */
+export function setVolume(plan: EditPlan, index: number, volume: number): EditPlan {
+  const s = at(plan, index);
+  if (!Number.isFinite(volume) || volume < 0 || volume > 2) throw new PlanOpError("Volume must be between 0% and 200%.");
+  const next = plan.segments.slice();
+  next[index] = { ...s, volume: Math.round(volume * 100) / 100 };
+  return rebuild(plan, next);
+}
+
+export function setAspect(plan: EditPlan, aspectRatio: AspectRatio): EditPlan {
+  if (!["9:16", "1:1", "16:9"].includes(aspectRatio)) throw new PlanOpError("That shape is not available.");
+  return { ...plan, aspectRatio };
 }
 
 // ---------------------------------------------------------------- undo / redo

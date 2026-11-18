@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Redo2, RefreshCw, Scissors, Trash2, Undo2 } from "lucide-react";
+import { ArrowDown, ArrowUp, History, Redo2, RefreshCw, Scissors, Trash2, Undo2 } from "lucide-react";
 import {
   PlanOpError,
   commit,
   moveSegment,
   redo,
   removeSegment,
+  setAspect,
+  setVolume,
   splitSegment,
   startHistory,
   trimSegment,
@@ -15,7 +17,7 @@ import {
   validatePlan,
   type PlanHistory,
 } from "@/lib/plan-ops";
-import type { EditPlan, PublicAsset } from "@/lib/types/schema";
+import type { AspectRatio, EditPlan, PublicAsset } from "@/lib/types/schema";
 
 interface Props {
   plan: EditPlan;
@@ -24,11 +26,17 @@ interface Props {
   busy: boolean;
   error?: string;
   onRender: (plan: EditPlan) => void;
+  versions?: { version: number; createdAt: string; plan: EditPlan }[];
 }
 
 const fmt = (n: number) => `${n.toFixed(1)}s`;
+const SHAPES: { value: AspectRatio; label: string; hint: string }[] = [
+  { value: "9:16", label: "Vertical", hint: "TikTok, Reels, Shorts" },
+  { value: "1:1", label: "Square", hint: "Feed posts" },
+  { value: "16:9", label: "Wide", hint: "YouTube" },
+];
 
-export function ManualEditor({ plan, assets, capSec, busy, error, onRender }: Props) {
+export function ManualEditor({ plan, assets, capSec, busy, error, onRender, versions = [] }: Props) {
   const [history, setHistory] = useState<PlanHistory>(() => startHistory(plan));
   const [open, setOpen] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -75,6 +83,20 @@ export function ManualEditor({ plan, assets, capSec, busy, error, onRender }: Pr
         </div>
       </div>
 
+      <div className="mt-4">
+        <p className="text-[13px] text-[#8d97a8]">Video shape</p>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {SHAPES.map((sh) => (
+            <button key={sh.value} type="button" disabled={busy} aria-pressed={current.aspectRatio === sh.value}
+              onClick={() => run((p) => setAspect(p, sh.value))}
+              className={`min-h-14 rounded-[12px] border px-2 py-2 text-center transition disabled:opacity-40 ${current.aspectRatio === sh.value ? "border-[#d9b45b] bg-[#1f1b10] text-[#ecd083]" : "border-[#242a35] bg-[#11141b] text-[#c3cad6]"}`}>
+              <b className="block text-[13px] font-semibold">{sh.label}</b>
+              <span className="block text-[11px] text-[#8d97a8]">{sh.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <ol className="mt-4 space-y-2">
         {current.segments.map((s, i) => {
           const asset = assets.find((a) => a.id === s.assetId);
@@ -105,6 +127,12 @@ export function ManualEditor({ plan, assets, capSec, busy, error, onRender }: Pr
                       onChange={(e) => run((p) => trimSegment(p, i, { endSec: Math.max(Number(e.target.value), p.segments[i].startSec + 0.5) }, assets))}
                       className="mt-1 h-11 w-full accent-[#d9b45b]" />
                   </label>
+                  <label className="block text-[13px] text-[#8d97a8]">
+                    Sound <b className="text-[#eceff4]">{Math.round((s.volume ?? 1) * 100)}%</b>{(s.volume ?? 1) === 0 ? " (muted)" : ""}
+                    <input type="range" min={0} max={2} step={0.05} value={s.volume ?? 1} disabled={busy}
+                      onChange={(e) => run((p) => setVolume(p, i, Number(e.target.value)))}
+                      className="mt-1 h-11 w-full accent-[#d9b45b]" />
+                  </label>
                   <button type="button" disabled={busy} onClick={() => run((p) => splitSegment(p, i, (p.segments[i].startSec + p.segments[i].endSec) / 2))}
                     className="inline-flex min-h-11 items-center gap-2 rounded-[12px] border border-[#242a35] bg-[#11141b] px-3.5 text-[14px] font-medium transition hover:border-[#d9b45b]/50 disabled:opacity-40">
                     <Scissors size={16} className="text-[#d9b45b]" /> Split in the middle
@@ -116,6 +144,21 @@ export function ManualEditor({ plan, assets, capSec, busy, error, onRender }: Pr
           );
         })}
       </ol>
+
+      {versions.length > 1 && (
+        <details className="mt-4 rounded-[14px] border border-[#242a35] bg-[#181c25]">
+          <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3 text-[14px] font-medium"><History size={16} className="text-[#d9b45b]" /> Earlier versions</summary>
+          <ul className="space-y-2 border-t border-[#242a35] p-3">
+            {versions.slice(1).map((v) => (
+              <li key={v.version} className="flex items-center justify-between gap-2">
+                <span className="text-[13px] text-[#c3cad6]">Version {v.version} · {v.plan.segments.length} pieces · {fmt(v.plan.targetDurationSec)}</span>
+                <button type="button" disabled={busy} onClick={() => { setHistory((h) => commit(h, v.plan)); setNote(""); }}
+                  className="min-h-11 rounded-[12px] border border-[#242a35] bg-[#11141b] px-3 text-[13px] font-medium text-[#ecd083] hover:border-[#d9b45b]/50 disabled:opacity-40">Use this</button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {(note || error) && <p role="alert" className="mt-3 text-[13px] text-[#ff8a96]">{note || error}</p>}
 
