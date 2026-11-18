@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { admin } from "@/lib/supabase/admin";
-import { getUploadPresignedUrl, B2_BUCKET_CLIPS } from "@/lib/storage";
+import { getUploadPresignedUrl, ensureUploadCors, B2_BUCKET_CLIPS } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,10 +46,12 @@ export async function GET() {
   };
   const database = await databaseAccess();
   const storage = await storageLink();
+  const origin = process.env.APP_ORIGIN || "https://z-clip-studio-production.up.railway.app";
+  const cors = await ensureUploadCors([origin]);
   const required = ["supabaseUrl", "supabasePublishableKey", "supabaseSecretKey", "storageKeyId", "storageApplicationKey", "ffmpeg"] as const;
   const missing = required.filter((k) => !checks[k]);
   return Response.json(
-    { ok: missing.length === 0 && database.ok, missing, checks, database, storage, time: new Date().toISOString() },
+    { ok: missing.length === 0 && database.ok, missing, checks, database, storage, cors, time: new Date().toISOString() },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
 }

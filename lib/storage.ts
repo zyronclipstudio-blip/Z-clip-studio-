@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
+  PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -112,4 +113,39 @@ export async function deleteObjects(bucket: string, keys: string[]): Promise<voi
       },
     }),
   );
+}
+
+
+/**
+ * Backblaze's dashboard presets only allow downloads. Browser uploads need a custom rule,
+ * so the app sets it itself (idempotent, fixed content, safe to repeat).
+ */
+let corsResult: Promise<{ ok: boolean; code?: string }> | null = null;
+export function ensureUploadCors(origins: string[]): Promise<{ ok: boolean; code?: string }> {
+  if (!corsResult) {
+    corsResult = getB2Client()
+      .send(
+        new PutBucketCorsCommand({
+          Bucket: B2_BUCKET_CLIPS,
+          CORSConfiguration: {
+            CORSRules: [
+              {
+                AllowedOrigins: origins,
+                AllowedMethods: ["PUT", "GET", "HEAD"],
+                AllowedHeaders: ["*"],
+                ExposeHeaders: ["ETag"],
+                MaxAgeSeconds: 3600,
+              },
+            ],
+          },
+        }),
+      )
+      .then(() => ({ ok: true }))
+      .catch((e: unknown) => {
+        corsResult = null;
+        const err = e as { name?: string; message?: string };
+        return { ok: false, code: `${err.name ?? "error"}: ${(err.message ?? "").slice(0, 80)}` };
+      });
+  }
+  return corsResult;
 }
