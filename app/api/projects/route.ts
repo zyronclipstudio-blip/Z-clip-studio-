@@ -56,6 +56,9 @@ async function createProject() {
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   cleanupExpired().catch(() => undefined);
   const { data, error } = await admin().from("projects").insert({ owner_id: user.id, status: "uploading", expires_at: null }).select("id").single();
-  if (error || !data) return Response.json({ error: "Could not create the project." }, { status: 500 });
+  if (error || !data) {
+    console.error("create project failed:", error?.code, error?.message);
+    return Response.json({ error: "Could not create the project." }, { status: 500 });
+  }
   return Response.json({ projectId: data.id });
 }
