@@ -17,9 +17,9 @@ interface DashboardProps {
 }
 
 const STEPS = [
-  { icon: Upload, title: "Add your clips", text: "Up to 20 clips, 500 MB per batch." },
-  { icon: Wand2, title: "ZClip edits it", text: "Cuts, pacing and music planned for you. You approve the cost first." },
-  { icon: ShieldCheck, title: "Review and fix", text: "Check the result, then change anything yourself or let ZClip redo it." },
+  { icon: Upload, title: "Add your clips", tone: "blue" },
+  { icon: Wand2, title: "ZClip edits it", tone: "" },
+  { icon: ShieldCheck, title: "Review and fix", tone: "green" },
 ];
 
 export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject, onShowEdits, onBackHome, opening, openError }: DashboardProps) {
@@ -76,31 +76,25 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
 
             <div className="grid grid-cols-3 gap-2.5">
               <div className="zy-kpi"><small>Credits</small><b>{balanceLabel}</b></div>
-              <div className="zy-kpi"><small>Ready</small><b>{counts ? counts.ready : "—"}</b></div>
-              <div className="zy-kpi"><small>In progress</small><b>{counts ? counts.working : "—"}</b></div>
+              <div className="zy-kpi green"><small>Ready</small><b>{counts ? counts.ready : "—"}</b></div>
+              <div className="zy-kpi blue"><small>In progress</small><b>{counts ? counts.working : "—"}</b></div>
             </div>
 
             <button type="button" onClick={() => onShowEdits()} className="zy-card flex min-h-16 w-full items-center gap-3 text-left transition hover:brightness-110">
-              <span className="zy-icon h-11 w-11 rounded-[14px]"><Film size={19} /></span>
+              <span className="zy-icon rose h-11 w-11 rounded-[14px]"><Film size={19} /></span>
               <span className="flex-1">
                 <b className="block text-[15px] font-semibold">My Edits</b>
                 <span className="text-[13px] text-[#8d97a8]">{counts && counts.total ? `${counts.total} video${counts.total === 1 ? "" : "s"} saved` : "Your finished and in-progress videos"}</span>
               </span>
             </button>
 
-            <section className="zy-card flex flex-col gap-3">
-              <h2 className="text-[16px] font-semibold">How it works</h2>
-              <ol className="flex flex-col gap-4">
-                {STEPS.map(({ icon: Icon, title, text }) => (
-                  <li key={title} className="flex gap-3">
-                    <span className="zy-icon h-10 w-10 shrink-0 rounded-[12px]"><Icon size={18} /></span>
-                    <div>
-                      <b className="block text-[15px] font-semibold">{title}</b>
-                      <p className="text-[13px] leading-5 text-[#8d97a8]">{text}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+            <section className="grid grid-cols-3 gap-2.5" aria-label="How it works">
+              {STEPS.map(({ icon: Icon, title, tone }) => (
+                <div key={title} className="flex flex-col items-center gap-2 rounded-[18px] border border-[#242a35] bg-[#11141b] px-2 py-3 text-center">
+                  <span className={`zy-icon ${tone} h-11 w-11 rounded-[14px]`}><Icon size={19} /></span>
+                  <b className="text-[12px] font-medium leading-4 text-[#c3cad6]">{title}</b>
+                </div>
+              ))}
             </section>
           </div>
   );

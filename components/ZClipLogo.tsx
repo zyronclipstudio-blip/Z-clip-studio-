@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ZClipMark } from "@/components/ZClipMark";
+import { ZClipTile } from "@/components/ZClipMark";
 
 export function ZClipLogo({
   size = 48,
@@ -12,11 +12,7 @@ export function ZClipLogo({
   variant?: "icon" | "horizontal" | "vertical" | "badge";
   className?: string;
 }) {
-  const icon = (
-    <span className="inline-flex shrink-0" style={{ width: size, height: size }}>
-      <ZClipMark className="h-full w-full" />
-    </span>
-  );
+  const icon = <ZClipTile size={size} />;
 
   if (variant === "icon") {
     return <span className={`inline-flex items-center ${className}`}>{icon}</span>;
