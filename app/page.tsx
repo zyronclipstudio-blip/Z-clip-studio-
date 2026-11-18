@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Film, Share2, Sparkles, Upload, X, ArrowLeft } from "lucide-react";
-import { ZLogo } from "@/components/ZLogo";
+import { Check, Download, Film, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
+import { AppShell, type Tab } from "@/components/AppShell";
 import { ManualEditor } from "@/components/ManualEditor";
 import { PLATFORM_CAP_SECONDS } from "@/lib/caps";
 import { createClient } from "@/lib/supabase/browser";
@@ -122,6 +122,7 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [inEditor, setInEditor] = useState(false);
+  const [tab, setTab] = useState<Tab>("home");
   const [step, setStep] = useState<Step>("upload");
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
@@ -302,43 +303,35 @@ export default function Home() {
     <>
       {showSplash && <NetflixSplash onFinish={() => setShowSplash(false)} />}
 
+      <AppShell
+        tab={inEditor ? "new" : tab}
+        onTab={(t) => {
+          if (t === "new") setInEditor(true);
+          else {
+            setInEditor(false);
+            setTab(t);
+          }
+        }}
+        credits={account?.credits}
+        email={account?.email}
+        onSignOut={signOut}
+      >
       {!inEditor ? (
         <StudioDashboard
-          userEmail={account?.email}
+          view={tab === "edits" ? "edits" : "home"}
           userCredits={account?.credits}
           onNewProject={() => setInEditor(true)}
           onOpenProject={handleOpen}
+          onShowEdits={() => setTab("edits")}
+          onBackHome={() => setTab("home")}
           opening={opening}
           openError={openError}
-          onSignOut={signOut}
         />
       ) : (
-        <main className="relative mx-auto min-h-screen w-full max-w-xl overflow-hidden bg-[#05060a] px-4 py-6 text-[#eceff4] sm:px-6 sm:py-8 lg:px-10">
-          <header className="mb-8">
-            <div className="flex items-center gap-3 text-[#d9b45b]">
-              <button
-                onClick={() => setInEditor(false)}
-                aria-label="Back to dashboard" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-[#242a35] bg-[#11141b] text-[#eceff4] transition hover:border-[#d9b45b]/50 mr-1"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <ZLogo size={30} />
-              <span className="text-lg font-extrabold tracking-[0.2em] text-[#f3eee2]">
-                Z<span className="text-[#d9b45b]">CLIP</span>
-              </span>
-              {account && (
-                <span className="ml-auto flex items-center gap-3 text-sm text-[#8d97a8]">
-                  <span className="whitespace-nowrap rounded-full border border-[#242a35] bg-[#11141b] px-3 py-2 text-sm text-[#eceff4]">
-                    {account.credits} credit{account.credits === 1 ? "" : "s"}
-                  </span>
-                  <button onClick={signOut} className="hover:text-[#eceff4]">
-                    Sign out
-                  </button>
-                </span>
-              )}
-            </div>
+        <main className="relative w-full text-[#eceff4]">
+          <header className="mb-6">
             <h1 className="mt-5 font-display text-[24px] font-semibold leading-tight sm:text-3xl text-[#eceff4]">
-              Upload your footage. Let ZClip do the editing.
+              New video
             </h1>
             <div className="mt-5 flex gap-2" aria-label="Progress">
               {["Upload", "Setup", "Approve", "Edit", "Review"].map((label, i) => (
@@ -610,6 +603,7 @@ export default function Home() {
       )}
     </main>
     )}
+      </AppShell>
     </>
   );
 }

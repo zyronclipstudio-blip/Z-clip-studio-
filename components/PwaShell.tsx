@@ -46,7 +46,7 @@ export default function PwaShell() {
             await installEvent.userChoice;
             setInstallEvent(null);
           }}
-          className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 flex min-h-11 items-center gap-2 rounded-full border border-gold/40 bg-surface px-4 py-2 text-sm text-gold shadow-lg"
+          className="fixed bottom-[calc(104px+env(safe-area-inset-bottom,0px))] right-4 z-40 flex min-h-11 items-center gap-2 rounded-full border border-gold/40 bg-surface px-4 py-2 text-sm text-gold shadow-lg"
         >
           <Download size={16} /> Install ZClip
         </button>
