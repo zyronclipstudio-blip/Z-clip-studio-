@@ -3,7 +3,21 @@ import { admin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getDownloadPresignedUrl, B2_BUCKET_EXPORTS } from "@/lib/storage";
 export const runtime = "nodejs";
+const setupError = (e: unknown) =>
+  Response.json(
+    { error: e instanceof Error && /SUPABASE_SECRET_KEY|B2_|storage/i.test(e.message) ? "ZClip's storage is not connected yet. Please try again soon." : "Something went wrong. Please try again." },
+    { status: 503, headers: { "Cache-Control": "no-store" } },
+  );
+
 export async function GET() {
+  try {
+    return await listProjects();
+  } catch (e) {
+    return setupError(e);
+  }
+}
+
+async function listProjects() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
@@ -29,6 +43,14 @@ export async function GET() {
   return Response.json({ projects: result }, { headers: { "Cache-Control": "no-store" } });
 }
 export async function POST() {
+  try {
+    return await createProject();
+  } catch (e) {
+    return setupError(e);
+  }
+}
+
+async function createProject() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });

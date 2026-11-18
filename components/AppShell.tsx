@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Film, Home, LogOut, Plus } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Download, Film, Home, LogOut, Plus } from "lucide-react";
 import { ZClipLogo } from "@/components/ZClipLogo";
 
 export type Tab = "home" | "new" | "edits";
@@ -18,6 +18,15 @@ interface Props {
 // One shell for every screen, like Zyron Studio: header on top, content in the middle, the same
 // bottom navigation everywhere. Screens never carry their own logo, credits or sign-out.
 export function AppShell({ tab, onTab, credits, email, onSignOut, children }: Props) {
+  type Installer = Event & { prompt(): Promise<void>; userChoice: Promise<unknown> };
+  const [installer, setInstaller] = useState<Installer | null>(null);
+  useEffect(() => {
+    const read = () => setInstaller(((window as unknown as { __zclipInstall?: Installer }).__zclipInstall) ?? null);
+    read();
+    window.addEventListener("zclip-install-ready", read);
+    window.addEventListener("appinstalled", () => setInstaller(null));
+    return () => window.removeEventListener("zclip-install-ready", read);
+  }, []);
   const hasBalance = typeof credits === "number" && Number.isFinite(credits);
   return (
     <div className="relative min-h-screen bg-[#05060a] text-[#eceff4]">
@@ -44,7 +53,20 @@ export function AppShell({ tab, onTab, credits, email, onSignOut, children }: Pr
         </header>
 
         <div className="flex flex-1 flex-col">{children}</div>
-        <p className="mt-8 text-center text-xs tracking-[0.04em] text-[#7b8596]">Proudly by Zyron</p>
+        {installer && (
+          <button
+            type="button"
+            onClick={async () => {
+              await installer.prompt();
+              await installer.userChoice;
+              setInstaller(null);
+            }}
+            className="mx-auto mt-8 inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d9b45b]/40 bg-[#11141b] px-4 text-sm text-[#ecd083]"
+          >
+            <Download size={16} /> Install ZClip
+          </button>
+        )}
+        <p className="mt-6 text-center text-xs tracking-[0.04em] text-[#7b8596]">Proudly by Zyron</p>
       </div>
 
       <nav className="zy-nav" aria-label="Main">

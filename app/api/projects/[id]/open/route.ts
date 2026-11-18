@@ -8,7 +8,15 @@ export const runtime = "nodejs";
 
 // Reopens a saved edit so the customer can keep fixing it: clips, the latest plan, earlier versions
 // and a fresh link to the latest finished video. Only the owner's own project is ever returned.
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    return await openProject(req, ctx);
+  } catch {
+    return Response.json({ error: "ZClip's storage is not connected yet. Please try again soon." }, { status: 503 });
+  }
+}
+
+async function openProject(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const sb = await createClient();
   const {

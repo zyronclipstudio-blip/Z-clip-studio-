@@ -1,10 +1,10 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Download, Film, LoaderCircle, Pencil, Play, Search, Trash2 } from "lucide-react";
+import { Download, Film, LoaderCircle, Pencil, Play, Search, Trash2 } from "lucide-react";
 type Edit = { id: string; status: string; purpose: string; createdAt: string; outputUrl?: string; downloadUrl?: string };
 const titleFor = (purpose: string) => ({ cinematic: "Cinematic edit", gym: "Gym & sports edit", business: "Business promotion", general: "Video edit", auto: "Automatic edit" }[purpose] || "Video edit");
 const statusLabel = (status: string) => ({ ready: "Ready", rendering: "Rendering", analysing: "Analysing", planning: "Planning", uploading: "Uploading", qa_failed: "Quality check needed", failed: "Could not finish", unavailable: "Video unavailable" }[status] || "In progress");
-export function MyEdits({ onBack, onOpen }: { onBack: () => void; onOpen?: (id: string) => void }) {
+export function MyEdits({ onOpen }: { onBack?: () => void; onOpen?: (id: string) => void }) {
   const [edits, setEdits] = useState<Edit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,8 +14,8 @@ export function MyEdits({ onBack, onOpen }: { onBack: () => void; onOpen?: (id: 
     setLoading(true); setError("");
     try {
       const response = await fetch("/api/projects", { cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not load your edits.");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not load your edits right now. Please try again.");
       setEdits(Array.isArray(data.projects) ? data.projects : []);
     } catch (err) { setError(err instanceof Error ? err.message : "Could not load your edits."); }
     finally { setLoading(false); }
@@ -34,7 +34,6 @@ export function MyEdits({ onBack, onOpen }: { onBack: () => void; onOpen?: (id: 
     finally { setDeleting(null); }
   }
   return <section className="relative z-10 mx-auto w-full flex-1">
-    <button onClick={onBack} className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-[#c3cad6] transition hover:border-[#d9b45b]/40 hover:text-white"><ArrowLeft size={16}/> Back to studio</button>
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-mono text-[10px] tracking-[0.2em] text-[#d9b45b]">YOUR VIDEOS</p><h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">My Edits</h1><p className="mt-2 max-w-xl text-sm leading-6 text-[#8d97a8]">Your finished videos and projects, together in one place.</p></div><div className="text-xs text-[#8d97a8]">{edits.length} {edits.length === 1 ? "project" : "projects"}</div></div>
     <div className="mt-7 flex items-center gap-3 rounded-xl border border-white/10 bg-[#11141b] px-4"><Search size={17} className="shrink-0 text-[#7b8596]"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your edits" aria-label="Search your edits" className="h-12 min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#6a7384]"/></div>
     {error && <div role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
