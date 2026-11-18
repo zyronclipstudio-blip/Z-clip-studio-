@@ -99,12 +99,17 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
     const upload = uploads[i];
     if (upload.url) {
       // Direct presigned S3 / Backblaze B2 PUT upload
-      const res = await fetch(upload.url, {
-        method: "PUT",
-        headers: { "Content-Type": upload.contentType },
-        body: files[i],
-      });
-      if (!res.ok) throw new Error(`Could not upload "${files[i].name}". Please try again.`);
+      let res: Response;
+      try {
+        res = await fetch(upload.url, {
+          method: "PUT",
+          headers: { "Content-Type": upload.contentType },
+          body: files[i],
+        });
+      } catch {
+        throw new Error(`Could not reach ZClip's storage from this browser (upload blocked). Code: STORAGE_NETWORK`);
+      }
+      if (!res.ok) throw new Error(`Could not upload "${files[i].name}". Storage answered ${res.status}. Please try again.`);
     } else {
       // Fallback: Supabase Storage uploadToSignedUrl
       const sb = createClient();

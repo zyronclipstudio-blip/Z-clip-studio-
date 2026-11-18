@@ -30,6 +30,9 @@ export function getB2Client(): S3Client {
         secretAccessKey,
       },
       forcePathStyle: true,
+      // Backblaze does not support the SDK's newer default checksum headers on presigned uploads.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
     });
   }
   return s3Client;
