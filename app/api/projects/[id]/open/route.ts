@@ -39,13 +39,18 @@ async function openProject(_req: Request, { params }: { params: Promise<{ id: st
     const parsed = EditPlanSchema.safeParse(r.plan);
     return parsed.success ? [{ version: r.version as number, createdAt: r.created_at as string, plan: parsed.data }] : [];
   });
-  if (!versions.length) return Response.json({ error: "This project has no finished edit yet." }, { status: 409 });
-
   const assets: PublicAsset[] = rows.map((r) => {
     const { storedName: _omit, ...pub } = rowToAsset(r);
     void _omit;
     return pub;
   });
+  // Not finished yet: let the person pick up where they left off (clips are already uploaded).
+  if (!versions.length) {
+    return Response.json(
+      { resume: true, projectId: id, platform: project.platform ?? "auto", purpose: project.purpose, mood: project.mood, assets },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   let outputUrl: string | undefined;
   let downloadUrl: string | undefined;

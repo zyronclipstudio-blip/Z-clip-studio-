@@ -268,6 +268,15 @@ export default function Home() {
       if (!res.ok) throw new Error(d.error || "Could not open this edit.");
       setProject({ projectId: d.projectId, assets: d.assets });
       setSetup((prev) => ({ ...prev, purpose: d.purpose ?? prev.purpose, mood: d.mood ?? prev.mood, platform: d.platform ?? "auto" }));
+      if (d.resume) {
+        // Unfinished project: continue from setup with the clips already uploaded.
+        setVersions([]);
+        setResult(null);
+        setEstimate(null);
+        setStep("setup");
+        setInEditor(true);
+        return;
+      }
       setVersions(d.versions ?? []);
       setResult({
         status: "ready",
