@@ -12,12 +12,14 @@ interface Props {
   credits?: number;
   email?: string;
   onSignOut: () => void;
+  /** Wider canvas on laptops, for screens that need room (the editor). */
+  wide?: boolean;
   children: ReactNode;
 }
 
 // One shell for every screen, like Zyron Studio: header on top, content in the middle, the same
 // bottom navigation everywhere. Screens never carry their own logo, credits or sign-out.
-export function AppShell({ tab, onTab, credits, email, onSignOut, children }: Props) {
+export function AppShell({ tab, onTab, credits, email, onSignOut, wide, children }: Props) {
   type Installer = Event & { prompt(): Promise<void>; userChoice: Promise<unknown> };
   const [installer, setInstaller] = useState<Installer | null>(null);
   useEffect(() => {
@@ -30,7 +32,7 @@ export function AppShell({ tab, onTab, credits, email, onSignOut, children }: Pr
   const hasBalance = typeof credits === "number" && Number.isFinite(credits);
   return (
     <div className="relative min-h-screen bg-[#05060a] text-[#eceff4]">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-32 pt-5">
+      <div className={`mx-auto flex min-h-screen w-full flex-col px-5 pb-32 pt-5 ${wide ? "max-w-md lg:max-w-6xl lg:px-8" : "max-w-md"}`}>
         <header className="mb-5 flex items-center justify-between gap-3">
           <button type="button" onClick={() => onTab("home")} aria-label="ZClip home" className="text-left">
             <ZClipLogo size={34} variant="horizontal" />

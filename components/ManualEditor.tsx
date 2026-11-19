@@ -169,6 +169,36 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
     setDraft(null);
   };
 
+  // Keyboard shortcuts for laptops. The listener is added once and always reads the latest handlers.
+  const keys = useRef<(e: KeyboardEvent) => void>(() => undefined);
+  keys.current = (e) => {
+    const el = e.target as HTMLElement | null;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+    if (busy) return;
+    const mod = e.ctrlKey || e.metaKey;
+    const k = e.key.toLowerCase();
+    if (mod && k === "z") { e.preventDefault(); setHistory(e.shiftKey ? redo : undo); return; }
+    if (mod && k === "y") { e.preventDefault(); setHistory(redo); return; }
+    if (mod) return;
+    if (e.key === " ") { e.preventDefault(); player.current?.toggle(); }
+    else if (k === "s") { e.preventDefault(); splitHere(); }
+    else if (e.key === "Delete" || e.key === "Backspace") {
+      if (current.segments.length > 1) { e.preventDefault(); run((p) => removeSegment(p, sel), () => setSelected(Math.max(0, sel - 1))); }
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const step = (e.shiftKey ? 1 : 0.1) * (e.key === "ArrowLeft" ? -1 : 1);
+      const t = Math.max(0, Math.min(total, time + step));
+      setTime(t);
+      player.current?.seek(t);
+    } else if (e.key === "ArrowUp" && sel > 0) { e.preventDefault(); selectPiece(sel - 1); }
+    else if (e.key === "ArrowDown" && sel < current.segments.length - 1) { e.preventDefault(); selectPiece(sel + 1); }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keys.current(e);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const btn = "inline-flex h-11 w-11 items-center justify-center rounded-[12px] border border-[#242a35] bg-[#11141b] text-[#c3cad6] transition hover:border-[#d9b45b]/50 disabled:opacity-35";
   const chip = (on: boolean) =>
     `min-h-11 rounded-[12px] border px-3 text-[13px] font-semibold transition disabled:opacity-40 ${on ? "text-[#eceff4]" : "border-[#242a35] bg-[#11141b] text-[#c3cad6]"}`;
@@ -191,8 +221,8 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
   }, [view, starts, time, pps]);
 
   return (
-    <div className="zy-card">
-      <div className="flex items-center justify-between gap-2">
+    <div className="zy-card lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-6">
+      <div className="flex items-center justify-between gap-2 lg:col-span-2">
         <div>
           <h2 className="font-display text-[16px] font-semibold">Edit it yourself</h2>
           <p className="mt-0.5 text-[13px] text-[#8d97a8]">
@@ -205,6 +235,7 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
         </div>
       </div>
 
+      <div className="min-w-0">
       {/* Live preview: plays your clips as edited, nothing is rendered yet. */}
       <div className="mt-4">
         <PlanPlayer ref={player} plan={current} urls={urls} onTime={setTime} />
@@ -274,6 +305,8 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
         <button type="button" disabled={busy || current.segments.length === 1} onClick={() => run((p) => removeSegment(p, sel), () => setSelected(Math.max(0, sel - 1)))} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[12px] border border-[#242a35] bg-[#11141b] text-[13px] font-semibold text-[#ff8a96] hover:border-[#ff6171]/50 disabled:opacity-40"><Trash2 size={16} /> Delete</button>
       </div>
 
+      </div>
+      <div className="min-w-0 lg:row-span-1">
       {/* Drawers: one per kind of job, each holds only its own tools */}
       <div className="mt-4 grid grid-cols-3 gap-2" role="tablist" aria-label="Editing tools">
         {DRAWERS.map((d) => {
@@ -385,6 +418,8 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
       <p className="mt-2 text-center text-[12px] text-[#7b8596]">
         Manual edits don&apos;t use extra credits. Your earlier video stays saved{original === current ? "" : " until the new one passes the checks"}.
       </p>
+      <p className="mt-3 hidden text-center text-[11px] leading-5 text-[#7b8596] lg:block">Shortcuts: Space play · S split · Delete remove · ← → step · ↑ ↓ pick piece · Ctrl+Z undo</p>
+      </div>
     </div>
   );
 }

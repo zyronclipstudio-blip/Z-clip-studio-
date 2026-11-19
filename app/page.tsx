@@ -346,6 +346,7 @@ export default function Home() {
       {showSplash && <NetflixSplash onFinish={() => setShowSplash(false)} />}
 
       <AppShell
+        wide={inEditor && step === "review" && Boolean(result)}
         tab={inEditor ? "new" : tab}
         onTab={(t) => {
           if (t === "new") setInEditor(true);
@@ -543,7 +544,8 @@ export default function Home() {
       )}
 
       {step === "review" && result && (
-        <section className="space-y-4">
+        <section className="space-y-4 lg:grid lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
+          <div className="space-y-4 lg:sticky lg:top-4">
           {result.status === "ready" && result.outputUrl ? (
             <div className="zy-card p-4">
               <div className="mb-3 flex items-center gap-3">
@@ -624,6 +626,8 @@ export default function Home() {
             </div>
           )}
 
+          </div>
+          <div className="space-y-4">
           {project && (
             <ManualEditor
               key={result.outputUrl ?? "plan"}
@@ -645,6 +649,7 @@ export default function Home() {
             <button onClick={reset} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
               Start a new video
             </button>
+          </div>
           </div>
         </section>
       )}

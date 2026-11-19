@@ -7,6 +7,8 @@ import type { EditPlan } from "@/lib/types/schema";
 export interface PlanPlayerHandle {
   /** Jump to a point on the edit's own timeline (seconds from the start of the edit). */
   seek: (sec: number) => void;
+  /** Play or pause (used by the keyboard shortcut). */
+  toggle: () => void;
 }
 
 interface Props {
@@ -42,6 +44,7 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
   const playingRef = useRef(false);
   const loadingRef = useRef(false);
   const lastReport = useRef(-1);
+  const toggleRef = useRef<() => void>(() => undefined);
   planRef.current = plan;
   urlsRef.current = urls;
 
@@ -140,6 +143,9 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
         for (let k = 0; k < starts.length; k++) if (sec >= starts[k]) i = k;
         load(i, Math.max(0, sec - starts[i]), playingRef.current);
       },
+      toggle() {
+        toggleRef.current();
+      },
     }),
     [load],
   );
@@ -155,6 +161,8 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
       void v.play().catch(() => setPlay(false));
     }
   };
+
+  toggleRef.current = toggle;
 
   const seg = plan.segments[idx];
   const hasPreview = Boolean(seg && urls[seg.assetId]);
