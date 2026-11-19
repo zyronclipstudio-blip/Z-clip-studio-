@@ -567,7 +567,7 @@ export default function Home() {
               {([
                 ["Length", fmtSec(result.metrics.outputDurationSec), ""],
                 ["Clips used", String(new Set(result.plan.segments.map((s) => s.assetId)).size), "green"],
-                ["Edited by", result.metrics.provider === "gemini" ? "Gemini" : "Basic editor", "blue"],
+                ["Edited by", result.metrics.provider === "gemini" ? "Gemini" : "Quick cut", "blue"],
                 ["Render time", `${(result.metrics.renderMs / 1000).toFixed(0)}s`, "rose"],
               ] as const).map(([k, v, tone]) => (
                 <div key={k} className={`zy-kpi ${tone}`}>

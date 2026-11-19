@@ -193,26 +193,16 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
 export function planDeterministic(assets: MediaAsset[], setup: Setup): PlanResult {
   const mood = setup.mood === "auto" ? moodFromPurpose(setup.purpose) : setup.mood;
   const pacing: EditPlan["pacing"] = mood === "energetic" ? "fast" : mood === "calm" || mood === "cinematic" ? "slow" : "medium";
-  const segLen = pacing === "fast" ? 2.5 : pacing === "slow" ? 5 : 3.5;
   const transition: CutSegment["transition"] = pacing === "fast" || mood === "professional" ? "cut" : "fade";
   const cap = PLATFORM_CAP_SECONDS[setup.platform];
 
   type Cand = { assetId: string; start: number; len: number; clipIdx: number };
   const cands: Cand[] = [];
 
+  // Manual-first default: keep every clip whole, in upload order. The person trims and
+  // rearranges from here; the platform limit below is the only thing that shortens it.
   assets.forEach((a, clipIdx) => {
-    const d = a.durationSec;
-    if (d <= segLen * 1.6) {
-      cands.push({ assetId: a.id, start: 0, len: Math.min(d, segLen * 1.6), clipIdx });
-      return;
-    }
-    const n = Math.min(3, Math.max(1, Math.floor(d / (segLen * 2))));
-    for (let i = 0; i < n; i++) {
-      // Evenly spaced windows, skipping the first moments where shaky starts are common.
-      const slot = d / n;
-      const start = Math.min(d - segLen, i * slot + Math.max(0.3, (slot - segLen) / 2));
-      cands.push({ assetId: a.id, start: Math.max(0, start), len: segLen, clipIdx });
-    }
+    cands.push({ assetId: a.id, start: 0, len: a.durationSec, clipIdx });
   });
 
   let total = cands.reduce((s, c) => s + c.len, 0);
@@ -235,7 +225,7 @@ export function planDeterministic(assets: MediaAsset[], setup: Setup): PlanResul
     assetId: c.assetId,
     startSec: round(c.start),
     endSec: round(Math.min(c.start + c.len, assets.find((a) => a.id === c.assetId)!.durationSec)),
-    reason: "Evenly sampled from this clip because no AI key is configured.",
+    reason: "Your full clip, kept as shot. Trim or rearrange it below.",
     confidence: 0.4,
     transition,
   }));
@@ -248,7 +238,7 @@ export function planDeterministic(assets: MediaAsset[], setup: Setup): PlanResul
     aspectRatio: aspectFor(setup.platform),
     pacing,
     targetDurationSec: round(segments.reduce((sum, segment) => sum + segment.endSec - segment.startSec, 0)),
-    summary: `Basic automatic assembly of ${assets.length} clip${assets.length === 1 ? "" : "s"} in upload order with ${pacing} pacing.`,
+    summary: `Your first cut: ${assets.length} clip${assets.length === 1 ? "" : "s"} in upload order. Trim, reorder or remove anything below.`,
     segments,
   });
   return { plan, provider: "deterministic" };
