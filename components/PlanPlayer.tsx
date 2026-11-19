@@ -83,7 +83,8 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
         v.dataset.url = url;
         loadingRef.current = true;
         v.addEventListener("loadedmetadata", go, { once: true });
-        v.src = url;
+        // The #t fragment makes phones draw a first frame instead of a black box.
+        v.src = `${url}#t=${(seg.startSec + 0.05).toFixed(2)}`;
         v.load();
       } else {
         go();

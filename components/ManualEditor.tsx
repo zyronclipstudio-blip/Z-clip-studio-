@@ -35,8 +35,7 @@ interface Props {
 
 type Drawer = "video" | "audio" | "effects";
 
-const PX_PER_SEC = 36; // timeline scale
-const MIN_BLOCK_PX = 72;
+const MIN_BLOCK_PX = 48;
 const COLORS = ["#d9b45b", "#3ddba5", "#62adff", "#ff6171", "#b794f6"]; // Zyron palette
 
 const fmt = (n: number) => `${n.toFixed(1)}s`;
@@ -51,7 +50,6 @@ const DRAWERS: { id: Drawer; label: string; icon: typeof Film; tone: string }[] 
   { id: "effects", label: "Effects", icon: Sparkles, tone: "#62adff" },
 ];
 
-const widthOf = (sec: number) => Math.max(MIN_BLOCK_PX, sec * PX_PER_SEC);
 
 export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onRender, versions = [] }: Props) {
   const [history, setHistory] = useState<PlanHistory>(() => startHistory(plan));
@@ -62,6 +60,8 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<EditPlan | null>(null);
   const player = useRef<PlanPlayerHandle>(null);
+  const tlRef = useRef<HTMLDivElement>(null);
+  const [tlWidth, setTlWidth] = useState(0);
   const drag = useRef<{ i: number; edge: "start" | "end"; x0: number; start: number; end: number } | null>(null);
 
   const current = history.present;
@@ -73,6 +73,9 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
   const colorOf = (id: string) => COLORS[Math.max(0, assets.findIndex((a) => a.id === id)) % COLORS.length];
   const total = useMemo(() => current.segments.reduce((s, x) => s + x.endSec - x.startSec, 0), [current]);
   const overCap = total > capSec + 0.01;
+  // Fit the whole edit on screen by default (clamped so tiny pieces stay tappable and long edits scroll).
+  const pps = tlWidth > 0 && total > 0 ? Math.min(60, Math.max(10, (tlWidth - 8 - current.segments.length * 4) / total)) : 30;
+  const widthOf = (sec: number) => Math.max(MIN_BLOCK_PX, sec * pps);
   const starts = useMemo(() => {
     let t = 0;
     return current.segments.map((s) => {
@@ -81,6 +84,16 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
       return at;
     });
   }, [current]);
+
+  useEffect(() => {
+    const el = tlRef.current;
+    if (!el) return;
+    const measure = () => setTlWidth(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -138,7 +151,7 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
   const onHandleMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d) return;
-    const delta = (e.clientX - d.x0) / PX_PER_SEC;
+    const delta = (e.clientX - d.x0) / pps;
     try {
       setDraft(trimSegment(current, d.i, d.edge === "start" ? { startSec: d.start + delta } : { endSec: d.end + delta }, assets));
     } catch {
@@ -175,7 +188,7 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
       x += w + 4;
     }
     return x;
-  }, [view, starts, time]);
+  }, [view, starts, time, pps]);
 
   return (
     <div className="zy-card">
@@ -208,7 +221,7 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
       </div>
 
       {/* Timeline */}
-      <div className="mt-2 overflow-x-auto pb-2" style={{ touchAction: "pan-x" }}>
+      <div ref={tlRef} className="mt-2 overflow-x-auto pb-2" style={{ touchAction: "pan-x" }}>
         <div className="relative flex gap-1 py-3" style={{ minWidth: "100%" }}>
           {view.segments.map((seg, i) => {
             const len = seg.endSec - seg.startSec;
