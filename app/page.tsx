@@ -627,6 +627,7 @@ export default function Home() {
           {project && (
             <ManualEditor
               key={result.outputUrl ?? "plan"}
+              projectId={project.projectId}
               plan={result.plan}
               assets={project.assets}
               capSec={PLATFORM_CAP_SECONDS[setup.platform]}

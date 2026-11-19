@@ -100,6 +100,24 @@ export function setVolume(plan: EditPlan, index: number, volume: number): EditPl
   return rebuild(plan, next);
 }
 
+/** How a piece joins the one before it: a plain cut or a short fade. */
+export function setTransition(plan: EditPlan, index: number, transition: CutSegment["transition"]): EditPlan {
+  const s = at(plan, index);
+  if (transition !== "cut" && transition !== "fade") throw new PlanOpError("That transition is not available.");
+  const next = plan.segments.slice();
+  next[index] = { ...s, transition };
+  return rebuild(plan, next);
+}
+
+/** Put a copy of one piece right after it. */
+export function duplicateSegment(plan: EditPlan, index: number): EditPlan {
+  const s = at(plan, index);
+  if (plan.segments.length >= MAX_SEGMENTS) throw new PlanOpError(`An edit can have at most ${MAX_SEGMENTS} pieces.`);
+  const next = plan.segments.slice();
+  next.splice(index + 1, 0, { ...s, transition: "cut" });
+  return rebuild(plan, next);
+}
+
 export function setAspect(plan: EditPlan, aspectRatio: AspectRatio): EditPlan {
   if (!["9:16", "1:1", "16:9"].includes(aspectRatio)) throw new PlanOpError("That shape is not available.");
   return { ...plan, aspectRatio };

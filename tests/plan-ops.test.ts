@@ -11,6 +11,8 @@ import {
   redo,
   removeSegment,
   setAspect,
+  setTransition,
+  duplicateSegment,
   setVolume,
   splitSegment,
   startHistory,
@@ -140,4 +142,17 @@ test("volume and aspect changes are validated and keep the plan valid", () => {
   assert.throws(() => setVolume(plan, 0, Number.NaN), PlanOpError);
   assert.equal(setAspect(plan, "1:1").aspectRatio, "1:1");
   assert.throws(() => setAspect(plan, "4:3" as never), PlanOpError);
+});
+
+test("transition and duplicate change only what they should", () => {
+  const assets = [fakeAsset(10)];
+  const setup = SetupSchema.parse({ platform: "shorts" });
+  const plan = planDeterministic(assets, setup).plan;
+  const faded = setTransition(plan, 0, "fade");
+  assert.equal(faded.segments[0].transition, "fade");
+  assert.equal(plan.segments[0].transition, "cut"); // original untouched
+  const dup = duplicateSegment(plan, 0);
+  assert.equal(dup.segments.length, plan.segments.length + 1);
+  assert.equal(dup.segments[1].startSec, plan.segments[0].startSec);
+  assert.throws(() => setTransition(plan, 9, "fade"), PlanOpError);
 });
