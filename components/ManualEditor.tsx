@@ -1,6 +1,3 @@
-  const chip = (on: boolean) =>
-    `min-h-11 rounded-[12px] border px-3 text-[13px] font-semibold transition disabled:opacity-40 ${on ? "text-[#eceff4]" : "border-[#242a35] bg-[#11141b] text-[#c3cad6]"}`;
-  const chipStyle = (on: boolean, tone: string): React.CSSProperties => (on ? { borderColor: tone, background: `${tone}22` } : {});
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -160,8 +157,9 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
   };
 
   const btn = "inline-flex h-11 w-11 items-center justify-center rounded-[12px] border border-[#242a35] bg-[#11141b] text-[#c3cad6] transition hover:border-[#d9b45b]/50 disabled:opacity-35";
-  const chip = (on: boolean, tone = "#d9b45b") =>
-    `min-h-11 rounded-[12px] border px-3 text-[13px] font-semibold transition disabled:opacity-40 ${on ? "text-[#eceff4]" : "border-[#242a35] bg-[#11141b] text-[#c3cad6]"}`.concat(on ? ` border-[${tone}]` : "");
+  const chip = (on: boolean) =>
+    `min-h-11 rounded-[12px] border px-3 text-[13px] font-semibold transition disabled:opacity-40 ${on ? "text-[#eceff4]" : "border-[#242a35] bg-[#11141b] text-[#c3cad6]"}`;
+  const chipStyle = (on: boolean, tone: string): React.CSSProperties => (on ? { borderColor: tone, background: `${tone}22` } : {});
   const s = current.segments[sel];
   const asset = s ? assets.find((a) => a.id === s.assetId) : undefined;
   const dur = asset?.durationSec ?? (s ? s.endSec : 0);
