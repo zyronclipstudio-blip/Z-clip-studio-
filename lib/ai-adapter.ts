@@ -193,7 +193,8 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
 export function planDeterministic(assets: MediaAsset[], setup: Setup): PlanResult {
   const mood = setup.mood === "auto" ? moodFromPurpose(setup.purpose) : setup.mood;
   const pacing: EditPlan["pacing"] = mood === "energetic" ? "fast" : mood === "calm" || mood === "cinematic" ? "slow" : "medium";
-  const transition: CutSegment["transition"] = pacing === "fast" || mood === "professional" ? "cut" : "fade";
+  // Plain hard cuts by default: clips are usually already polished. Fades are one tap in the editor.
+  const transition: CutSegment["transition"] = "cut";
   const cap = PLATFORM_CAP_SECONDS[setup.platform];
 
   type Cand = { assetId: string; start: number; len: number; clipIdx: number };
