@@ -104,7 +104,7 @@ test("old caches are removed on activate", async () => {
   let done: Promise<unknown> = Promise.resolve();
   sw.handlers.activate({ waitUntil: (p: Promise<unknown>) => (done = p) });
   await done;
-  assert.deepEqual([...sw.stores.keys()], ["zclip-shell-v4"]);
+  assert.deepEqual([...sw.stores.keys()], ["zclip-shell-v5"]);
 });
 
 // ---------- manifest and icons ----------
@@ -130,7 +130,7 @@ test("manifest uses the approved gold SVG for install and maskable icons", async
 test("PWA shell version changes with the gold icon and no legacy blue offline palette remains", () => {
   const sw = fs.readFileSync(path.join(ROOT, "public/sw.js"), "utf8");
   const offline = fs.readFileSync(path.join(ROOT, "public/offline.html"), "utf8");
-  assert.match(sw, /zclip-shell-v4/);
+  assert.match(sw, /zclip-shell-v5/);
   assert.match(sw, /\/icons\/zclip-gold\.svg/);
   assert.doesNotMatch(offline, /#080B11|#39D7F2|#F4F7FB/i);
   assert.match(offline, /#d9b45b/i);

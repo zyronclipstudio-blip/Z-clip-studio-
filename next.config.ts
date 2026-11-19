@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
 
 // Uploads go straight to private storage (signed URLs), so no body-size limit is needed here.
+const BUILD_ID = process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now());
+
 const nextConfig: NextConfig = {
   env: {
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
     // Public Supabase keys (safe to commit — already exposed in the browser bundle by design).
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://rxipwrkdygmtkqskgsdw.supabase.co",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_Xiay_mku9NaZh5xLDRXNHg_1LHJnvI9",

@@ -133,6 +133,11 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Tells the quiet auto-updater not to reload while an upload or render is running.
+  useEffect(() => {
+    (window as unknown as { __zclipBusy?: boolean }).__zclipBusy = busy;
+    return () => { (window as unknown as { __zclipBusy?: boolean }).__zclipBusy = false; };
+  }, [busy]);
   const [project, setProject] = useState<{ projectId: string; assets: PublicAsset[] } | null>(null);
   const [setup, setSetup] = useState<Setup>({ purpose: "auto", mood: "auto", platform: "auto" });
   const [stage, setStage] = useState<string>("");
