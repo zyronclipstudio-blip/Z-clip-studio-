@@ -127,6 +127,26 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
   return { projectId, assets: Array.isArray(fin.assets) ? fin.assets : [] };
 }
 
+// Opens the phone's own share sheet (WhatsApp, TikTok, Instagram, Telegram, Gmail, ...) with the real video file.
+async function shareVideo(url: string) {
+  if (!url) return;
+  const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const file = new File([blob], "zclip-video.mp4", { type: "video/mp4" });
+    if (nav.canShare?.({ files: [file] })) {
+      await nav.share({ files: [file], title: "My ZClip video", text: "Made with ZClip (Zyron Clip Studio)" });
+      return;
+    }
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") return; // the person closed the share sheet
+  }
+  // Fallback: share the link, or copy it.
+  if (nav.share) await nav.share({ title: "My ZClip video", url }).catch(() => undefined);
+  else await navigator.clipboard?.writeText(url).catch(() => undefined);
+}
+
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [inEditor, setInEditor] = useState(false);
@@ -539,11 +559,7 @@ export default function Home() {
               </a>
               <button
                 type="button"
-                onClick={() => {
-                  const url = result.downloadUrl ?? result.outputUrl ?? "";
-                  if (navigator.share) void navigator.share({ title: "My ZClip video", text: "Made with ZClip (Zyron Clip Studio)", url }).catch(() => undefined);
-                  else void navigator.clipboard?.writeText(url).catch(() => undefined);
-                }}
+                onClick={() => void shareVideo(result.downloadUrl ?? result.outputUrl ?? "")}
                 className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] border border-[#242a35] bg-[#11141b] px-4 text-sm font-medium transition hover:border-[#d9b45b]/50"
               >
                 <Share2 size={17} className="text-[#d9b45b]" /> Share
