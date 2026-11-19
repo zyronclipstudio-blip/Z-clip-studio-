@@ -3,7 +3,7 @@ import path from "node:path";
 import { z } from "zod";
 import { LIMITS, MIME_BY_EXT } from "@/lib/config";
 import { checkBatch, logEvent } from "@/lib/guardian";
-import { getUploadPresignedUrl, B2_BUCKET_CLIPS } from "@/lib/storage";
+import { getUploadPresignedUrl, ensureUploadCors, B2_BUCKET_CLIPS } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -52,6 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const contentType = MIME_BY_EXT[ext];
     if (!contentType) return Response.json({ error: `Unsupported video type: ${ext || "unknown"}.` }, { status: 400 });
     const objectPath = `${user.id}/${id}/${crypto.randomUUID()}${ext}`;
+    await ensureUploadCors([process.env.APP_ORIGIN || new URL(req.url).origin]);
     const uploadUrl = await getUploadPresignedUrl(B2_BUCKET_CLIPS, objectPath, contentType, 900);
     uploads.push({
       path: objectPath,

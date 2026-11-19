@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   DeleteObjectsCommand,
   PutBucketCorsCommand,
+  GetBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -118,34 +119,47 @@ export async function deleteObjects(bucket: string, keys: string[]): Promise<voi
 
 /**
  * Backblaze's dashboard presets only allow downloads. Browser uploads need a custom rule,
- * so the app sets it itself (idempotent, fixed content, safe to repeat).
+ * so the app sets it itself. It is safe to repeat, and is re-applied every few minutes so a
+ * change made in the Backblaze dashboard cannot silently break uploads.
  */
-let corsResult: Promise<{ ok: boolean; code?: string }> | null = null;
-export function ensureUploadCors(origins: string[]): Promise<{ ok: boolean; code?: string }> {
-  if (!corsResult) {
-    corsResult = getB2Client()
-      .send(
-        new PutBucketCorsCommand({
-          Bucket: B2_BUCKET_CLIPS,
-          CORSConfiguration: {
-            CORSRules: [
-              {
-                AllowedOrigins: origins,
-                AllowedMethods: ["PUT", "GET", "HEAD"],
-                AllowedHeaders: ["*"],
-                ExposeHeaders: ["ETag"],
-                MaxAgeSeconds: 3600,
-              },
-            ],
-          },
-        }),
-      )
-      .then(() => ({ ok: true }))
-      .catch((e: unknown) => {
-        corsResult = null;
-        const err = e as { name?: string; message?: string };
-        return { ok: false, code: `${err.name ?? "error"}: ${(err.message ?? "").slice(0, 80)}` };
-      });
+let corsApplied = 0;
+export async function ensureUploadCors(origins: string[], force = false): Promise<{ ok: boolean; code?: string }> {
+  if (!force && Date.now() - corsApplied < 5 * 60_000) return { ok: true };
+  try {
+    await getB2Client().send(
+      new PutBucketCorsCommand({
+        Bucket: B2_BUCKET_CLIPS,
+        CORSConfiguration: {
+          CORSRules: [
+            {
+              AllowedOrigins: origins,
+              AllowedMethods: ["PUT", "GET", "HEAD"],
+              AllowedHeaders: ["*"],
+              ExposeHeaders: ["ETag"],
+              MaxAgeSeconds: 3600,
+            },
+          ],
+        },
+      }),
+    );
+    corsApplied = Date.now();
+    return { ok: true };
+  } catch (e: unknown) {
+    const err = e as { name?: string; message?: string };
+    return { ok: false, code: `${err.name ?? "error"}: ${(err.message ?? "").slice(0, 80)}` };
   }
-  return corsResult;
+}
+
+/** What the bucket currently allows (origins and methods only), for the health page. */
+export async function readUploadCors(): Promise<{ origins: string[]; methods: string[] } | { error: string }> {
+  try {
+    const out = await getB2Client().send(new GetBucketCorsCommand({ Bucket: B2_BUCKET_CLIPS }));
+    const rules = out.CORSRules ?? [];
+    return {
+      origins: rules.flatMap((r) => r.AllowedOrigins ?? []),
+      methods: Array.from(new Set(rules.flatMap((r) => r.AllowedMethods ?? []))),
+    };
+  } catch (e: unknown) {
+    return { error: (e as { name?: string }).name ?? "error" };
+  }
 }
