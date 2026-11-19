@@ -11,6 +11,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState(
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("error") === "confirm"
       ? "That confirmation link did not work. Try signing in, or sign up again."
@@ -31,6 +32,10 @@ export default function Login() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "up" && !agree) {
+      setError("Please agree to the Terms of Use and Privacy Policy to create your account.");
+      return;
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -139,6 +144,21 @@ export default function Login() {
                 />
               </div>
             </div>
+
+            {mode === "up" && (
+              <label className="flex items-start gap-3 text-xs leading-5 text-muted">
+                <input
+                  type="checkbox"
+                  checked={agree}
+                  onChange={(e) => setAgree(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#d9b45b]"
+                />
+                <span>
+                  I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="text-gold underline underline-offset-4">Terms of Use</a> and{" "}
+                  <a href="/privacy" target="_blank" rel="noreferrer" className="text-gold underline underline-offset-4">Privacy Policy</a>.
+                </span>
+              </label>
+            )}
 
             {error && (
               <div role="alert" className="p-3 rounded-xl border border-danger/30 bg-danger/10 text-xs text-danger flex items-center gap-2">

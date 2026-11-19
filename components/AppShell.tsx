@@ -68,7 +68,12 @@ export function AppShell({ tab, onTab, credits, email, onSignOut, wide, children
             <Download size={16} /> Install ZClip
           </button>
         )}
-        <p className="mt-6 text-center text-xs tracking-[0.04em] text-[#7b8596]">Proudly by Zyron</p>
+        <p className="mt-6 text-center text-xs tracking-[0.04em] text-[#7b8596]">
+          <a href="/terms" className="underline-offset-4 hover:underline">Terms</a>
+          <span className="mx-2">·</span>
+          <a href="/privacy" className="underline-offset-4 hover:underline">Privacy</a>
+          <span className="mx-2">·</span>Proudly by Zyron
+        </p>
       </div>
 
       <nav className="zy-nav" aria-label="Main">
