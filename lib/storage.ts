@@ -1,3 +1,4 @@
+import type { Readable } from "node:stream";
 import {
   S3Client,
   PutObjectCommand,
@@ -94,6 +95,19 @@ export async function uploadBuffer(
     ContentType: contentType,
   });
   await client.send(command);
+}
+
+/** Streams an upload straight through to storage without holding the whole file in memory. */
+export async function putObjectStream(
+  bucket: string,
+  key: string,
+  body: Readable,
+  contentLength: number,
+  contentType = "video/mp4",
+): Promise<void> {
+  await getB2Client().send(
+    new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentLength: contentLength, ContentType: contentType }),
+  );
 }
 
 /**

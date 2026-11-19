@@ -99,17 +99,36 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
     const upload = uploads[i];
     if (upload.url) {
       // Direct presigned S3 / Backblaze B2 PUT upload
-      let res: Response;
+      let ok = false;
+      let status = 0;
       try {
-        res = await fetch(upload.url, {
+        const res = await fetch(upload.url, {
           method: "PUT",
           headers: { "Content-Type": upload.contentType },
           body: files[i],
         });
+        ok = res.ok;
+        status = res.status;
       } catch {
-        throw new Error(`Could not reach ZClip's storage from this browser (upload blocked). Code: STORAGE_NETWORK`);
+        // This browser or network can't reach storage directly. Send it through ZClip instead.
+        try {
+          const prox = await fetch(`/api/projects/${projectId}/upload-proxy?path=${encodeURIComponent(upload.path)}`, {
+            method: "POST",
+            headers: { "Content-Type": upload.contentType },
+            body: files[i],
+          });
+          ok = prox.ok;
+          status = prox.status;
+          if (!prox.ok) {
+            const d = await prox.json().catch(() => null);
+            if (d?.error) throw new Error(d.error);
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message && !/fetch|network/i.test(e.message)) throw e;
+          throw new Error("Could not upload. Please check your internet connection and try again. Code: UPLOAD_NETWORK");
+        }
       }
-      if (!res.ok) throw new Error(`Could not upload "${files[i].name}". Storage answered ${res.status}. Please try again.`);
+      if (!ok) throw new Error(`Could not upload "${files[i].name}". Storage answered ${status}. Please try again.`);
     } else {
       // Fallback: Supabase Storage uploadToSignedUrl
       const sb = createClient();
