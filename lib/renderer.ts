@@ -6,10 +6,11 @@ import { EXPORT_DIR, FFMPEG, LIMITS, UPLOAD_DIR } from "./config";
 import { probeMedia, run } from "./media";
 import type { AspectRatio, EditPlan, MediaAsset, QACheck, QAReport } from "./types/schema";
 
+// 720p exports: sharp on phones, small for WhatsApp, and light enough for a small server.
 const DIMENSIONS: Record<AspectRatio, [number, number]> = {
-  "9:16": [1080, 1920],
-  "16:9": [1920, 1080],
-  "1:1": [1080, 1080],
+  "9:16": [720, 1280],
+  "16:9": [1280, 720],
+  "1:1": [720, 720],
 };
 
 export type RenderStage = "rendering" | "inspecting";
@@ -104,7 +105,10 @@ function segmentArgs(
   }
   args.push(
     "-vf", vf, "-af", af,
-    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+    // Low-memory encode: few threads, short look-ahead, so a small server is not killed for memory.
+    "-threads", "2", "-filter_threads", "1",
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+    "-x264-params", "rc-lookahead=10:sync-lookahead=0:threads=2",
     "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2",
     "-movflags", "+faststart",
     out,

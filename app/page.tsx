@@ -526,6 +526,13 @@ export default function Home() {
         <section className="space-y-4">
           {result.status === "ready" && result.outputUrl ? (
             <div className="zy-card p-4">
+              <div className="mb-3 flex items-center gap-3">
+                <span className="zy-icon green flex h-10 w-10 items-center justify-center rounded-xl"><Check size={18} /></span>
+                <div>
+                  <p className="font-semibold text-[#eceff4]">Your video is ready</p>
+                  <p className="text-xs text-[#8d97a8]">Watch it, download it, or fix anything below.</p>
+                </div>
+              </div>
               <video src={result.outputUrl} controls playsInline className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
               <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99]">
                 <Download size={18} /> Download MP4
@@ -543,8 +550,9 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <div role="alert" className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-200">
-              <p className="font-medium">This video didn&apos;t pass ZClip&apos;s technical checks, so it was withheld.</p>
+            <div role="alert" className="rounded-2xl border border-[#ff6171]/35 bg-[#ff6171]/10 p-4 text-sm text-[#ffb3bb]">
+              <p className="font-semibold">We couldn&apos;t make your video this time.</p>
+              <p className="mt-1 text-xs text-[#ffb3bb]/80">Nothing was lost. Tap &ldquo;Try different settings&rdquo; below to run it again.</p>
               <ul className="mt-2 list-disc pl-5">
                 {result.qa.hardChecks.filter((c) => !c.ok).map((c) => (
                   <li key={c.name}>{c.name}: {c.detail}</li>
@@ -555,16 +563,16 @@ export default function Home() {
 
           <div className="zy-card p-4 text-sm">
             <p className="text-[#eceff4]">{result.plan.summary}</p>
-            <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                ["Length", fmtSec(result.metrics.outputDurationSec)],
-                ["Clips used", String(new Set(result.plan.segments.map((s) => s.assetId)).size)],
-                ["Edited by", result.metrics.provider === "gemini" ? "Gemini" : "Basic editor"],
-                ["Render time", `${(result.metrics.renderMs / 1000).toFixed(0)}s`],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-xs text-[#8d97a8]">{k}</dt>
-                  <dd className="font-medium">{v}</dd>
+            <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {([
+                ["Length", fmtSec(result.metrics.outputDurationSec), ""],
+                ["Clips used", String(new Set(result.plan.segments.map((s) => s.assetId)).size), "green"],
+                ["Edited by", result.metrics.provider === "gemini" ? "Gemini" : "Basic editor", "blue"],
+                ["Render time", `${(result.metrics.renderMs / 1000).toFixed(0)}s`, "rose"],
+              ] as const).map(([k, v, tone]) => (
+                <div key={k} className={`zy-kpi ${tone}`}>
+                  <b className={k === "Edited by" ? "!text-base" : ""}>{v}</b>
+                  <small>{k}</small>
                 </div>
               ))}
             </dl>

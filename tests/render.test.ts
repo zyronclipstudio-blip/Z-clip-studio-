@@ -11,7 +11,7 @@ import { SetupSchema, type EditPlan } from "../lib/types/schema";
 import { assetFrom, makeClip } from "./helpers";
 import { TEST_DIR } from "./setup";
 
-const DIMS = { "9:16": [1080, 1920], "16:9": [1920, 1080], "1:1": [1080, 1080] } as const;
+const DIMS = { "9:16": [720, 1280], "16:9": [1280, 720], "1:1": [720, 720] } as const;
 const exportsNow = () => (fs.existsSync(EXPORT_DIR) ? fs.readdirSync(EXPORT_DIR) : []);
 
 test("mixed clips render correctly for every aspect ratio and pass QA", { timeout: 300_000 }, async () => {
