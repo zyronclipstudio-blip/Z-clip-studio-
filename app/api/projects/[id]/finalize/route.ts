@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { downloadToWorkDir, removeLocal } from "@/lib/assets";
+import { downloadToWorkDir, removeLocal, rowToAsset } from "@/lib/assets";
 import { checkDurations, logEvent } from "@/lib/guardian";
 import { probeMedia, type ProbeResult } from "@/lib/media";
 import { deleteObjects, B2_BUCKET_CLIPS } from "@/lib/storage";
@@ -81,5 +81,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   await removeLocal(allPaths.map((p) => path.basename(p))); // processing re-downloads when needed
   if (error) return rejectAll("Could not save your clips.", 500);
 
-  return Response.json({ count: rows.length });
+  // The browser needs the saved clips back (it shows the count and total footage next).
+  const { data: saved } = await db.from("media_assets").select("*").eq("project_id", id).eq("owner_id", user.id).order("created_at");
+  const assets = (saved ?? []).map((r) => {
+    const { storedName: _omit, ...pub } = rowToAsset(r);
+    void _omit;
+    return pub;
+  });
+  return Response.json({ projectId: id, count: rows.length, assets });
 }

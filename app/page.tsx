@@ -121,7 +121,10 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
     done += files[i].size;
     onProgress(Math.round((done / total) * 100));
   }
-  return postJson(`/api/projects/${projectId}/finalize`, { files: uploads.map((u) => ({ path: u.path, name: u.name })) });
+  const fin = await postJson<{ projectId?: string; assets?: PublicAsset[] }>(`/api/projects/${projectId}/finalize`, {
+    files: uploads.map((u) => ({ path: u.path, name: u.name })),
+  });
+  return { projectId, assets: Array.isArray(fin.assets) ? fin.assets : [] };
 }
 
 export default function Home() {
