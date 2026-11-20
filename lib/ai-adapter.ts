@@ -14,6 +14,7 @@ import {
   PLATFORM_CAP_SECONDS,
   UPLOAD_DIR,
 } from "./config";
+import { isImageName } from "./image";
 import { run } from "./media";
 import {
   EFFECT_IDS,
@@ -105,8 +106,10 @@ async function planWithGemini(assets: MediaAsset[], setup: Setup): Promise<PlanR
       let source = original;
       let mimeType = MIME_BY_EXT[path.extname(a.storedName).toLowerCase()] ?? "video/mp4";
       try {
-        source = await makeWatchCopy(original, tmp, ai_i);
-        mimeType = "video/mp4";
+        if (!isImageName(a.originalName)) {
+          source = await makeWatchCopy(original, tmp, ai_i);
+          mimeType = "video/mp4";
+        }
       } catch {
         // If the small copy fails, fall back to the original clip.
       }
@@ -122,7 +125,7 @@ async function planWithGemini(assets: MediaAsset[], setup: Setup): Promise<PlanR
       if (String(file.state) === "FAILED" || !file.uri || !file.mimeType)
         throw new Error("Gemini could not process one of the clips");
 
-      parts.push(`Clip ID: ${a.id} (file "${a.originalName}", ${a.durationSec.toFixed(1)} seconds):`);
+      parts.push(isImageName(a.originalName) ? `Clip ID: ${a.id} (a PHOTO, "${a.originalName}"; it can be shown for at most ${a.durationSec.toFixed(0)} seconds, always from 0):` : `Clip ID: ${a.id} (file "${a.originalName}", ${a.durationSec.toFixed(1)} seconds):`);
       parts.push(createPartFromUri(file.uri, file.mimeType));
     }
 
@@ -136,6 +139,7 @@ Customer intent (may be "auto", meaning decide from the footage):
 - Destination: ${setup.platform}
 
 Rules:
+- Some items may be PHOTOS. Treat a photo as a still shot: start at 0, show it for 1 to 3 seconds, and place it where it fits the story or the beat. Mix photos and videos naturally.
 - Use ONLY the clip IDs given above. Times are seconds from the start of that clip and must lie inside its duration.
 - Choose the strongest, clearest moments. Skip blurry, shaky, dark, duplicate or empty footage.
 - Never cut in the middle of important action or speech.

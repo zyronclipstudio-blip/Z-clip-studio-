@@ -15,6 +15,8 @@ interface Props {
   plan: EditPlan;
   /** Short-lived links to the person's clips, keyed by clip id. */
   urls: Record<string, string>;
+  /** Clip ids that are photos: shown as a picture for their length instead of played. */
+  stills?: string[];
   onTime?: (sec: number) => void;
 }
 
@@ -34,7 +36,7 @@ const startsOf = (plan: EditPlan) => {
  * Plays the edit live, straight from the clips, so changes show instantly and nothing is
  * rendered until the person taps export. One video element walks through the pieces in order.
  */
-export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlayer({ plan, urls, onTime }, ref) {
+export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlayer({ plan, urls, stills, onTime }, ref) {
   const video = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -45,6 +47,10 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
   const loadingRef = useRef(false);
   const lastReport = useRef(-1);
   const toggleRef = useRef<() => void>(() => undefined);
+  const stillsRef = useRef<string[]>(stills ?? []);
+  const [still, setStill] = useState<string | null>(null);
+  const stillClock = useRef({ start: 0, offset: 0 });
+  stillsRef.current = stills ?? [];
   planRef.current = plan;
   urlsRef.current = urls;
 
@@ -74,6 +80,16 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
       v.volume = Math.min(1, Math.max(0, seg.volume ?? 1));
       v.muted = (seg.volume ?? 1) === 0;
       const url = urlsRef.current[seg.assetId];
+      if (stillsRef.current.includes(seg.assetId)) {
+        // A photo: show the picture and run our own clock for its length.
+        v.pause();
+        loadingRef.current = false;
+        setStill(url ?? null);
+        stillClock.current = { start: performance.now() - Math.max(0, offset) * 1000, offset: Math.max(0, offset) };
+        report(startsOf(p)[i] + Math.max(0, offset));
+        return;
+      }
+      setStill(null);
       if (!url) return;
       const target = Math.min(seg.endSec - 0.05, seg.startSec + Math.max(0, offset));
       const go = () => {
@@ -105,7 +121,18 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
       const v = video.current;
       const p = planRef.current;
       const seg = p.segments[idxRef.current];
-      if (v && seg && !loadingRef.current) {
+      if (v && seg && stillsRef.current.includes(seg.assetId)) {
+        const elapsed = (performance.now() - stillClock.current.start) / 1000;
+        stillClock.current.offset = elapsed;
+        if (elapsed >= seg.endSec - seg.startSec - 0.02) {
+          const next = idxRef.current + 1;
+          if (next < p.segments.length) load(next, 0, true);
+          else {
+            setPlay(false);
+            load(0, 0, false);
+          }
+        } else report(startsOf(p)[idxRef.current] + elapsed);
+      } else if (v && seg && !loadingRef.current) {
         const t = v.currentTime;
         if (t >= seg.endSec - 0.04 || v.ended) {
           const next = idxRef.current + 1;
@@ -153,12 +180,14 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
   const toggle = () => {
     const v = video.current;
     if (!v) return;
+    const onStill = stillsRef.current.includes(planRef.current.segments[idxRef.current]?.assetId ?? "");
     if (playingRef.current) {
       v.pause();
       setPlay(false);
     } else {
       setPlay(true);
-      void v.play().catch(() => setPlay(false));
+      if (onStill) stillClock.current.start = performance.now() - stillClock.current.offset * 1000;
+      else void v.play().catch(() => setPlay(false));
     }
   };
 
@@ -167,12 +196,16 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
   const seg = plan.segments[idx];
   const hasPreview = Boolean(seg && urls[seg.assetId]);
   const next = plan.segments[idx + 1];
-  const nextUrl = next && next.assetId !== seg?.assetId ? urls[next.assetId] : undefined;
+  const nextUrl = next && next.assetId !== seg?.assetId && !(stills ?? []).includes(next.assetId) ? urls[next.assetId] : undefined;
 
   return (
     <div className="mx-auto w-full" style={{ maxWidth: plan.aspectRatio === "16:9" ? "100%" : plan.aspectRatio === "1:1" ? "420px" : "300px" }}>
       <div className="relative overflow-hidden rounded-[16px] border border-[#242a35] bg-black" style={{ aspectRatio: ASPECT[plan.aspectRatio] }}>
         <video ref={video} playsInline preload="auto" className="h-full w-full object-cover" onClick={toggle} />
+        {still && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={still} alt="" onClick={toggle} className="absolute inset-0 h-full w-full object-cover" />
+        )}
         {nextUrl && <video src={nextUrl} preload="auto" muted playsInline className="hidden" />}
         {!hasPreview && (
           <div className="absolute inset-0 grid place-items-center px-6 text-center text-[13px] leading-5 text-[#8d97a8]">

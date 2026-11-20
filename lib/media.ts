@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { FFPROBE } from "./config";
+import { IMAGE_SECONDS, isImageName } from "./image";
 
 export function run(cmd: string, args: string[], timeoutMs = 120_000): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
@@ -49,6 +50,7 @@ interface FfStream {
 
 // Reads the real streams from the file, so a renamed non-video file is rejected.
 export async function probeMedia(file: string): Promise<ProbeResult> {
+  const isPhoto = isImageName(file);
   const { stdout } = await run(
     FFPROBE,
     ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", file],
@@ -66,6 +68,10 @@ export async function probeMedia(file: string): Promise<ProbeResult> {
 
   const [num, den] = (v.r_frame_rate ?? "30/1").split("/").map(Number);
   const fps = den ? num / den : num || 30;
+  if (isPhoto) {
+    // A photo is a still: it can be shown for up to IMAGE_SECONDS and has no sound.
+    return { durationSec: IMAGE_SECONDS, width, height, fps: 30, hasAudio: false, codec: "image" };
+  }
   const durationSec = Number(info.format?.duration ?? v.duration ?? 0);
   if (!Number.isFinite(durationSec) || durationSec <= 0) throw new Error("Could not read clip duration");
 

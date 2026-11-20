@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { EXPORT_DIR, FFMPEG, LIMITS, UPLOAD_DIR } from "./config";
 import { probeMedia, run } from "./media";
+import { isImageName } from "./image";
 import type { AspectRatio, EditPlan, EffectId, MediaAsset, QACheck, QAReport } from "./types/schema";
 
 // 720p exports: sharp on phones, small for WhatsApp, and light enough for a small server.
@@ -52,7 +53,7 @@ export async function renderPlan(
       expected += dur;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
-      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects), LIMITS.renderTimeoutMs);
+      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, isImageName(asset.originalName)), LIMITS.renderTimeoutMs);
       partFiles.push(out);
     }
 
@@ -121,8 +122,11 @@ function segmentArgs(
   fade: boolean,
   volume = 1,
   effects: EffectId[] = [],
+  still = false,
 ): string[] {
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
+  // A photo gets a slow push-in so it feels alive instead of frozen.
+  if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
   for (const e of effects) vf += effectFilter(e, w, h);
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
   if (volume !== 1) af += `,volume=${Math.min(2, Math.max(0, volume)).toFixed(2)}`;
@@ -133,7 +137,9 @@ function segmentArgs(
     af += `,afade=t=in:st=0:d=${f},afade=t=out:st=${out_st}:d=${f}`;
   }
 
-  const args = ["-y", "-hide_banner", "-ss", String(start), "-t", String(dur), "-i", src];
+  const args = still
+    ? ["-y", "-hide_banner", "-loop", "1", "-framerate", "30", "-t", String(dur), "-i", src]
+    : ["-y", "-hide_banner", "-ss", String(start), "-t", String(dur), "-i", src];
   if (hasAudio) {
     args.push("-map", "0:v:0", "-map", "0:a:0");
   } else {

@@ -213,7 +213,7 @@ export default function Home() {
 
   function addFiles(list: FileList | null) {
     if (!list) return;
-    const videos = Array.from(list).filter((f) => f.type.startsWith("video/") || /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name));
+    const videos = Array.from(list).filter((f) => f.type.startsWith("video/") || f.type.startsWith("image/") || /\.(mp4|mov|m4v|webm|avi|jpe?g|png|webp)$/i.test(f.name));
     const next = [...files, ...videos];
     if (next.length > MAX_CLIPS) return setError(`You can add up to ${MAX_CLIPS} clips.`);
     if (next.reduce((s, f) => s + f.size, 0) > MAX_BYTES) return setError("That is more than 500 MB in total. Remove a clip or two.");
@@ -510,7 +510,7 @@ export default function Home() {
             <Upload className="text-[#d9b45b]" />
             <p className="mt-3 font-medium">Drop your clips here, or tap to choose</p>
             <p className="mt-1 text-sm text-[#8d97a8]">Up to {MAX_CLIPS} clips, 500 MB total. MP4, MOV, WebM, AVI.</p>
-            <input ref={inputRef} type="file" accept="video/*" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+            <input ref={inputRef} type="file" accept="video/*,image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
           </div>
 
           {files.length > 0 && (

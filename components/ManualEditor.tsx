@@ -21,6 +21,7 @@ import {
   type PlanHistory,
 } from "@/lib/plan-ops";
 import type { AspectRatio, EditPlan, PublicAsset } from "@/lib/types/schema";
+import { isImageName } from "@/lib/image";
 import { PlanPlayer, type PlanPlayerHandle } from "./PlanPlayer";
 
 interface Props {
@@ -239,7 +240,7 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
       <div className="min-w-0">
       {/* Live preview: plays your clips as edited, nothing is rendered yet. */}
       <div className="mt-4">
-        <PlanPlayer ref={player} plan={current} urls={urls} onTime={setTime} />
+        <PlanPlayer ref={player} plan={current} urls={urls} stills={assets.filter((a) => isImageName(a.originalName)).map((a) => a.id)} onTime={setTime} />
         <div className="mt-3 flex items-center gap-3">
           <span className="w-12 font-mono text-[12px] text-[#8d97a8]">{fmt(time)}</span>
           <input

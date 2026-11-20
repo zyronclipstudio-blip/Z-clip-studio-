@@ -26,7 +26,7 @@ export const LIMITS = {
   maxProcessPerDay: 30,
   maxConcurrentRenders: 1,
   renderTimeoutMs: 10 * 60 * 1000,
-  allowedExtensions: [".mp4", ".mov", ".m4v", ".webm", ".avi"],
+  allowedExtensions: [".mp4", ".mov", ".m4v", ".webm", ".avi", ".jpg", ".jpeg", ".png", ".webp"],
 } as const;
 
 export const MIME_BY_EXT: Record<string, string> = {
@@ -35,6 +35,10 @@ export const MIME_BY_EXT: Record<string, string> = {
   ".mov": "video/quicktime",
   ".webm": "video/webm",
   ".avi": "video/x-msvideo",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
 };
 
 // Maximum finished length per destination. ZClip never pads to reach this.

@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   for (const f of body.files) {
     const ext = path.extname(f.name).toLowerCase();
     if (!(LIMITS.allowedExtensions as readonly string[]).includes(ext))
-      return Response.json({ error: `"${path.basename(f.name)}" is not a supported video type (use MP4, MOV, M4V, WebM or AVI).` }, { status: 400 });
+      return Response.json({ error: `"${path.basename(f.name)}" is not supported. Use a video (MP4, MOV, M4V, WebM, AVI) or a photo (JPG, PNG, WebP).` }, { status: 400 });
   }
 
   const uploads: { path: string; token: string; url: string; name: string; contentType: string }[] = [];
