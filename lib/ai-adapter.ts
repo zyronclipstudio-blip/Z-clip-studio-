@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { GoogleGenAI, createPartFromUri, createUserContent } from "@google/genai";
@@ -6,11 +8,14 @@ import {
   GEMINI_MODEL,
   GEMINI_PRICE_IN_PER_M,
   GEMINI_PRICE_OUT_PER_M,
+  FFMPEG,
   MIME_BY_EXT,
   PLATFORM_CAP_SECONDS,
   UPLOAD_DIR,
 } from "./config";
+import { run } from "./media";
 import {
+  EFFECT_IDS,
   EditPlanSchema,
   type AspectRatio,
   type CutSegment,
@@ -69,22 +74,42 @@ const GeminiPlanSchema = z.object({
       reason: z.string().catch(""),
       confidence: z.coerce.number().min(0).max(1).catch(0.7),
       transition: z.enum(["cut", "fade"]).catch("cut"),
+      effects: z.array(z.string()).catch([]),
     }),
   ),
 });
 
+// A small copy of a clip for the AI to watch: it needs to see and hear the footage, not receive 4K.
+// This makes the upload to the AI many times smaller and faster, and the render still uses the original.
+async function makeWatchCopy(src: string, dir: string, i: number): Promise<string> {
+  const out = path.join(dir, `watch-${i}.mp4`);
+  await run(
+    FFMPEG,
+    ["-y", "-hide_banner", "-i", src, "-vf", "scale=-2:360,fps=8", "-c:v", "libx264", "-preset", "veryfast", "-crf", "33", "-c:a", "aac", "-b:a", "48k", "-ac", "1", "-threads", "2", "-movflags", "+faststart", out],
+    120_000,
+  );
+  return out;
+}
+
 async function planWithGemini(assets: MediaAsset[], setup: Setup): Promise<PlanResult> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   const uploaded: string[] = [];
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "zclip-watch-"));
 
   try {
     const parts: (string | ReturnType<typeof createPartFromUri>)[] = [];
-    for (const a of assets) {
-      const ext = path.extname(a.storedName).toLowerCase();
-      let file = await ai.files.upload({
-        file: path.join(UPLOAD_DIR, a.storedName),
-        config: { mimeType: MIME_BY_EXT[ext] ?? "video/mp4" },
-      });
+    for (let ai_i = 0; ai_i < assets.length; ai_i++) {
+      const a = assets[ai_i];
+      const original = path.join(UPLOAD_DIR, a.storedName);
+      let source = original;
+      let mimeType = MIME_BY_EXT[path.extname(a.storedName).toLowerCase()] ?? "video/mp4";
+      try {
+        source = await makeWatchCopy(original, tmp, ai_i);
+        mimeType = "video/mp4";
+      } catch {
+        // If the small copy fails, fall back to the original clip.
+      }
+      let file = await ai.files.upload({ file: source, config: { mimeType } });
       if (file.name) uploaded.push(file.name);
 
       const started = Date.now();
@@ -116,11 +141,14 @@ Rules:
 - Pick the final length yourself based on how much good footage there is. Do not pad. Hard maximum: ${cap} seconds in total.
 - Each segment should usually be between 1 and 12 seconds. Faster pacing means shorter segments.
 - "transition" is "cut" or "fade". Prefer "cut" for energetic content and use "fade" sparingly.
+- HOOK: the very first segment must be the single most striking, clear moment in all the footage, because viewers decide in the first second. Never open with a slow or empty moment.
+- ORDER: arrange clips so they flow. For footage that tells a story (for example AI-generated scenes), keep the story logical and keep a character or look consistent across neighbouring cuts. Put wide shots before close-ups unless a close-up is the hook.
+- "effects" is a list (0 to 2 items) chosen only from: "punch" (zoom push-in, for hits and reveals), "shake" (handheld jitter, for impact or action), "flash" (white flash, for a big beat or the hook), "glitch" (colour split, for energetic or edgy moments), "whip" (blur streak, to link two shots). Use them on real moments only, never on every segment, and use none for calm or professional content. The first segment may use one.
 - "reason" is one plain sentence a customer can read explaining why this moment was chosen.
 - "confidence" is 0 to 1: how sure you are this segment belongs in the edit.
 
 Return ONLY a JSON object, with no markdown and no commentary, in exactly this shape:
-{"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut"}]}`;
+{"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[]}]}`;
 
     const res = await ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -142,6 +170,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
   } finally {
     // Do not leave customer footage on the provider's servers.
     await Promise.all(uploaded.map((name) => ai.files.delete({ name }).catch(() => undefined)));
+    await fs.rm(tmp, { recursive: true, force: true });
   }
 }
 
@@ -171,6 +200,11 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
       reason: s.reason || "Selected as a strong moment.",
       confidence: s.confidence,
       transition: s.transition,
+      effects: (() => {
+        const ok = s.effects.filter((e): e is (typeof EFFECT_IDS)[number] => (EFFECT_IDS as readonly string[]).includes(e));
+        const uniq = [...new Set(ok)].slice(0, 2);
+        return uniq.length ? uniq : undefined;
+      })(),
     });
     if (total >= cap) break;
   }
