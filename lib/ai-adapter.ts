@@ -5,6 +5,7 @@ import { z } from "zod";
 import { GoogleGenAI, createPartFromUri, createUserContent } from "@google/genai";
 import {
   GEMINI_API_KEY,
+  GEMINI_FALLBACK_MODEL,
   GEMINI_MODEL,
   GEMINI_PRICE_IN_PER_M,
   GEMINI_PRICE_OUT_PER_M,
@@ -150,11 +151,25 @@ Rules:
 Return ONLY a JSON object, with no markdown and no commentary, in exactly this shape:
 {"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[]}]}`;
 
-    const res = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: createUserContent([...parts, prompt]),
-      config: { responseMimeType: "application/json", temperature: 0.4 },
-    });
+    // Gemini sometimes answers "high demand" (503/429). Retry, then try a backup model,
+    // so a busy moment does not turn a smart edit into a plain join of the clips.
+    const contents = createUserContent([...parts, prompt]);
+    const attempts: string[] = [GEMINI_MODEL, GEMINI_MODEL, GEMINI_MODEL, GEMINI_FALLBACK_MODEL, GEMINI_FALLBACK_MODEL];
+    let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
+    let usedModel = GEMINI_MODEL;
+    let lastErr: unknown;
+    for (let n = 0; n < attempts.length && !res; n++) {
+      try {
+        usedModel = attempts[n];
+        res = await ai.models.generateContent({ model: usedModel, contents, config: { responseMimeType: "application/json", temperature: 0.4 } });
+      } catch (e) {
+        lastErr = e;
+        const msg = e instanceof Error ? e.message : "";
+        if (!/503|429|UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|timeout/i.test(msg)) throw e;
+        await new Promise((r) => setTimeout(r, 2500 * (n + 1)));
+      }
+    }
+    if (!res) throw lastErr instanceof Error ? lastErr : new Error("Gemini is busy");
 
     const text = (res.text ?? "").replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
     const plan = sanitize(JSON.parse(text), assets, setup, "gemini");
@@ -166,7 +181,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
         ? ((tokensIn ?? 0) * GEMINI_PRICE_IN_PER_M + (tokensOut ?? 0) * GEMINI_PRICE_OUT_PER_M) / 1e6
         : undefined;
 
-    return { plan, provider: "gemini", model: GEMINI_MODEL, tokensIn, tokensOut, estimatedCostUsd: cost };
+    return { plan, provider: "gemini", model: usedModel, tokensIn, tokensOut, estimatedCostUsd: cost };
   } finally {
     // Do not leave customer footage on the provider's servers.
     await Promise.all(uploaded.map((name) => ai.files.delete({ name }).catch(() => undefined)));

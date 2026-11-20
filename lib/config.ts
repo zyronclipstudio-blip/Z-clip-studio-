@@ -10,6 +10,7 @@ export const FFMPEG = process.env.FFMPEG_PATH || "ffmpeg";
 export const FFPROBE = process.env.FFPROBE_PATH || "ffprobe";
 
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 export const GEMINI_PRICE_IN_PER_M = Number(process.env.GEMINI_PRICE_IN_PER_M) || 0;
 export const GEMINI_PRICE_OUT_PER_M = Number(process.env.GEMINI_PRICE_OUT_PER_M) || 0;
