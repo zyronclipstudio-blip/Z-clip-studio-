@@ -662,7 +662,7 @@ export default function Home() {
           )}
 
           <div className="flex gap-3">
-            <button onClick={() => setStep("preflight")} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
+            <button onClick={() => setStep("setup")} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
               Try different settings
             </button>
             <button onClick={reset} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Film, Home, LogOut, Plus, ShieldCheck, Upload, Wand2 } from "lucide-react";
+import { Film, Home, LogOut, Plus, ShieldCheck, Trash2, Upload, Wand2 } from "lucide-react";
 import { MyEdits } from "@/components/MyEdits";
 import { ZClipMark } from "@/components/ZClipMark";
 
@@ -41,6 +41,27 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
     };
   }, []);
 
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const removeLast = async () => {
+    const id = counts?.lastReadyId;
+    if (!id) return;
+    setDeleting(true);
+    try {
+      const r = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+      if (r.ok) {
+        const d = await fetch("/api/projects", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+        const list = (d?.projects ?? []) as { id: string; status: string }[];
+        const ready = list.filter((p) => p.status === "ready").length;
+        const failed = list.filter((p) => ["failed", "qa_failed", "unavailable"].includes(p.status)).length;
+        setCounts({ ready, working: list.length - ready - failed, total: list.length, lastReadyId: list.find((p) => p.status === "ready")?.id });
+      }
+    } finally {
+      setDeleting(false);
+      setConfirmDel(false);
+    }
+  };
+
   const balanceLabel = typeof userCredits === "number" && Number.isFinite(userCredits) ? new Intl.NumberFormat("en-NG").format(userCredits) : "—";
 
   if (view === "edits") return <MyEdits onBack={onBackHome} onOpen={onOpenProject} />;
@@ -64,13 +85,23 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
 
 
             {counts?.lastReadyId && onOpenProject && (
-              <button type="button" disabled={opening} onClick={() => onOpenProject(counts.lastReadyId!)} className="zy-card flex min-h-16 w-full items-center gap-3 text-left transition hover:brightness-110 disabled:opacity-60">
-                <span className="zy-icon h-11 w-11 rounded-[14px]"><Wand2 size={19} /></span>
-                <span className="flex-1">
-                  <b className="block text-[15px] font-semibold">{opening ? "Opening…" : "Continue your last edit"}</b>
-                  <span className="text-[13px] text-[#8d97a8]">Fix it by hand, or try a different shape</span>
-                </span>
-              </button>
+              <div className="zy-card flex min-h-16 w-full items-center gap-2">
+                <button type="button" disabled={opening} onClick={() => onOpenProject(counts.lastReadyId!)} className="flex flex-1 items-center gap-3 text-left transition hover:brightness-110 disabled:opacity-60">
+                  <span className="zy-icon h-11 w-11 rounded-[14px]"><Wand2 size={19} /></span>
+                  <span className="flex-1">
+                    <b className="block text-[15px] font-semibold">{opening ? "Opening…" : "Continue your last edit"}</b>
+                    <span className="text-[13px] text-[#8d97a8]">Fix it by hand, or try a different shape</span>
+                  </span>
+                </button>
+                {confirmDel ? (
+                  <span className="flex items-center gap-1.5">
+                    <button type="button" disabled={deleting} onClick={removeLast} className="min-h-11 rounded-[12px] bg-[#ff8a96]/15 px-3 text-[13px] font-medium text-[#ff8a96]">{deleting ? "Deleting…" : "Delete"}</button>
+                    <button type="button" onClick={() => setConfirmDel(false)} className="min-h-11 px-2 text-[13px] text-[#8d97a8]">Keep</button>
+                  </span>
+                ) : (
+                  <button type="button" aria-label="Delete this edit" onClick={() => setConfirmDel(true)} className="grid h-11 w-11 place-items-center rounded-[12px] text-[#8d97a8] hover:text-[#ff8a96]"><Trash2 size={18} /></button>
+                )}
+              </div>
             )}
             {openError && <p role="alert" className="text-[13px] text-[#ff8a96]">{openError}</p>}
 
