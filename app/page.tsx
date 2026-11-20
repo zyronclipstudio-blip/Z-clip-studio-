@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Film, Share2, Sparkles, Upload, X } from "lucide-react";
+import { Check, Download, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
 import { AppShell, type Tab } from "@/components/AppShell";
@@ -177,6 +177,9 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [step, setStep] = useState<Step>("upload");
   const [files, setFiles] = useState<File[]>([]);
+  const [soundFile, setSoundFile] = useState<File | null>(null);
+  const soundKeyRef = useRef("");
+  const soundInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -225,6 +228,23 @@ export default function Home() {
     try {
       const uploaded = await uploadClips(files, setProgress);
       setProject(uploaded);
+      soundKeyRef.current = "";
+      if (soundFile) {
+        // Their own sound is optional. If it can't be saved, the edit simply goes ahead without it.
+        const ext = soundFile.name.slice(soundFile.name.lastIndexOf(".")).toLowerCase();
+        try {
+          const r = await fetch(`/api/projects/${uploaded.projectId}/sound?ext=${encodeURIComponent(ext)}`, {
+            method: "POST",
+            headers: { "Content-Type": soundFile.type || "application/octet-stream" },
+            body: soundFile,
+          });
+          const d = await r.json().catch(() => null);
+          if (r.ok && d?.key) soundKeyRef.current = d.key as string;
+          else setError(d?.error ? `${d.error} Continuing without your sound.` : "Your sound could not be saved. Continuing without it.");
+        } catch {
+          setError("Your sound could not be saved. Continuing without it.");
+        }
+      }
       if (mode === "manual") setStep("canvas");
       else await autoStart(uploaded.projectId);
     } catch (e) {
@@ -283,6 +303,7 @@ export default function Home() {
       targetDurationSec: segments.reduce((t, g) => t + g.endSec - g.startSec, 0),
       summary: "Manual edit. Cut, arrange and export it yourself.",
       segments,
+      ...(soundKeyRef.current ? { sound: { key: soundKeyRef.current, startSec: 0, volume: 1 } } : {}),
     });
     setVersions([]);
     setResult({ status: "ready", plan, qa: { passed: true, hardChecks: [], warnings: [] }, metrics: { provider: "deterministic", renderMs: 0, outputDurationSec: plan.targetDurationSec, clipCount: project.assets.length } } as Result);
@@ -300,7 +321,7 @@ export default function Home() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup }),
+        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup, soundKey: soundKeyRef.current || undefined }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -337,6 +358,8 @@ export default function Home() {
   function reset() {
     setStep("upload");
     setFiles([]);
+    setSoundFile(null);
+    soundKeyRef.current = "";
     setProject(null);
     setResult(null);
     setVersions([]);
@@ -513,6 +536,20 @@ export default function Home() {
                   <div className="h-full bg-gradient-to-r from-[#ecd083] to-[#b88f38] transition-all" style={{ width: `${progress}%` }} />
                 </div>
               )}
+              <input ref={soundInputRef} type="file" accept="audio/*,video/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setSoundFile(f); e.target.value = ""; }} />
+              {soundFile ? (
+                <div className="mt-4 flex items-center gap-2 rounded-[14px] border border-[#d9b45b]/40 bg-[#d9b45b]/10 px-3 py-2.5 text-sm">
+                  <Music size={16} className="shrink-0 text-[#ecd083]" />
+                  <span className="min-w-0 flex-1 truncate">{soundFile.name}</span>
+                  <button aria-label="Remove sound" disabled={busy} onClick={() => setSoundFile(null)} className="rounded p-1 hover:bg-[#181c25]"><X size={14} /></button>
+                </div>
+              ) : (
+                <button type="button" disabled={busy} onClick={() => soundInputRef.current?.click()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 text-sm text-[#eceff4] transition hover:border-[#d9b45b]/50">
+                  <Music size={16} className="text-[#d9b45b]" />
+                  Add your sound (optional)
+                </button>
+              )}
+              {soundFile && <p className="mt-2 text-xs leading-5 text-[#8d97a8]">ZClip will cut your clips to the beat of this sound. Only use sounds you have the right to use.</p>}
               <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
                 {busy ? `Uploading… ${progress}%` : "Continue"}
               </button>

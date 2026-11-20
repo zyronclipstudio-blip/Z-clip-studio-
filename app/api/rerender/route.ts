@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import { isOwnSoundKey } from "@/lib/sound";
 import { downloadToWorkDir, removeLocal, rowToAsset } from "@/lib/assets";
 import { EXPORT_DIR, LIMITS, PLATFORM_CAP_SECONDS } from "@/lib/config";
 import { logEvent, rateLimitDb } from "@/lib/guardian";
@@ -84,7 +85,12 @@ export async function POST(req: Request) {
   let outputLocal: string | null = null;
   try {
     for (let i = 0; i < assets.length; i++) await downloadToWorkDir(rows[i].object_key as string, assets[i].storedName);
-    const rendered = await renderPlan(plan, assets);
+    let soundLocal: string | undefined;
+    if (plan.sound) {
+      if (!isOwnSoundKey(plan.sound.key, user.id, project.id)) throw new Error("That sound does not belong to this project.");
+      soundLocal = await downloadToWorkDir(plan.sound.key, `sound-${jobId}${path.extname(plan.sound.key)}`).catch(() => undefined);
+    }
+    const rendered = await renderPlan(plan, assets, undefined, soundLocal).finally(() => (soundLocal ? fs.unlink(soundLocal).catch(() => undefined) : undefined));
     outputLocal = path.join(EXPORT_DIR, rendered.outputName);
     const ready = rendered.qa.passed;
 

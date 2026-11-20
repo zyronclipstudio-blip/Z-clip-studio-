@@ -59,22 +59,29 @@ export function analyzeBeats(samples: Float32Array, sampleRate = SR): BeatInfo {
       bestLag = lag;
     }
   }
-  const period = bestLag * step;
-  const bpm = 60 / period;
-
-  // Phase: where on the grid do the strongest onsets fall.
-  let bestPhase = 0;
-  let bestPhaseScore = -1;
-  for (let ph = 0; ph < bestLag; ph++) {
-    let s = 0;
-    for (let f = ph; f < frames; f += bestLag) s += onset[f] + 0.5 * (onset[f - 1] ?? 0) + 0.5 * (onset[f + 1] ?? 0);
-    if (s > bestPhaseScore) {
-      bestPhaseScore = s;
-      bestPhase = ph;
+  // Refine: the best whole-frame lag drifts over a long track, so search fractional periods
+  // and phases for the grid that lands on the most onset energy.
+  let bestP = bestLag;
+  let bestPh = 0;
+  let bestGrid = -1;
+  for (let p = bestLag - 1; p <= bestLag + 1; p += 0.05) {
+    for (let ph = 0; ph < p; ph += 0.5) {
+      let sc = 0;
+      for (let pos = ph; pos < frames - 1; pos += p) {
+        const i = Math.round(pos);
+        sc += onset[i] + 0.5 * (onset[i - 1] ?? 0) + 0.5 * (onset[i + 1] ?? 0);
+      }
+      if (sc > bestGrid) {
+        bestGrid = sc;
+        bestP = p;
+        bestPh = ph;
+      }
     }
   }
+  const period = bestP * step;
+  const bpm = 60 / period;
   const beats: number[] = [];
-  for (let t = bestPhase * step; t < durationSec - 0.05; t += period) beats.push(Math.round(t * 1000) / 1000);
+  for (let t = bestPh * step; t < durationSec - 0.05; t += period) beats.push(Math.round(t * 1000) / 1000);
 
   // Drop: the beat where the next ~8 seconds are the most energetic compared to the track.
   const win = Math.max(1, Math.round(8 / step));

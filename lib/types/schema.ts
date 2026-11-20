@@ -50,6 +50,15 @@ export const EditPlanSchema = z.object({
   targetDurationSec: z.number().positive(),
   summary: z.string().max(600),
   segments: z.array(CutSegmentSchema).min(1).max(60),
+  /** The person's own sound, kept in their private storage. */
+  sound: z
+    .object({
+      key: z.string().min(1).max(300),
+      startSec: z.number().min(0).max(3600),
+      volume: z.number().min(0).max(2).default(1),
+      bpm: z.number().min(0).max(400).optional(),
+    })
+    .optional(),
 });
 export type EditPlan = z.infer<typeof EditPlanSchema>;
 

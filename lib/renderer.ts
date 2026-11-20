@@ -28,6 +28,7 @@ export async function renderPlan(
   plan: EditPlan,
   assets: MediaAsset[],
   onStage?: (s: RenderStage) => void,
+  soundFile?: string,
 ): Promise<RenderResult> {
   const started = Date.now();
   const byId = new Map(assets.map((a) => [a.id, a]));
@@ -57,11 +58,29 @@ export async function renderPlan(
 
     const list = path.join(tmp, "list.txt");
     await fs.writeFile(list, partFiles.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n"));
-    await run(
-      FFMPEG,
-      ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", "-movflags", "+faststart", outputPath],
-      LIMITS.renderTimeoutMs,
-    );
+    if (soundFile && plan.sound) {
+      // Their own sound leads; the clips' own audio stays quietly underneath. The edit's length decides the end.
+      const joined = path.join(tmp, "joined.mp4");
+      await run(FFMPEG, ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined], LIMITS.renderTimeoutMs);
+      const total = (Math.round(expected * 1000) / 1000).toFixed(3);
+      const fadeAt = Math.max(0, expected - 0.6).toFixed(3);
+      await run(
+        FFMPEG,
+        [
+          "-y", "-hide_banner", "-i", joined, "-ss", String(plan.sound.startSec), "-i", soundFile,
+          "-filter_complex",
+          `[0:a]volume=0.2[a0];[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${plan.sound.volume.toFixed(2)},afade=t=out:st=${fadeAt}:d=0.6[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${total}[a]`,
+          "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", total, "-movflags", "+faststart", outputPath,
+        ],
+        LIMITS.renderTimeoutMs,
+      );
+    } else {
+      await run(
+        FFMPEG,
+        ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", "-movflags", "+faststart", outputPath],
+        LIMITS.renderTimeoutMs,
+      );
+    }
 
     onStage?.("inspecting");
     const qa = await inspectOutput(outputPath, w, h, expected);

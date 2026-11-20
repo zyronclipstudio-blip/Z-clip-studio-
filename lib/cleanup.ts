@@ -1,4 +1,5 @@
 import { admin } from "./supabase/admin";
+import { allSoundKeys } from "./sound";
 import { deleteObjects, B2_BUCKET_CLIPS, B2_BUCKET_EXPORTS } from "./storage";
 
 // Deletes the real stored files (not just database rows) once retention passes.
@@ -12,6 +13,11 @@ export async function cleanupExpired(): Promise<{ clips: number; exports: number
   const { data: assets } = await db.from("media_assets").select("id, object_key").lt("retention_expires_at", now).limit(200);
   if (assets?.length) {
     const keys = assets.map((a) => a.object_key as string);
+    // Their sound lives next to the clips (user/project/sound.ext); remove it with them.
+    for (const k of [...keys]) {
+      const [uid, pid] = k.split("/");
+      if (uid && pid) keys.push(...allSoundKeys(uid, pid));
+    }
     await deleteObjects(B2_BUCKET_CLIPS, keys).catch(() => undefined);
     await db.storage.from("clips").remove(keys).catch(() => undefined);
     await db.from("media_assets").delete().in("id", assets.map((a) => a.id as string));

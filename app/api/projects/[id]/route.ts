@@ -1,3 +1,4 @@
+import { allSoundKeys } from "@/lib/sound";
 import { deleteObjects, B2_BUCKET_CLIPS, B2_BUCKET_EXPORTS } from "@/lib/storage";
 import { admin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -14,7 +15,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     db.from("media_assets").select("object_key").eq("project_id", id).eq("owner_id", user.id),
     db.from("render_jobs").select("output_object_key").eq("project_id", id).eq("owner_id", user.id).not("output_object_key", "is", null),
   ]);
-  const clipKeys = (assets ?? []).map((row) => row.object_key as string);
+  const clipKeys = [...(assets ?? []).map((row) => row.object_key as string), ...allSoundKeys(user.id, id)];
   const exportKeys = (jobs ?? []).map((row) => row.output_object_key as string).filter(Boolean);
   try { await Promise.all([deleteObjects(B2_BUCKET_CLIPS, clipKeys), deleteObjects(B2_BUCKET_EXPORTS, exportKeys)]); }
   catch { return Response.json({ error: "The stored video could not be removed. Your project was kept safe; please try again." }, { status: 502 }); }

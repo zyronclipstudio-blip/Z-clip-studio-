@@ -2,6 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { createEditPlan } from "@/lib/ai-adapter";
+import { analyzeSoundFile } from "@/lib/beats";
+import { snapPlanToBeats } from "@/lib/beat-plan";
+import { isOwnSoundKey } from "@/lib/sound";
+import { PLATFORM_CAP_SECONDS } from "@/lib/config";
 import { downloadToWorkDir, removeLocal, rowToAsset } from "@/lib/assets";
 import { estimateCredits } from "@/lib/credits";
 import { EXPORT_DIR, LIMITS } from "@/lib/config";
@@ -21,6 +25,7 @@ const BodySchema = z.object({
   idempotencyKey: z.string().uuid(),
   approvedCeiling: z.number().int().positive(),
   setup: SetupSchema.default({}),
+  soundKey: z.string().max(300).optional(),
 });
 
 const fail = (error: string, status: number) =>
@@ -132,6 +137,7 @@ export async function POST(req: Request) {
         });
       };
       let outputLocal: string | null = null;
+      let soundLocal: string | null = null;
 
       try {
         await db.from("projects").update({ status: "analysing" }).eq("id", project.id);
@@ -141,6 +147,20 @@ export async function POST(req: Request) {
         await db.from("projects").update({ status: "planning" }).eq("id", project.id);
         send({ type: "stage", stage: "planning" });
         const planned = await createEditPlan(assets, body.setup, { allowAI: !flag(settings.kill_switch_ai) });
+
+        // Their own sound: find the beats, then cut the edit to them. If anything fails, the edit still works without it.
+        if (body.soundKey && isOwnSoundKey(body.soundKey, user.id, project.id)) {
+          try {
+            soundLocal = await downloadToWorkDir(body.soundKey, `sound-${jobId}${path.extname(body.soundKey)}`);
+            const info = await analyzeSoundFile(soundLocal);
+            const cap = PLATFORM_CAP_SECONDS[body.setup.platform] ?? PLATFORM_CAP_SECONDS.auto;
+            const snapped = snapPlanToBeats(planned.plan, assets, info, body.soundKey, cap);
+            if (snapped.sound) planned.plan = snapped;
+            else soundLocal = null;
+          } catch {
+            soundLocal = null;
+          }
+        }
 
         const { data: last } = await db.from("edit_plans").select("version").eq("project_id", project.id).order("version", { ascending: false }).limit(1);
         await db.from("edit_plans").insert({
@@ -173,7 +193,7 @@ export async function POST(req: Request) {
         if (planned.fallbackReason) await logEvent("ai_fallback", "warn", planned.fallbackReason, { projectId: project.id }, user.id);
 
         await db.from("projects").update({ status: "rendering", aspect_ratio: planned.plan.aspectRatio, ...setupColumns(body.setup) }).eq("id", project.id);
-        const rendered = await renderPlan(planned.plan, assets, (stage) => send({ type: "stage", stage }));
+        const rendered = await renderPlan(planned.plan, assets, (stage) => send({ type: "stage", stage }), soundLocal ?? undefined);
         outputLocal = path.join(EXPORT_DIR, rendered.outputName);
         const ready = rendered.qa.passed;
 
@@ -250,6 +270,7 @@ export async function POST(req: Request) {
         send({ type: "error", message: message.includes("FFmpeg") ? message : "We couldn't finish this edit, and no credit was used. Please try again." });
       } finally {
         await removeLocal(assets.map((a: { storedName: string }) => a.storedName));
+        if (soundLocal) await fs.unlink(soundLocal).catch(() => undefined);
         if (outputLocal) await fs.unlink(outputLocal).catch(() => undefined);
         try {
           controller.close();
