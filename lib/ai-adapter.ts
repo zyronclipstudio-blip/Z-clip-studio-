@@ -139,12 +139,12 @@ Customer intent (may be "auto", meaning decide from the footage):
 - Destination: ${setup.platform}
 
 Rules:
-- Some items may be PHOTOS. Treat a photo as a still shot: start at 0, show it for 1 to 3 seconds, and place it where it fits the story or the beat. Mix photos and videos naturally.
+- Some items may be PHOTOS. Treat a photo as a still shot: start at 0, show it for 2 to 3 seconds, and place it where it fits the story or the beat. Mix photos and videos naturally.
 - Use ONLY the clip IDs given above. Times are seconds from the start of that clip and must lie inside its duration.
 - Choose the strongest, clearest moments. Skip blurry, shaky, dark, duplicate or empty footage.
 - Never cut in the middle of important action or speech.
-- Pick the final length yourself based on how much good footage there is. Do not pad. Hard maximum: ${cap} seconds in total.
-- Each segment should usually be between 1 and 12 seconds. Faster pacing means shorter segments.
+- LENGTH: the person added all of this footage on purpose. Use EVERY clip and photo at least once, and keep most of the good footage. The finished video should normally be at least 60% as long as the usable footage, and never shorter than 15 seconds when there is that much footage. Only drop a moment if it is clearly unusable (blurry, black, duplicate). Hard maximum: ${cap} seconds in total.
+- Each video segment should usually be 3 to 8 seconds (shorter only for fast, beat-driven styles). Photos get 2 to 3 seconds each.
 - "transition" is "cut" or "fade". Prefer "cut" for energetic content and use "fade" sparingly.
 - HOOK: the very first segment must be the single most striking, clear moment in all the footage, because viewers decide in the first second. Never open with a slow or empty moment.
 - ORDER: arrange clips so they flow. For footage that tells a story (for example AI-generated scenes), keep the story logical and keep a character or look consistent across neighbouring cuts. Put wide shots before close-ups unless a close-up is the hook.
@@ -227,6 +227,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
     });
     if (total >= cap) break;
   }
+  ensureCoverage(segments, assets, cap);
   fitSegmentsToCap(segments, cap);
   if (segments.length === 0) throw new Error("The AI plan contained no usable segments");
 
@@ -303,6 +304,32 @@ function moodFromPurpose(purpose: Setup["purpose"]): Setup["mood"] {
   if (purpose === "cinematic") return "cinematic";
   if (purpose === "business") return "professional";
   return "auto";
+}
+
+// The AI sometimes keeps only a second or two of everything. The person added these clips on purpose,
+// so every clip and photo is used at least once, and the edit is lengthened up to a fair share of the footage.
+function ensureCoverage(segments: CutSegment[], assets: MediaAsset[], cap: number): void {
+  const len = (s: CutSegment) => s.endSec - s.startSec;
+  const total = () => segments.reduce((t, s) => t + len(s), 0);
+  const used = new Set(segments.map((s) => s.assetId));
+  for (const a of assets) {
+    if (used.has(a.id) || total() >= cap - 1) continue;
+    const take = Math.min(isImageName(a.originalName) ? 2.5 : 6, a.durationSec, cap - total());
+    if (take >= 0.5) segments.push({ assetId: a.id, startSec: 0, endSec: round(take), reason: "Included so none of your clips are left out.", confidence: 0.6, transition: "cut" });
+  }
+  const footage = assets.reduce((t, a) => t + a.durationSec, 0);
+  const goal = Math.min(cap, Math.max(Math.min(15, footage), footage * 0.6));
+  const byId = new Map(assets.map((a) => [a.id, a]));
+  for (let pass = 0; pass < 4 && total() < goal - 0.3; pass++) {
+    for (const s of segments) {
+      const a = byId.get(s.assetId);
+      if (!a || isImageName(a.originalName)) continue; // photos stay short
+      const room = a.durationSec - s.endSec;
+      if (room <= 0.05) continue;
+      s.endSec = round(s.endSec + Math.min(room, 1.5, goal - total()));
+      if (total() >= goal - 0.3) break;
+    }
+  }
 }
 
 function fitSegmentsToCap(segments: CutSegment[], capSeconds: number): void {
