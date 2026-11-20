@@ -7,11 +7,14 @@ import { StudioDashboard } from "@/components/StudioDashboard";
 import { AppShell, type Tab } from "@/components/AppShell";
 import { ManualEditor } from "@/components/ManualEditor";
 import { PLATFORM_CAP_SECONDS } from "@/lib/caps";
+import { EditPlanSchema } from "@/lib/types/schema";
 import { createClient } from "@/lib/supabase/browser";
 import { useOnline } from "@/lib/useOnline";
 import type { EditPlan, PublicAsset, QAReport, Setup } from "@/lib/types/schema";
 
-type Step = "upload" | "setup" | "preflight" | "processing" | "review";
+type Step = "upload" | "setup" | "canvas" | "preflight" | "processing" | "review";
+type Mode = "auto" | "manual";
+const CANVASES: [EditPlan["aspectRatio"], string, string][] = [["9:16", "Vertical", "TikTok, Reels, Shorts"], ["1:1", "Square", "Feed posts"], ["16:9", "Wide", "YouTube, laptop"]];
 
 interface Metrics {
   provider: "gemini" | "deterministic";
@@ -169,6 +172,8 @@ async function shareVideo(url: string) {
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [inEditor, setInEditor] = useState(false);
+  const [mode, setMode] = useState<Mode>("auto");
+  const [canvas, setCanvas] = useState<EditPlan["aspectRatio"]>("9:16");
   const [tab, setTab] = useState<Tab>("home");
   const [step, setStep] = useState<Step>("upload");
   const [files, setFiles] = useState<File[]>([]);
@@ -218,8 +223,10 @@ export default function Home() {
     setError("");
     setProgress(0);
     try {
-      setProject(await uploadClips(files, setProgress));
-      setStep("setup");
+      const uploaded = await uploadClips(files, setProgress);
+      setProject(uploaded);
+      if (mode === "manual") setStep("canvas");
+      else await autoStart(uploaded.projectId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed.");
     } finally {
@@ -241,8 +248,51 @@ export default function Home() {
     }
   }
 
-  async function handleProcess() {
-    if (!project || !estimate) return;
+  // Auto edit: no questions. Work out the cost, and if the person has enough credits just start.
+  async function autoStart(projectId: string) {
+    setError("");
+    try {
+      const res = await fetch(`/api/projects/${projectId}/estimate`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not estimate the cost.");
+      setEstimate(data);
+      if (data.sufficient) await handleProcess(projectId, data);
+      else setStep("preflight");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start the edit.");
+      setStep("upload");
+    }
+  }
+
+  // Manual edit: no AI, no questions. Every clip whole, in order, on the chosen canvas.
+  function openManual() {
+    if (!project) return;
+    const segments = project.assets.map((a) => ({
+      assetId: a.id,
+      startSec: 0,
+      endSec: Math.round(a.durationSec * 100) / 100,
+      reason: "Your clip, kept as shot.",
+      confidence: 1,
+      transition: "cut" as const,
+    }));
+    const plan = EditPlanSchema.parse({
+      version: 1,
+      source: "deterministic",
+      aspectRatio: canvas,
+      pacing: "medium",
+      targetDurationSec: segments.reduce((t, g) => t + g.endSec - g.startSec, 0),
+      summary: "Manual edit. Cut, arrange and export it yourself.",
+      segments,
+    });
+    setVersions([]);
+    setResult({ status: "ready", plan, qa: { passed: true, hardChecks: [], warnings: [] }, metrics: { provider: "deterministic", renderMs: 0, outputDurationSec: plan.targetDurationSec, clipCount: project.assets.length } } as Result);
+    setStep("review");
+  }
+
+  async function handleProcess(pid?: string, est?: Estimate) {
+    const projectId = pid ?? project?.projectId;
+    const estimateNow = est ?? estimate;
+    if (!projectId || !estimateNow) return;
     setStep("processing");
     setError("");
     setStage("analysing");
@@ -250,7 +300,7 @@ export default function Home() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: project.projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimate.ceiling, setup }),
+        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -305,6 +355,7 @@ export default function Home() {
       const res = await fetch(`/api/projects/${projectId}/open`, { cache: "no-store" });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Could not open this edit.");
+      setMode("auto");
       setProject({ projectId: d.projectId, assets: d.assets });
       setSetup((prev) => ({ ...prev, purpose: d.purpose ?? prev.purpose, mood: d.mood ?? prev.mood, platform: d.platform ?? "auto" }));
       if (d.resume) {
@@ -358,7 +409,10 @@ export default function Home() {
     }
   }
 
-  const stepIdx = ["upload", "setup", "preflight", "processing", "review"].indexOf(step);
+  const labels = mode === "manual" ? ["Upload", "Canvas", "Edit"] : ["Upload", "Edit", "Review"];
+  const stepIdx = mode === "manual"
+    ? { upload: 0, canvas: 1, review: 2 }[step as "upload" | "canvas" | "review"] ?? 0
+    : { upload: 0, setup: 1, preflight: 1, processing: 1, canvas: 1, review: 2 }[step];
 
   return (
     <>
@@ -368,7 +422,7 @@ export default function Home() {
         wide={inEditor && step === "review" && Boolean(result)}
         tab={inEditor ? "new" : tab}
         onTab={(t) => {
-          if (t === "new") setInEditor(true);
+          if (t === "new") { setMode("auto"); setInEditor(true); }
           else {
             setInEditor(false);
             setTab(t);
@@ -382,7 +436,7 @@ export default function Home() {
         <StudioDashboard
           view={tab === "edits" ? "edits" : "home"}
           userCredits={account?.credits}
-          onNewProject={() => setInEditor(true)}
+          onNewProject={(m) => { setMode(m); if (step !== "upload" || result) reset(); setInEditor(true); }}
           onOpenProject={handleOpen}
           onShowEdits={() => setTab("edits")}
           onBackHome={() => setTab("home")}
@@ -393,10 +447,10 @@ export default function Home() {
         <main className="relative w-full text-[#eceff4]">
           <header className="mb-6">
             <h1 className="mt-5 font-display text-[24px] font-semibold leading-tight sm:text-3xl text-[#eceff4]">
-              New video
+              {mode === "manual" ? "Manual edit" : "Auto edit"}
             </h1>
             <div className="mt-5 flex gap-2" aria-label="Progress">
-              {["Upload", "Setup", "Approve", "Edit", "Review"].map((label, i) => (
+              {labels.map((label, i) => (
                 <div key={label} className="flex-1">
                   <div
                     className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -467,6 +521,24 @@ export default function Home() {
         </section>
       )}
 
+      {step === "canvas" && project && (
+        <section className="zy-card p-5">
+          <p className="text-sm text-[#8d97a8]">
+            {project.assets.length} clip{project.assets.length > 1 ? "s" : ""} · {fmtSec(project.assets.reduce((s, a) => s + a.durationSec, 0))}. Pick your canvas. You can trim, split, arrange and add effects next.
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2.5">
+            {CANVASES.map(([ratio, name, hint]) => (
+              <button key={ratio} type="button" aria-pressed={canvas === ratio} onClick={() => setCanvas(ratio)} className={`flex flex-col items-center gap-2 rounded-[16px] border p-3 text-center transition ${canvas === ratio ? "border-[#d9b45b] bg-[#d9b45b]/10" : "border-[#242a35] bg-[#11141b]"}`}>
+                <span className="border border-[#d9b45b]/60 bg-black/40" style={{ aspectRatio: ratio.replace(":", " / "), width: ratio === "16:9" ? 56 : ratio === "1:1" ? 38 : 28 }} />
+                <b className="text-[13px] font-semibold">{ratio}</b>
+                <span className="text-[11px] leading-4 text-[#8d97a8]">{name}<br />{hint}</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={openManual} className="mt-6 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99]">Open editor</button>
+        </section>
+      )}
+
       {step === "setup" && project && (
         <section className="zy-card p-5">
           <p className="text-sm text-[#8d97a8]">
@@ -531,7 +603,7 @@ export default function Home() {
               Not enough credits: this edit needs {estimate.ceiling} available and you have {estimate.available}. Try fewer or shorter clips.
             </p>
           )}
-          <button onClick={handleProcess} disabled={!estimate.sufficient || !online} className="mt-5 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
+          <button onClick={() => void handleProcess()} disabled={!estimate.sufficient || !online} className="mt-5 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
             <Sparkles size={18} /> Approve and start edit
           </button>
           <button onClick={() => setStep("setup")} className="mt-2 w-full py-2 text-sm text-[#8d97a8] hover:text-[#eceff4]">
@@ -565,7 +637,7 @@ export default function Home() {
       {step === "review" && result && (
         <section className="space-y-4 lg:grid lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
           <div className="space-y-4 lg:sticky lg:top-4">
-          {result.status === "ready" && result.outputUrl ? (
+          {mode === "manual" && !result.outputUrl ? null : result.status === "ready" && result.outputUrl ? (
             <div className="zy-card p-4">
               <div className="mb-3 flex items-center gap-3">
                 <span className="zy-icon green flex h-10 w-10 items-center justify-center rounded-xl"><Check size={18} /></span>
@@ -598,7 +670,7 @@ export default function Home() {
             </div>
           )}
 
-          <div className="zy-card p-4 text-sm">
+          {!(mode === "manual" && !result.outputUrl) && <div className="zy-card p-4 text-sm">
             <p className="text-[#eceff4]">{result.plan.summary}</p>
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {([
@@ -623,7 +695,7 @@ export default function Home() {
                 ))}
               </ul>
             )}
-          </div>
+          </div>}
 
           {result.receipt && (
             <div className="zy-card p-4 text-sm">
@@ -662,9 +734,9 @@ export default function Home() {
           )}
 
           <div className="flex gap-3">
-            <button onClick={() => setStep("setup")} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
+            {mode === "auto" && <button onClick={() => setStep("setup")} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
               Try different settings
-            </button>
+            </button>}
             <button onClick={reset} className="flex-1 rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 py-3 text-sm font-medium hover:border-[#d9b45b]/50">
               Start a new video
             </button>

@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Film, Home, LogOut, Plus, ShieldCheck, Trash2, Upload, Wand2 } from "lucide-react";
+import { Film, Home, LogOut, Scissors, ShieldCheck, Trash2, Upload, Wand2 } from "lucide-react";
 import { MyEdits } from "@/components/MyEdits";
 import { ZClipMark } from "@/components/ZClipMark";
 
 interface DashboardProps {
   view: "home" | "edits";
   userCredits?: number;
-  onNewProject: () => void;
+  onNewProject: (mode: "auto" | "manual") => void;
   onOpenProject?: (id: string) => void;
   onShowEdits: () => void;
   onBackHome: () => void;
@@ -75,11 +75,15 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
                 <span className="block bg-gradient-to-r from-[#f6dc92] to-[#d9b45b] bg-clip-text text-transparent">Let ZClip edit it.</span>
               </h1>
               <p className="max-w-sm text-[15px] leading-6 text-[#8d97a8]">
-                Add your clips, answer a few quick questions if you like, and get a finished video to review. Fix anything yourself, or let ZClip do it.
+                Add your clips and ZClip edits them for you. No questions, no settings. Prefer to cut it yourself? Use Manual edit.
               </p>
-              <button type="button" onClick={onNewProject} className="zy-btn-gold mt-3 flex min-h-16 w-full items-center justify-center gap-3 rounded-[14px] text-[17px] transition active:scale-[0.99]">
-                <Plus size={20} />
-                Create a video
+              <button type="button" onClick={() => onNewProject("auto")} className="zy-btn-gold mt-3 flex min-h-16 w-full items-center justify-center gap-3 rounded-[14px] text-[17px] transition active:scale-[0.99]">
+                <Wand2 size={20} />
+                Auto edit
+              </button>
+              <button type="button" onClick={() => onNewProject("manual")} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-[14px] border border-[#242a35] bg-[#11141b] text-[15px] font-medium transition hover:border-[#d9b45b]/50">
+                <Scissors size={18} className="text-[#d9b45b]" />
+                Manual edit
               </button>
             </section>
 
