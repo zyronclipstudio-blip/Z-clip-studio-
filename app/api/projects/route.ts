@@ -25,11 +25,16 @@ async function listProjects() {
   const db = admin();
   const { data: projects, error } = await db.from("projects").select("id,status,purpose,created_at,updated_at").eq("owner_id", user.id).order("updated_at", { ascending: false }).limit(100);
   if (error) return Response.json({ error: "Could not load your projects." }, { status: 500 });
-  const ids = (projects ?? []).map((project) => project.id as string);
+  // Uploads that never finished (no clips saved) are not "edits": do not list them.
+  const allIds = (projects ?? []).map((project) => project.id as string);
+  const { data: withClips } = allIds.length ? await db.from("media_assets").select("project_id").in("project_id", allIds) : { data: [] };
+  const hasClips = new Set((withClips ?? []).map((r) => r.project_id as string));
+  const visible = (projects ?? []).filter((p) => hasClips.has(p.id as string) || !["uploading", "draft"].includes(p.status as string));
+  const ids = visible.map((project) => project.id as string);
   const { data: jobs } = ids.length ? await db.from("render_jobs").select("project_id,output_object_key,created_at").in("project_id", ids).order("created_at", { ascending: false }) : { data: [] };
   const latest = new Map<string, string | null>();
   for (const job of jobs ?? []) if (!latest.has(job.project_id as string)) latest.set(job.project_id as string, (job.output_object_key as string | null) ?? null);
-  const result = await Promise.all((projects ?? []).map(async (project) => {
+  const result = await Promise.all(visible.map(async (project) => {
     const outputKey = latest.get(project.id as string);
     if (project.status !== "ready" || !outputKey) return { id: project.id, status: project.status, purpose: project.purpose, createdAt: project.created_at };
     try {
@@ -55,7 +60,17 @@ async function createProject() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return Response.json({ error: "Please sign in." }, { status: 401 });
   cleanupExpired().catch(() => undefined);
-  const { data, error } = await admin().from("projects").insert({ owner_id: user.id, status: "uploading", expires_at: null }).select("id").single();
+  // Clear this person's earlier uploads that never saved a clip, so retries do not pile up.
+  const db = admin();
+  const { data: mine } = await db.from("projects").select("id").eq("owner_id", user.id).in("status", ["uploading", "draft"]);
+  const mineIds = (mine ?? []).map((r) => r.id as string);
+  if (mineIds.length) {
+    const { data: used } = await db.from("media_assets").select("project_id").in("project_id", mineIds);
+    const usedSet = new Set((used ?? []).map((r) => r.project_id as string));
+    const empty = mineIds.filter((id) => !usedSet.has(id));
+    if (empty.length) await db.from("projects").delete().in("id", empty).eq("owner_id", user.id);
+  }
+  const { data, error } = await db.from("projects").insert({ owner_id: user.id, status: "uploading", expires_at: null }).select("id").single();
   if (error || !data) {
     console.error("create project failed:", error?.code, error?.message);
     return Response.json({ error: "Could not create the project." }, { status: 500 });

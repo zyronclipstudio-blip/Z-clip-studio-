@@ -101,19 +101,22 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
   for (let i = 0; i < files.length; i++) {
     const upload = uploads[i];
     if (upload.url) {
-      // Direct presigned S3 / Backblaze B2 PUT upload
+      // Weak mobile networks drop long uploads, so each file gets a few tries: straight to storage first,
+      // then through ZClip. Only after all of those fail do we tell the person.
       let ok = false;
       let status = 0;
-      try {
-        const res = await fetch(upload.url, {
-          method: "PUT",
-          headers: { "Content-Type": upload.contentType },
-          body: files[i],
-        });
-        ok = res.ok;
-        status = res.status;
-      } catch {
-        // This browser or network can't reach storage directly. Send it through ZClip instead.
+      let lastNetwork = false;
+      for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1500 * attempt));
+        try {
+          const res = await fetch(upload.url, { method: "PUT", headers: { "Content-Type": upload.contentType }, body: files[i] });
+          ok = res.ok;
+          status = res.status;
+          lastNetwork = false;
+          if (ok) break;
+        } catch {
+          lastNetwork = true;
+        }
         try {
           const prox = await fetch(`/api/projects/${projectId}/upload-proxy?path=${encodeURIComponent(upload.path)}`, {
             method: "POST",
@@ -122,15 +125,18 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
           });
           ok = prox.ok;
           status = prox.status;
+          lastNetwork = false;
           if (!prox.ok) {
             const d = await prox.json().catch(() => null);
-            if (d?.error) throw new Error(d.error);
+            if (d?.error && prox.status < 500) throw new Error(d.error);
           }
         } catch (e) {
-          if (e instanceof Error && e.message && !/fetch|network/i.test(e.message)) throw e;
-          throw new Error("Could not upload. Please check your internet connection and try again. Code: UPLOAD_NETWORK");
+          if (e instanceof Error && e.message && !/fetch|network|load failed/i.test(e.message)) throw e;
+          lastNetwork = true;
         }
       }
+      if (!ok && lastNetwork)
+        throw new Error(`"${files[i].name}" (${fmtMB(files[i].size)}) did not finish uploading. Your connection looks weak. Try Wi-Fi, or a shorter or smaller file. Code: UPLOAD_NETWORK`);
       if (!ok) throw new Error(`Could not upload "${files[i].name}". Storage answered ${status}. Please try again.`);
     } else {
       // Fallback: Supabase Storage uploadToSignedUrl
