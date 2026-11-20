@@ -25,6 +25,11 @@ export interface MediaAsset {
 }
 export type PublicAsset = Omit<MediaAsset, "storedName">;
 
+/** Motion effects the render engine can apply to the start of a piece. */
+export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip"] as const;
+export const EffectSchema = z.enum(EFFECT_IDS);
+export type EffectId = z.infer<typeof EffectSchema>;
+
 export const CutSegmentSchema = z.object({
   assetId: z.string().min(1),
   startSec: z.number().min(0),
@@ -33,6 +38,7 @@ export const CutSegmentSchema = z.object({
   confidence: z.number().min(0).max(1).default(0.7),
   transition: z.enum(["cut", "fade"]).default("cut"),
   volume: z.number().min(0).max(2).optional(), // 1 = original loudness, 0 = muted
+  effects: z.array(EffectSchema).max(3).optional(),
 });
 export type CutSegment = z.infer<typeof CutSegmentSchema>;
 

@@ -1,4 +1,4 @@
-import type { AspectRatio, CutSegment, EditPlan, MediaAsset } from "./types/schema";
+import { EFFECT_IDS, type AspectRatio, type CutSegment, type EditPlan, type EffectId, type MediaAsset } from "./types/schema";
 
 // Manual editing as pure functions over the same EditPlan the automatic editor writes.
 // Every operation returns a NEW plan or throws PlanOpError with a message safe to show the user.
@@ -87,7 +87,7 @@ export function splitSegment(plan: EditPlan, index: number, atSec: number): Edit
   if (!Number.isFinite(cut) || cut - s.startSec < MIN_SEGMENT_SEC - 0.0005 || s.endSec - cut < MIN_SEGMENT_SEC - 0.0005)
     throw new PlanOpError(`Split inside the piece, at least ${MIN_SEGMENT_SEC}s from either end.`);
   const next = plan.segments.slice();
-  next.splice(index, 1, { ...s, endSec: cut }, { ...s, startSec: cut, transition: "cut" });
+  next.splice(index, 1, { ...s, endSec: cut }, { ...s, startSec: cut, transition: "cut", effects: undefined });
   return rebuild(plan, next);
 }
 
@@ -106,6 +106,20 @@ export function setTransition(plan: EditPlan, index: number, transition: CutSegm
   if (transition !== "cut" && transition !== "fade") throw new PlanOpError("That transition is not available.");
   const next = plan.segments.slice();
   next[index] = { ...s, transition };
+  return rebuild(plan, next);
+}
+
+/** Turn one motion effect on or off for a piece (at most three at once). */
+export function toggleEffect(plan: EditPlan, index: number, effect: EffectId): EditPlan {
+  const s = at(plan, index);
+  if (!EFFECT_IDS.includes(effect)) throw new PlanOpError("That effect is not available.");
+  const have = s.effects ?? [];
+  let effects: EffectId[];
+  if (have.includes(effect)) effects = have.filter((e) => e !== effect);
+  else if (have.length >= 3) throw new PlanOpError("Use up to three effects on one piece.");
+  else effects = [...have, effect];
+  const next = plan.segments.slice();
+  next[index] = { ...s, effects: effects.length ? effects : undefined };
   return rebuild(plan, next);
 }
 

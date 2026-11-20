@@ -12,6 +12,7 @@ import {
   removeSegment,
   setAspect,
   setTransition,
+  toggleEffect,
   duplicateSegment,
   setVolume,
   splitSegment,
@@ -155,4 +156,18 @@ test("transition and duplicate change only what they should", () => {
   assert.equal(dup.segments.length, plan.segments.length + 1);
   assert.equal(dup.segments[1].startSec, plan.segments[0].startSec);
   assert.throws(() => setTransition(plan, 9, "fade"), PlanOpError);
+});
+
+test("effects toggle on and off, cap at three, and do not repeat after a split", () => {
+  const assets = [fakeAsset(20)];
+  const plan = planDeterministic(assets, SetupSchema.parse({})).plan;
+  let p = toggleEffect(plan, 0, "punch");
+  assert.deepEqual(p.segments[0].effects, ["punch"]);
+  p = toggleEffect(p, 0, "shake");
+  p = toggleEffect(p, 0, "flash");
+  assert.throws(() => toggleEffect(p, 0, "glitch"), PlanOpError);
+  p = toggleEffect(p, 0, "punch");
+  assert.deepEqual(p.segments[0].effects, ["shake", "flash"]);
+  const split = splitSegment(p, 0, 10);
+  assert.equal(split.segments[1].effects, undefined);
 });

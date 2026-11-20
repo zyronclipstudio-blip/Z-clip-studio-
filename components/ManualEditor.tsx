@@ -11,6 +11,7 @@ import {
   removeSegment,
   setAspect,
   setTransition,
+  toggleEffect,
   setVolume,
   splitSegment,
   startHistory,
@@ -386,7 +387,18 @@ export function ManualEditor({ projectId, plan, assets, capSec, busy, error, onR
                   <button type="button" disabled={busy} aria-pressed={s.transition === "fade"} onClick={() => run((p) => setTransition(p, sel, "fade"))} className={chip(s.transition === "fade")} style={chipStyle(s.transition === "fade", "#62adff")}>Soft fade</button>
                 </div>
               </div>
-              <p className="text-[12px] leading-5 text-[#7b8596]">Fades show when you render. More effects, text and music are coming to these drawers.</p>
+              <div>
+                <p className="text-[13px] text-[#8d97a8]">Motion on the first beat (up to 3)</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {([["punch", "Zoom punch"], ["shake", "Shake"], ["flash", "Flash"], ["glitch", "Glitch"], ["whip", "Whip blur"]] as const).map(([id, label]) => {
+                    const on = (s.effects ?? []).includes(id);
+                    return (
+                      <button key={id} type="button" disabled={busy} aria-pressed={on} onClick={() => run((p) => toggleEffect(p, sel, id))} className={chip(on)} style={chipStyle(on, "#d9b45b")}>{label}</button>
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="text-[12px] leading-5 text-[#7b8596]">Effects and fades show when you export. Text and music are coming next.</p>
             </>
           )}
 

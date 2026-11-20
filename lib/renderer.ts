@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { EXPORT_DIR, FFMPEG, LIMITS, UPLOAD_DIR } from "./config";
 import { probeMedia, run } from "./media";
-import type { AspectRatio, EditPlan, MediaAsset, QACheck, QAReport } from "./types/schema";
+import type { AspectRatio, EditPlan, EffectId, MediaAsset, QACheck, QAReport } from "./types/schema";
 
 // 720p exports: sharp on phones, small for WhatsApp, and light enough for a small server.
 const DIMENSIONS: Record<AspectRatio, [number, number]> = {
@@ -51,7 +51,7 @@ export async function renderPlan(
       expected += dur;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
-      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1), LIMITS.renderTimeoutMs);
+      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects), LIMITS.renderTimeoutMs);
       partFiles.push(out);
     }
 
@@ -74,6 +74,23 @@ export async function renderPlan(
   }
 }
 
+// Motion effects. Each one acts on the start of a piece, where the beat lands.
+// Filters are chained after the base crop; every one keeps the frame size and pixel format.
+export function effectFilter(effect: EffectId, w: number, h: number): string {
+  switch (effect) {
+    case "punch": // quick push-in that settles
+      return `,scale=w='iw*(1+0.14*max(0,1-t/0.3))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+    case "shake": // handheld jitter
+      return `,scale=iw*1.08:ih*1.08,crop=${w}:${h}:'(in_w-out_w)/2+16*sin(t*47)':'(in_h-out_h)/2+16*cos(t*53)',setsar=1,format=yuv420p`;
+    case "flash": // white flash that fades out
+      return `,eq=brightness='0.5*max(0,1-t/0.15)':eval=frame`;
+    case "glitch": // colour split in short bursts
+      return `,rgbashift=rh=-10:bh=10:enable='lt(mod(t,0.4),0.1)'`;
+    case "whip": // blur streak into the piece
+      return `,boxblur=luma_radius=14:luma_power=1:enable='lt(t,0.2)'`;
+  }
+}
+
 function segmentArgs(
   src: string,
   out: string,
@@ -84,8 +101,10 @@ function segmentArgs(
   hasAudio: boolean,
   fade: boolean,
   volume = 1,
+  effects: EffectId[] = [],
 ): string[] {
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
+  for (const e of effects) vf += effectFilter(e, w, h);
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
   if (volume !== 1) af += `,volume=${Math.min(2, Math.max(0, volume)).toFixed(2)}`;
   if (fade) {
