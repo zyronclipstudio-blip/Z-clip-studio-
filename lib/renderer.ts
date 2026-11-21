@@ -99,9 +99,9 @@ export async function renderPlan(
 export function effectFilter(effect: EffectId, w: number, h: number): string {
   switch (effect) {
     case "punch": // quick push-in that settles
-      return `,scale=w='iw*(1+0.14*max(0,1-t/0.3))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+      return `,scale=w='iw*(1+0.07*max(0,1-t/0.3))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
     case "shake": // handheld jitter
-      return `,scale=iw*1.08:ih*1.08,crop=${w}:${h}:'(in_w-out_w)/2+16*sin(t*47)':'(in_h-out_h)/2+16*cos(t*53)',setsar=1,format=yuv420p`;
+      return `,scale=iw*1.04:ih*1.04,crop=${w}:${h}:'(in_w-out_w)/2+8*sin(t*47)':'(in_h-out_h)/2+8*cos(t*53)',setsar=1,format=yuv420p`;
     case "flash": // white flash that fades out
       return `,eq=brightness='0.5*max(0,1-t/0.15)':eval=frame`;
     case "glitch": // colour split in short bursts

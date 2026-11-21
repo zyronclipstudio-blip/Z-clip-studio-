@@ -14,6 +14,7 @@ import {
   PLATFORM_CAP_SECONDS,
   UPLOAD_DIR,
 } from "./config";
+import { capabilityPrompt } from "./capabilities";
 import { isImageName } from "./image";
 import { run } from "./media";
 import {
@@ -155,9 +156,10 @@ Rules:
 - "transition" is "cut" or "fade". Prefer "cut" for energetic content and use "fade" sparingly.
 - HOOK: the very first segment must be the single most striking, clear moment in all the footage, because viewers decide in the first second. Never open with a slow or empty moment.
 - ORDER: arrange clips so they flow. For footage that tells a story (for example AI-generated scenes), keep the story logical and keep a character or look consistent across neighbouring cuts. Put wide shots before close-ups unless a close-up is the hook.
-- "effects" is a list (0 to 2 items) chosen only from: "punch" (zoom push-in, for hits and reveals), "shake" (handheld jitter, for impact or action), "flash" (white flash, for a big beat or the hook), "glitch" (colour split, for energetic or edgy moments), "whip" (blur streak, to link two shots). Use them on real moments only, never on every segment, and use none for calm or professional content. The first segment may use one.
+${capabilityPrompt()}
 - DIRECTOR: build a shape, not a pile. Hook first, then build energy, put the biggest moment about two thirds in, and END on a strong, clean moment (never mid-action or on a fade of nothing). Do not place two near-identical shots next to each other; alternate wide, medium and close, and alternate subjects when you can. Prefer moments with clear faces, clear motion or clear results. If a clip has speech, keep whole sentences together and do not cut off a word.
 - VARIETY: spread effects across the video with space between them; the same effect never twice in a row. Use "flash" or "punch" on the hook and on the peak only when the style is energetic.
+- CONTINUITY: group shots of the same person, outfit and place together; change outfit or location only with a deliberate cut. End on a clear face or finished moment, never a tight crop of clothing or a blurry frame.
 - "reason" is one plain sentence a customer can read explaining why this moment was chosen.
 - "confidence" is 0 to 1: how sure you are this segment belongs in the edit.
 
