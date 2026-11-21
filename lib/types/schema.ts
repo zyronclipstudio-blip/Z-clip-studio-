@@ -61,6 +61,14 @@ export const EditPlanSchema = z.object({
       bpm: z.number().min(0).max(400).optional(),
     })
     .optional(),
+  /** Spoken words from the clips, in each clip's own time, burned in as captions. */
+  captions: z
+    .object({
+      enabled: z.boolean().default(true),
+      style: z.enum(["pop", "clean"]).default("pop"),
+      words: z.array(z.object({ assetId: z.string(), startSec: z.number().min(0), endSec: z.number().min(0), text: z.string().min(1).max(40) })).max(1500),
+    })
+    .optional(),
 });
 export type EditPlan = z.infer<typeof EditPlanSchema>;
 

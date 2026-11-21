@@ -487,6 +487,35 @@ export default function Home() {
     }
   }
 
+  const [fixText, setFixText] = useState("");
+  const [fixing, setFixing] = useState(false);
+  const [fixNote, setFixNote] = useState("");
+
+  // "Change this": free-text complaint -> corrected plan -> re-render. Feedback never costs credits.
+  async function handleFix() {
+    if (!project || !result || fixText.trim().length < 2) return;
+    setFixing(true);
+    setFixNote("");
+    try {
+      const res = await fetch("/api/revise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: project.projectId, plan: result.plan, feedback: fixText.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not change that.");
+      setFixNote(data.explanation || (data.changed ? "Done." : "Nothing needed to change."));
+      if (data.changed) {
+        await handleRerender(data.plan);
+        setFixText("");
+      }
+    } catch (e) {
+      setFixNote(e instanceof Error ? e.message : "Could not change that.");
+    } finally {
+      setFixing(false);
+    }
+  }
+
   const labels = mode === "manual" ? ["Upload", "Canvas", "Edit"] : ["Upload", "Edit", "Review"];
   const stepIdx = mode === "manual"
     ? { upload: 0, canvas: 1, review: 2 }[step as "upload" | "canvas" | "review"] ?? 0
@@ -827,6 +856,26 @@ export default function Home() {
 
           </div>
           <div className="space-y-4">
+          {mode === "auto" && result.outputUrl && (
+            <div className="zy-card p-4">
+              <p className="text-sm font-medium text-[#eceff4]">Not happy with something?</p>
+              <p className="mt-1 text-xs leading-5 text-[#8d97a8]">Tell ZClip what to change, like &quot;the zoom is too much&quot; or &quot;silence the background&quot;. It&apos;s free.</p>
+              <textarea
+                value={fixText}
+                onChange={(e) => setFixText(e.target.value)}
+                maxLength={500}
+                rows={2}
+                disabled={fixing || rerendering}
+                placeholder="What should change?"
+                className="mt-3 w-full resize-none rounded-[12px] border border-[#242a35] bg-[#11141b] p-3 text-sm text-[#eceff4] outline-none focus:border-[#d9b45b]/60"
+              />
+              <button onClick={handleFix} disabled={fixing || rerendering || fixText.trim().length < 2 || !online} className="mt-3 w-full zy-btn-gold rounded-[14px] min-h-12 px-4 text-sm transition active:scale-[0.99] disabled:opacity-60">
+                {fixing || rerendering ? "Fixing it…" : "Change this"}
+              </button>
+              {fixNote && <p className="mt-3 text-xs leading-5 text-[#ecd083]">{fixNote}</p>}
+            </div>
+          )}
+
           {project && (
             <ManualEditor
               key={result.outputUrl ?? "plan"}
