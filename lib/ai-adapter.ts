@@ -86,6 +86,7 @@ const GeminiPlanSchema = z.object({
       confidence: z.coerce.number().min(0).max(1).catch(0.7),
       transition: z.enum(["cut", "fade"]).catch("cut"),
       effects: z.array(z.string()).catch([]),
+      speed: z.coerce.number().min(0.75).max(1.5).optional().catch(undefined),
     }),
   ),
 });
@@ -159,6 +160,7 @@ Rules:
 - HOOK: the very first segment must be the single most striking, clear moment in all the footage, because viewers decide in the first second. Never open with a slow or empty moment.
 - ORDER: arrange clips so they flow. For footage that tells a story (for example AI-generated scenes), keep the story logical and keep a character or look consistent across neighbouring cuts. Put wide shots before close-ups unless a close-up is the hook.
 ${capabilityPrompt()}
+- "speed" (0.75 to 1.5, default 1): 0.75 = slow motion for the single best moment (a reveal, a hit, a dance move); up to 1.5 to tighten a dull stretch. Use on at most 2 segments, never on speech.
 - DIRECTOR: build a shape, not a pile. Hook first, then build energy, put the biggest moment about two thirds in, and END on a strong, clean moment (never mid-action or on a fade of nothing). Do not place two near-identical shots next to each other; alternate wide, medium and close, and alternate subjects when you can. Prefer moments with clear faces, clear motion or clear results. If a clip has speech, keep whole sentences together and do not cut off a word.
 - VARIETY: spread effects across the video with space between them; the same effect never twice in a row. Use "flash" or "punch" on the hook and on the peak only when the style is energetic.
 - CONTINUITY: group shots of the same person, outfit and place together; change outfit or location only with a deliberate cut. End on a clear face or finished moment, never a tight crop of clothing or a blurry frame.
@@ -166,7 +168,7 @@ ${capabilityPrompt()}
 - "confidence" is 0 to 1: how sure you are this segment belongs in the edit.
 
 Return ONLY a JSON object, with no markdown and no commentary, in exactly this shape:
-{"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[]}]}`;
+{"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[],"speed":1}]}`;
 
     // Gemini sometimes answers "high demand" (503/429). Retry, then try a backup model,
     // so a busy moment does not turn a smart edit into a plain join of the clips.
@@ -233,6 +235,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
       reason: s.reason || "Selected as a strong moment.",
       confidence: s.confidence,
       transition: s.transition,
+      speed: s.speed && Math.abs(s.speed - 1) > 0.04 ? Math.round(s.speed * 100) / 100 : undefined,
       effects: (() => {
         const ok = s.effects.filter((e): e is (typeof EFFECT_IDS)[number] => (EFFECT_IDS as readonly string[]).includes(e));
         const uniq = [...new Set(ok)].slice(0, 2);

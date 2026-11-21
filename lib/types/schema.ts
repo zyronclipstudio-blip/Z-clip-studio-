@@ -40,6 +40,8 @@ export const CutSegmentSchema = z.object({
   transition: z.enum(["cut", "fade"]).default("cut"),
   volume: z.number().min(0).max(2).optional(), // 1 = original loudness, 0 = muted
   effects: z.array(EffectSchema).max(3).optional(),
+  /** Playback speed of this piece: 0.75 slow-motion up to 1.5 faster. 1 or missing = normal. */
+  speed: z.number().min(0.75).max(1.5).optional(),
 });
 export type CutSegment = z.infer<typeof CutSegmentSchema>;
 

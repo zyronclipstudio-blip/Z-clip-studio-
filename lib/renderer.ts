@@ -42,6 +42,7 @@ export async function renderPlan(
   try {
     onStage?.("rendering");
     const partFiles: string[] = [];
+    const grades = new Map<string, string>();
     let expected = 0;
 
     for (let i = 0; i < plan.segments.length; i++) {
@@ -50,22 +51,24 @@ export async function renderPlan(
       if (!asset) throw new Error("Plan references an unknown clip");
       const dur = Math.round((seg.endSec - seg.startSec) * 1000) / 1000;
       if (dur <= 0 || seg.endSec > asset.durationSec + 0.05) throw new Error("Plan contains an invalid time range");
-      expected += dur;
+      const spd = seg.speed && seg.speed !== 1 ? seg.speed : 1;
+      expected += dur / spd;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
       const src = path.join(UPLOAD_DIR, asset.storedName);
       const still = isImageName(asset.originalName);
       let capVf = "";
-      if (plan.captions?.enabled && !still && (await canDrawText())) {
+      const grade = still ? "" : await exposureFix(src, asset.durationSec, grades);
+      if (plan.captions?.enabled && !still && spd === 1 && (await canDrawText())) {
         const pw = wordsForPiece(plan.captions.words, seg.assetId, seg.startSec, seg.endSec);
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
     }
@@ -185,18 +188,25 @@ function segmentArgs(
   still = false,
   captionVf = "",
   look: EditPlan["look"] = "none",
+  speed = 1,
+  grade = "",
 ): string[] {
+  // Speed: the source range is read as is; the piece plays shorter or longer.
+  const outDur = dur / speed;
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+  if (speed !== 1) vf = `setpts=PTS/${speed.toFixed(3)},` + vf;
+  vf += grade;
   vf += lookFilter(look);
   for (const e of effects) vf += effectFilter(e, w, h);
   vf += captionVf;
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
+  if (speed !== 1) af += `,atempo=${speed.toFixed(3)}`;
   if (volume !== 1) af += `,volume=${Math.min(2, Math.max(0, volume)).toFixed(2)}`;
   if (fade) {
-    const f = Math.min(0.2, dur / 4).toFixed(3);
-    const out_st = (dur - Number(f)).toFixed(3);
+    const f = Math.min(0.2, outDur / 4).toFixed(3);
+    const out_st = (outDur - Number(f)).toFixed(3);
     vf += `,fade=t=in:st=0:d=${f},fade=t=out:st=${out_st}:d=${f}`;
     af += `,afade=t=in:st=0:d=${f},afade=t=out:st=${out_st}:d=${f}`;
   }
@@ -208,7 +218,7 @@ function segmentArgs(
     args.push("-map", "0:v:0", "-map", "0:a:0");
   } else {
     // Clips without sound get silence so every part has an identical audio track.
-    args.push("-f", "lavfi", "-t", String(dur), "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
+    args.push("-f", "lavfi", "-t", String(outDur), "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
     args.push("-map", "0:v:0", "-map", "1:a:0");
   }
   args.push(
@@ -278,4 +288,24 @@ export async function inspectOutput(file: string, w: number, h: number, expected
   }
 
   return { passed: hardChecks.every((c) => c.ok), hardChecks, warnings };
+}
+
+// Even exposure across clips: measure one frame per source and nudge brightness toward a shared middle.
+// Small, capped correction so a naturally dark or bright scene is never flattened.
+async function exposureFix(src: string, durationSec: number, cache: Map<string, string>): Promise<string> {
+  const hit = cache.get(src);
+  if (hit !== undefined) return hit;
+  let filter = "";
+  try {
+    const { stderr, stdout } = await run(FFMPEG, ["-hide_banner", "-ss", String(Math.max(0, durationSec / 2)), "-i", src, "-frames:v", "1", "-vf", "signalstats,metadata=print", "-f", "null", "-"], 20_000);
+    const m = /lavfi\.signalstats\.YAVG=([0-9.]+)/.exec(`${stdout}\n${stderr}`);
+    if (m) {
+      const delta = Math.max(-0.08, Math.min(0.08, ((118 - Number(m[1])) / 255) * 0.5));
+      if (Math.abs(delta) > 0.015) filter = `,eq=brightness=${delta.toFixed(3)}`;
+    }
+  } catch {
+    filter = "";
+  }
+  cache.set(src, filter);
+  return filter;
 }
