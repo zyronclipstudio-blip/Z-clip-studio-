@@ -15,7 +15,7 @@ import {
   UPLOAD_DIR,
 } from "./config";
 import { capabilityPrompt } from "./capabilities";
-import { styleById, stylePrompt } from "./styles";
+import { stylePrompt, type Style } from "./styles";
 import { isImageName } from "./image";
 import { run } from "./media";
 import {
@@ -57,12 +57,12 @@ export function aspectFor(platform: Setup["platform"], assets: Pick<MediaAsset, 
 export async function createEditPlan(
   assets: MediaAsset[],
   setup: Setup,
-  opts: { allowAI?: boolean } = {},
+  opts: { allowAI?: boolean; style?: Style; rules?: string[] } = {},
 ): Promise<PlanResult> {
   // allowAI=false is the emergency kill switch for provider calls.
   if (GEMINI_API_KEY && opts.allowAI !== false) {
     try {
-      return await planWithGemini(assets, setup);
+      return await planWithGemini(assets, setup, opts.style, opts.rules ?? []);
     } catch (err) {
       const reason = err instanceof Error ? err.message : "Unknown Gemini error";
       const fallback = planDeterministic(assets, setup);
@@ -102,7 +102,7 @@ async function makeWatchCopy(src: string, dir: string, i: number): Promise<strin
   return out;
 }
 
-async function planWithGemini(assets: MediaAsset[], setup: Setup): Promise<PlanResult> {
+async function planWithGemini(assets: MediaAsset[], setup: Setup, style: Style | undefined, rules: string[]): Promise<PlanResult> {
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   const uploaded: string[] = [];
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "zclip-watch-"));
@@ -146,7 +146,7 @@ Customer intent (may be "auto", meaning decide from the footage):
 - Purpose: ${setup.purpose}
 - Mood: ${setup.mood}
 - Destination: ${setup.platform}
-${stylePrompt(styleById(setup.style))}
+${stylePrompt(style)}${rules.length ? `\n- LESSONS from customers (follow them): ${rules.join(" ")}` : ""}
 
 Rules:
 - Some items may be PHOTOS. Treat a photo as a still shot: start at 0, show it for 2 to 3 seconds, and place it where it fits the story or the beat. Mix photos and videos naturally.

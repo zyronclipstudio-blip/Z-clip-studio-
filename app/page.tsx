@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ConfirmSheet } from "@/components/ConfirmSheet";
 import { askNotifyPermission, notify } from "@/lib/notify";
-import { STYLES, styleById } from "@/lib/styles";
+import { STYLES } from "@/lib/styles";
 import { Check, Download, Trash2, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
@@ -219,6 +219,10 @@ export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
   const [soundFile, setSoundFile] = useState<File | null>(null);
   const soundKeyRef = useRef("");
+  const [styleList, setStyleList] = useState<{ id: string; name: string; tagline: string }[]>(STYLES.map((x) => ({ id: x.id, name: x.name, tagline: x.tagline })));
+  useEffect(() => {
+    fetch("/api/styles", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && Array.isArray(d.styles) && d.styles.length) setStyleList(d.styles); }).catch(() => undefined);
+  }, []);
   const [captionsOn, setCaptionsOn] = useState(true);
   const [clipLow, setClipLow] = useState(false); // false = silence the clips' own audio under the sound
   const soundInputRef = useRef<HTMLInputElement>(null);
@@ -754,7 +758,7 @@ export default function Home() {
           <fieldset className="mt-5">
             <legend className="mb-2 font-medium">Style</legend>
             <div className="flex flex-wrap gap-2">
-              {[{ id: "auto", name: "Let ZClip decide", tagline: "" }, ...STYLES].map((st) => {
+              {[{ id: "auto", name: "Let ZClip decide", tagline: "" }, ...styleList].map((st) => {
                 const active = setup.style === st.id;
                 return (
                   <button key={st.id} type="button" aria-pressed={active} onClick={() => setSetup({ ...setup, style: st.id })} className={`rounded-full border px-3 py-1.5 text-sm transition ${active ? "border-[#d9b45b] bg-[#d9b45b]/15 text-[#d9b45b]" : "border-white/10 bg-[#181c25] text-[#eceff4] hover:border-muted"}`}>
@@ -763,7 +767,7 @@ export default function Home() {
                 );
               })}
             </div>
-            {styleById(setup.style) && <p className="mt-2 text-xs text-[#8d97a8]">{styleById(setup.style)?.tagline}</p>}
+            {styleList.find((x) => x.id === setup.style)?.tagline && <p className="mt-2 text-xs text-[#8d97a8]">{styleList.find((x) => x.id === setup.style)?.tagline}</p>}
           </fieldset>
           {QUESTIONS.map((q) => (
             <fieldset key={q.key} className="mt-5">

@@ -5,7 +5,8 @@ import { createEditPlan } from "@/lib/ai-adapter";
 import { analyzeSoundFile } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
-import { applyStyleRules, styleById } from "@/lib/styles";
+import { applyStyleRules } from "@/lib/styles";
+import { approvedRules, resolveStyle } from "@/lib/styles-db";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
 import { isOwnSoundKey } from "@/lib/sound";
 import { PLATFORM_CAP_SECONDS } from "@/lib/config";
@@ -151,7 +152,9 @@ export async function POST(req: Request) {
 
         await db.from("projects").update({ status: "planning" }).eq("id", project.id);
         send({ type: "stage", stage: "planning" });
-        const planned = await createEditPlan(assets, body.setup, { allowAI: !flag(settings.kill_switch_ai) });
+        const style = await resolveStyle(body.setup.style);
+        const lessons = await approvedRules(style?.id).catch(() => [] as string[]);
+        const planned = await createEditPlan(assets, body.setup, { allowAI: !flag(settings.kill_switch_ai), style, rules: lessons });
 
         // Their own sound: find the beats, then cut the edit to them. If anything fails, the edit still works without it.
         if (body.soundKey && isOwnSoundKey(body.soundKey, user.id, project.id)) {
@@ -185,7 +188,7 @@ export async function POST(req: Request) {
         }
 
         // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
-        planned.plan = applyStyleRules(planned.plan, styleById(body.setup.style));
+        planned.plan = applyStyleRules(planned.plan, style);
 
         // Self-check: repair clear mistakes in the plan (repeated or excess effects, messy ending) before rendering.
         {
