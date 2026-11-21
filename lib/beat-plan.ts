@@ -62,7 +62,7 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
     ...plan,
     segments: withFx,
     targetDurationSec: round(used),
-    sound: { key: soundKey, startSec: round(start), volume: 1, bpm: info.bpm },
+    sound: { key: soundKey, startSec: round(start), volume: 1, clipVolume: 0.2, bpm: info.bpm },
     summary: `${plan.summary.replace(/\s*Cut to the beat[^.]*\./, "")} Cut to the beat of your sound (${Math.round(info.bpm)} BPM).`.trim().slice(0, 600),
   };
 }

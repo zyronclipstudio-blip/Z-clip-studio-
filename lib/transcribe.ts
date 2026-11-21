@@ -52,7 +52,7 @@ export async function transcribeUsedAssets(plan: EditPlan, assets: MediaAsset[])
         const prompt = `Transcribe the spoken words in this audio for on-screen captions.
 Return ONLY a JSON array. Each item is {"start":seconds,"end":seconds,"text":"words"} with 1 to 3 words per item, in order, times measured from the start of the audio, accurate to about 0.1 second.
 Write the words exactly as spoken in the original language (do not translate). If there is no speech, or it is only music or singing, return [].`;
-        let res;
+        let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
         for (const model of [GEMINI_MODEL, GEMINI_FALLBACK_MODEL]) {
           try {
             res = await ai.models.generateContent({ model, contents: createUserContent([createPartFromUri(file.uri, file.mimeType), prompt]), config: { responseMimeType: "application/json", temperature: 0 } });

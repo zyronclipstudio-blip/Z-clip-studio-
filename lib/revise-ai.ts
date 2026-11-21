@@ -48,7 +48,7 @@ ${capabilityPrompt()}
 
 Return ONLY JSON: {"explanation":"...","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[]}]}`;
 
-  let res;
+  let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
   let lastErr: unknown;
   for (const model of [GEMINI_MODEL, GEMINI_MODEL, GEMINI_FALLBACK_MODEL]) {
     try {
