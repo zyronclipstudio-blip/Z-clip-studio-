@@ -6,6 +6,7 @@ import { PlanOpError, validatePlan } from "@/lib/plan-ops";
 import { reviseByRules } from "@/lib/revise";
 import { reviseWithGemini } from "@/lib/revise-ai";
 import { flag, getSettings } from "@/lib/settings";
+import { admin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { EditPlanSchema } from "@/lib/types/schema";
 
@@ -71,6 +72,8 @@ export async function POST(req: Request) {
     }
   }
 
+  // Learning signal: what was complained about (text only, no media). Used to learn rules from many users.
+  await admin().from("feedback_events").insert({ owner_id: user.id, project_id: project.id, signal: "complaint", detail: { text: body.feedback.slice(0, 300), usedAI, changed: rules.handled || usedAI } });
   await logEvent("revise", "info", usedAI ? "Plan revised by AI" : "Plan revised by rules", { projectId: project.id, usedAI }, user.id);
   return Response.json({ plan, explanation, usedAI, changed: JSON.stringify(plan.segments) !== JSON.stringify(body.plan.segments) || plan.sound?.clipVolume !== body.plan.sound?.clipVolume || plan.captions?.enabled !== body.plan.captions?.enabled }, { headers: { "Cache-Control": "no-store" } });
 }

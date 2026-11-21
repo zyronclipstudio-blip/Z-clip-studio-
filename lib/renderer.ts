@@ -61,11 +61,11 @@ export async function renderPlan(
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, ""), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
     }
@@ -143,6 +143,16 @@ export async function captionFilter(words: PieceWord[], dir: string, tag: string
   return vf;
 }
 
+// Colour looks, applied before effects. Each keeps the frame size and pixel format.
+export function lookFilter(look: EditPlan["look"] = "none"): string {
+  switch (look) {
+    case "soft": return ",eq=brightness=0.03:saturation=1.08:contrast=0.97,colorbalance=rs=0.03:bs=-0.03";
+    case "punchy": return ",eq=contrast=1.1:saturation=1.2";
+    case "cinematic": return ",eq=contrast=1.07:saturation=0.92,colorbalance=rs=-0.02:bs=0.04";
+    default: return "";
+  }
+}
+
 // Motion effects. Each one acts on the start of a piece, where the beat lands.
 // Filters are chained after the base crop; every one keeps the frame size and pixel format.
 export function effectFilter(effect: EffectId, w: number, h: number): string {
@@ -173,10 +183,12 @@ function segmentArgs(
   effects: EffectId[] = [],
   still = false,
   captionVf = "",
+  look: EditPlan["look"] = "none",
 ): string[] {
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+  vf += lookFilter(look);
   for (const e of effects) vf += effectFilter(e, w, h);
   vf += captionVf;
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";

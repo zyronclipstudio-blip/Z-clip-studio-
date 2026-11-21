@@ -55,3 +55,24 @@ test("caption words move into the piece's own time and skip other clips", () => 
   assert.equal(r.length, 1);
   assert.ok(Math.abs(r[0].start - 0.2) < 1e-6);
 });
+
+import { applyStyleRules, styleById, STYLES } from "../lib/styles";
+import { lookFilter } from "../lib/renderer";
+test("style rules strip disallowed effects and cap the rest", () => {
+  const p = plan([seg(["shake", "punch"]), seg(["flash"]), seg(["glitch"]), seg(["punch"]), seg(["whip"]), seg([])]);
+  const lifestyle = applyStyleRules(p, styleById("lifestyle"));
+  const fx = (lifestyle as { segments: { effects: string[] }[] }).segments.flatMap((s) => s.effects);
+  assert.ok(fx.every((e) => e === "punch"));
+  assert.ok(fx.length <= 1);
+  assert.equal((applyStyleRules(p, styleById("clean")) as { segments: { effects: string[] }[] }).segments.flatMap((s) => s.effects).length, 0);
+  assert.equal((applyStyleRules(p, styleById("anime")) as { look: string }).look, "punchy");
+});
+test("every style has a unique id and a known look", () => {
+  assert.equal(new Set(STYLES.map((s) => s.id)).size, STYLES.length);
+  for (const s of STYLES) assert.ok(["none", "soft", "punchy", "cinematic"].includes(s.look));
+});
+test("look filters render in ffmpeg", async () => {
+  const { execFileSync } = await import("node:child_process");
+  for (const l of ["soft", "punchy", "cinematic"] as const)
+    execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=720x1280:d=1:r=30", "-vf", "format=yuv420p" + lookFilter(l), "-frames:v", "5", "/tmp/look.mp4"]);
+});

@@ -5,6 +5,7 @@ import { createEditPlan } from "@/lib/ai-adapter";
 import { analyzeSoundFile } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
+import { applyStyleRules, styleById } from "@/lib/styles";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
 import { isOwnSoundKey } from "@/lib/sound";
 import { PLATFORM_CAP_SECONDS } from "@/lib/config";
@@ -182,6 +183,9 @@ export async function POST(req: Request) {
             // No captions is fine.
           }
         }
+
+        // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
+        planned.plan = applyStyleRules(planned.plan, styleById(body.setup.style));
 
         // Self-check: repair clear mistakes in the plan (repeated or excess effects, messy ending) before rendering.
         {

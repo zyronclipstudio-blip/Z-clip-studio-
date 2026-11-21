@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ConfirmSheet } from "@/components/ConfirmSheet";
 import { askNotifyPermission, notify } from "@/lib/notify";
+import { STYLES, styleById } from "@/lib/styles";
 import { Check, Download, Trash2, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
@@ -248,7 +249,7 @@ export default function Home() {
     return () => { (window as unknown as { __zclipBusy?: boolean }).__zclipBusy = false; };
   }, [busy]);
   const [project, setProject] = useState<{ projectId: string; assets: PublicAsset[] } | null>(null);
-  const [setup, setSetup] = useState<Setup>({ purpose: "auto", mood: "auto", platform: "auto" });
+  const [setup, setSetup] = useState<Setup>({ purpose: "auto", mood: "auto", platform: "auto", style: "auto" });
   const [stage, setStage] = useState<string>("");
   const [result, setResult] = useState<Result | null>(null);
   const [estimate, setEstimate] = useState<Estimate | null>(null);
@@ -475,7 +476,7 @@ export default function Home() {
     setResult(null);
     setVersions([]);
     setError("");
-    setSetup({ purpose: "auto", mood: "auto", platform: "auto" });
+    setSetup({ purpose: "auto", mood: "auto", platform: "auto", style: "auto" });
   }
 
   const [versions, setVersions] = useState<{ version: number; createdAt: string; plan: EditPlan }[]>([]);
@@ -750,6 +751,20 @@ export default function Home() {
           <p className="text-sm text-[#8d97a8]">
             {project.assets.length} clip{project.assets.length > 1 ? "s" : ""} ready · {fmtSec(project.assets.reduce((s, a) => s + a.durationSec, 0))} of footage. Every question is optional.
           </p>
+          <fieldset className="mt-5">
+            <legend className="mb-2 font-medium">Style</legend>
+            <div className="flex flex-wrap gap-2">
+              {[{ id: "auto", name: "Let ZClip decide", tagline: "" }, ...STYLES].map((st) => {
+                const active = setup.style === st.id;
+                return (
+                  <button key={st.id} type="button" aria-pressed={active} onClick={() => setSetup({ ...setup, style: st.id })} className={`rounded-full border px-3 py-1.5 text-sm transition ${active ? "border-[#d9b45b] bg-[#d9b45b]/15 text-[#d9b45b]" : "border-white/10 bg-[#181c25] text-[#eceff4] hover:border-muted"}`}>
+                    {st.name}
+                  </button>
+                );
+              })}
+            </div>
+            {styleById(setup.style) && <p className="mt-2 text-xs text-[#8d97a8]">{styleById(setup.style)?.tagline}</p>}
+          </fieldset>
           {QUESTIONS.map((q) => (
             <fieldset key={q.key} className="mt-5">
               <legend className="mb-2 font-medium">{q.title}</legend>

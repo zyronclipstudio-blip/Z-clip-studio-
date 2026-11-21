@@ -7,6 +7,7 @@ export const SetupSchema = z.object({
   purpose: z.enum(["auto", "cinematic", "gym", "business", "general"]).default("auto"),
   mood: z.enum(["auto", "energetic", "cinematic", "calm", "professional"]).default("auto"),
   platform: z.enum(["auto", "shorts", "youtube", "other"]).default("auto"),
+  style: z.string().max(40).default("auto"),
 });
 export type Setup = z.infer<typeof SetupSchema>;
 
@@ -61,6 +62,8 @@ export const EditPlanSchema = z.object({
       bpm: z.number().min(0).max(400).optional(),
     })
     .optional(),
+  /** Colour look applied to every piece. */
+  look: z.enum(["none", "soft", "punchy", "cinematic"]).optional(),
   /** Spoken words from the clips, in each clip's own time, burned in as captions. */
   captions: z
     .object({

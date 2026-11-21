@@ -15,6 +15,7 @@ import {
   UPLOAD_DIR,
 } from "./config";
 import { capabilityPrompt } from "./capabilities";
+import { styleById, stylePrompt } from "./styles";
 import { isImageName } from "./image";
 import { run } from "./media";
 import {
@@ -145,6 +146,7 @@ Customer intent (may be "auto", meaning decide from the footage):
 - Purpose: ${setup.purpose}
 - Mood: ${setup.mood}
 - Destination: ${setup.platform}
+${stylePrompt(styleById(setup.style))}
 
 Rules:
 - Some items may be PHOTOS. Treat a photo as a still shot: start at 0, show it for 2 to 3 seconds, and place it where it fits the story or the beat. Mix photos and videos naturally.
