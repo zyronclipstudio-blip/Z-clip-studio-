@@ -89,6 +89,38 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
+// Sends one file through ZClip in 1 MB pieces. Weak or switching networks only cost one piece, never the whole file.
+async function sendInPieces(projectId: string, path: string, file: File, onBytes: (sent: number) => void): Promise<void> {
+  const CH = 1024 * 1024;
+  const pieces = Math.max(1, Math.ceil(file.size / CH));
+  const base = `/api/projects/${projectId}/upload-chunk?path=${encodeURIComponent(path)}`;
+  const have = new Set<number>();
+  try {
+    const r = await fetch(base, { cache: "no-store" });
+    if (r.ok) for (const n of ((await r.json()) as { have?: number[] }).have ?? []) have.add(n);
+  } catch { /* start from the beginning */ }
+  let sent = 0;
+  for (let n = 0; n < pieces; n++) {
+    const part = file.slice(n * CH, Math.min(file.size, (n + 1) * CH));
+    if (have.has(n)) { sent += part.size; onBytes(sent); continue; }
+    let ok = false;
+    for (let attempt = 0; attempt < 8 && !ok; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(8000, 1200 * attempt)));
+      try {
+        const res = await fetch(`${base}&index=${n}&total=${pieces}&size=${file.size}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: part });
+        if (res.ok) { ok = true; break; }
+        const d = await res.json().catch(() => null);
+        if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) throw new Error(d?.error || `Could not upload "${file.name}".`);
+      } catch (e) {
+        if (e instanceof Error && e.message && !/fetch|network|load failed|abort/i.test(e.message)) throw e;
+      }
+    }
+    if (!ok) throw new Error(`"${file.name}" (${fmtMB(file.size)}) stopped uploading. Your connection looks weak. Your progress is kept: tap Continue to carry on. Code: UPLOAD_NETWORK`);
+    sent += part.size;
+    onBytes(sent);
+  }
+}
+
 // Create project -> get server-approved upload paths -> upload straight to private storage -> server verifies.
 async function uploadClips(files: File[], onProgress: (pct: number) => void): Promise<{ projectId: string; assets: PublicAsset[] }> {
   const { projectId } = await postJson<{ projectId: string }>("/api/projects", {});
@@ -101,43 +133,23 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
   for (let i = 0; i < files.length; i++) {
     const upload = uploads[i];
     if (upload.url) {
-      // Weak mobile networks drop long uploads, so each file gets a few tries: straight to storage first,
-      // then through ZClip. Only after all of those fail do we tell the person.
+      // Straight to storage is fastest, but some networks block it. If it fails once, ZClip remembers
+      // and sends the file in small pieces through itself: each piece retries on its own and an
+      // interrupted upload resumes where it stopped.
       let ok = false;
-      let status = 0;
-      let lastNetwork = false;
-      for (let attempt = 0; attempt < 3 && !ok; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, 1500 * attempt));
+      let directBroken = false;
+      try { directBroken = localStorage.getItem("zclip-direct") === "broken"; } catch { /* ignore */ }
+      if (!directBroken && files[i].size <= 25 * 1024 * 1024) {
         try {
           const res = await fetch(upload.url, { method: "PUT", headers: { "Content-Type": upload.contentType }, body: files[i] });
           ok = res.ok;
-          status = res.status;
-          lastNetwork = false;
-          if (ok) break;
         } catch {
-          lastNetwork = true;
-        }
-        try {
-          const prox = await fetch(`/api/projects/${projectId}/upload-proxy?path=${encodeURIComponent(upload.path)}`, {
-            method: "POST",
-            headers: { "Content-Type": upload.contentType },
-            body: files[i],
-          });
-          ok = prox.ok;
-          status = prox.status;
-          lastNetwork = false;
-          if (!prox.ok) {
-            const d = await prox.json().catch(() => null);
-            if (d?.error && prox.status < 500) throw new Error(d.error);
-          }
-        } catch (e) {
-          if (e instanceof Error && e.message && !/fetch|network|load failed/i.test(e.message)) throw e;
-          lastNetwork = true;
+          try { localStorage.setItem("zclip-direct", "broken"); } catch { /* ignore */ }
         }
       }
-      if (!ok && lastNetwork)
-        throw new Error(`"${files[i].name}" (${fmtMB(files[i].size)}) did not finish uploading. Your connection looks weak. Try Wi-Fi, or a shorter or smaller file. Code: UPLOAD_NETWORK`);
-      if (!ok) throw new Error(`Could not upload "${files[i].name}". Storage answered ${status}. Please try again.`);
+      if (!ok) {
+        await sendInPieces(projectId, upload.path, files[i], (bytes) => onProgress(Math.min(99, Math.round(((done + bytes) / total) * 100))));
+      }
     } else {
       // Fallback: Supabase Storage uploadToSignedUrl
       const sb = createClient();
