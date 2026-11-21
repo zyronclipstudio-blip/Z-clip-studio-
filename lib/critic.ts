@@ -7,11 +7,12 @@ export interface CritiqueResult {
   fixes: string[];
 }
 
+type Seg = CutSegment & { effects: NonNullable<CutSegment["effects"]> };
 const MAX_EFFECT_SHARE = 0.4; // at most this share of the pieces may carry an effect
 
 export function critiquePlan(input: EditPlan): CritiqueResult {
   const fixes: string[] = [];
-  const segs: CutSegment[] = input.segments.map((s) => ({ ...s, effects: [...(s.effects ?? [])] }));
+  const segs: Seg[] = input.segments.map((s) => ({ ...s, effects: [...(s.effects ?? [])] }));
 
   // 1. The same effect on two neighbouring pieces looks like a mistake.
   let repeats = 0;
