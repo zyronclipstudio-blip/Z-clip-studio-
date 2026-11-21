@@ -8,14 +8,17 @@ const assets = [{ id: "a", durationSec: 20 }, { id: "b", durationSec: 20 }];
 const seg = (assetId: string, s: number, e: number) => ({ assetId, startSec: s, endSec: e, reason: "", confidence: 1, transition: "cut" as const });
 const plan = { version: 1 as const, source: "gemini" as const, aspectRatio: "9:16" as const, pacing: "fast" as const, targetDurationSec: 16, summary: "x", segments: [seg("a", 0, 5), seg("b", 0, 5), seg("a", 5, 10), seg("b", 5, 10), seg("a", 10, 15)] };
 
-test("pieces become whole beats, start at the drop, big beats get an effect", () => {
+test("pieces are whole beats, the edit is a fair length, and it starts at the drop", () => {
   const out = snapPlanToBeats(plan, assets, info, "u/p/sound.mp3", 60);
   assert.equal(out.sound?.startSec, 8);
   for (const s of out.segments) {
     const beatsLong = (s.endSec - s.startSec) / 0.5;
     assert.ok(Math.abs(beatsLong - Math.round(beatsLong)) < 0.01);
-    assert.ok(s.endSec - s.startSec <= 1.01); // fast = one beat each
+    assert.ok(s.endSec - s.startSec >= 0.5 && s.endSec - s.startSec <= 2.01); // fast: a few beats, never long
   }
+  // 40s of footage across two 20s clips: a fair share (at least 60%) must be kept, not a few seconds.
+  assert.ok(out.targetDurationSec >= 15, `only ${out.targetDurationSec}s`);
+  assert.ok(out.targetDurationSec <= 32 + 0.1);
   assert.ok(out.segments[0].effects?.length);
 });
 
