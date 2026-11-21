@@ -50,7 +50,7 @@ Ignore the people and the topic; describe only HOW it is edited. Return ONLY JSO
 "maxShare" is the share of cuts that carry an effect. "quality" is how clearly this video shows a repeatable editing style (0 = unclear).
 Do not mention names, brands, links, or anything the video says. Describe technique only.`;
 
-async function recipeFromVideo(ai: GoogleGenAI, videoId: string): Promise<RawRecipe | null> {
+async function recipeFromVideo(ai: InstanceType<typeof GoogleGenAI>, videoId: string): Promise<RawRecipe | null> {
   const contents = [{ role: "user", parts: [{ fileData: { fileUri: `https://www.youtube.com/watch?v=${videoId}` } }, { text: RECIPE_PROMPT }] }];
   for (const model of GEMINI_MODEL_CHAIN) {
     try {
