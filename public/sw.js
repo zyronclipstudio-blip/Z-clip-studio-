@@ -1,7 +1,7 @@
 /* ZClip service worker.
  * Cache only the offline shell and immutable static assets. Never cache API, auth, HTML or media.
  * Bump VERSION whenever the shell/icon set changes so installed clients discard old cached icons. */
-const VERSION = "zclip-shell-v5";
+const VERSION = "zclip-shell-v6";
 const SHELL = ["/offline.html", "/icons/zclip-gold.svg"];
 
 self.addEventListener("install", (event) => {
@@ -36,4 +36,14 @@ self.addEventListener("fetch", (event) => {
       })),
     );
   }
+});
+// Tapping a ZClip notification brings the app back to the front.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) if ("focus" in c) return c.focus();
+      return self.clients.openWindow("/");
+    }),
+  );
 });

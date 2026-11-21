@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ConfirmSheet } from "./ConfirmSheet";
 import { Film, Home, LogOut, Scissors, ShieldCheck, Trash2, Upload, Wand2 } from "lucide-react";
 import { MyEdits } from "@/components/MyEdits";
 import { ZClipMark } from "@/components/ZClipMark";
@@ -59,6 +60,7 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
     } finally {
       setDeleting(false);
       setConfirmDel(false);
+      setConfirmDel(false);
     }
   };
 
@@ -97,16 +99,10 @@ export function StudioDashboard({ view, userCredits, onNewProject, onOpenProject
                     <span className="text-[13px] text-[#8d97a8]">Fix it by hand, or try a different shape</span>
                   </span>
                 </button>
-                {confirmDel ? (
-                  <span className="flex items-center gap-1.5">
-                    <button type="button" disabled={deleting} onClick={removeLast} className="min-h-11 rounded-[12px] bg-[#ff8a96]/15 px-3 text-[13px] font-medium text-[#ff8a96]">{deleting ? "Deleting…" : "Delete"}</button>
-                    <button type="button" onClick={() => setConfirmDel(false)} className="min-h-11 px-2 text-[13px] text-[#8d97a8]">Keep</button>
-                  </span>
-                ) : (
-                  <button type="button" aria-label="Delete this edit" onClick={() => setConfirmDel(true)} className="grid h-11 w-11 place-items-center rounded-[12px] text-[#8d97a8] hover:text-[#ff8a96]"><Trash2 size={18} /></button>
-                )}
+                <button type="button" aria-label="Delete this edit" onClick={() => setConfirmDel(true)} className="grid h-11 w-11 place-items-center rounded-[12px] text-[#8d97a8] hover:text-[#ff8a96]"><Trash2 size={18} /></button>
               </div>
             )}
+            <ConfirmSheet open={confirmDel} busy={deleting} title="Delete this edit?" body="The finished video and the clips behind it are removed from ZClip. This can't be undone." confirmLabel="Delete forever" onConfirm={removeLast} onCancel={() => setConfirmDel(false)} />
             {openError && <p role="alert" className="text-[13px] text-[#ff8a96]">{openError}</p>}
 
             <div className="grid grid-cols-3 gap-2.5">

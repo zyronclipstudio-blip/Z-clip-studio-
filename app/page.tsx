@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
+import { ConfirmSheet } from "@/components/ConfirmSheet";
+import { askNotifyPermission, notify } from "@/lib/notify";
+import { Check, Download, Trash2, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
 import { AppShell, type Tab } from "@/components/AppShell";
@@ -298,6 +300,10 @@ export default function Home() {
     return () => window.removeEventListener("popstate", onBack);
   }, [mode]);
 
+  useEffect(() => {
+    if (!online && busy) void notify("No internet", "Your upload is paused. Your progress is saved and it carries on when you are back online.", "zclip-offline");
+  }, [online, busy]);
+
   const uploadAbort = useRef<AbortController | null>(null);
   const uploadProjectId = useRef("");
 
@@ -307,6 +313,7 @@ export default function Home() {
   }
 
   async function handleUpload() {
+    void askNotifyPermission();
     const ctl = new AbortController();
     uploadAbort.current = ctl;
     uploadProjectId.current = "";
@@ -413,6 +420,7 @@ export default function Home() {
     const projectId = pid ?? project?.projectId;
     const estimateNow = est ?? estimate;
     if (!projectId || !estimateNow) return;
+    void askNotifyPermission();
     setStep("processing");
     setError("");
     setStage("analysing");
@@ -445,11 +453,13 @@ export default function Home() {
             if (typeof ev.credits === "number") setAccount((a) => (a ? { ...a, credits: ev.credits } : a));
             setResult(ev);
             setStep("review");
+            void notify("Your video is ready", "Tap to watch it and download.", "zclip-done");
           }
         }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
+      void notify("ZClip needs you", "Your edit stopped. Open ZClip to see what happened.", "zclip-error");
       setStep("preflight");
     }
   }
@@ -843,8 +853,12 @@ export default function Home() {
                 </div>
               </div>
               <video src={result.outputUrl} controls playsInline className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
-              <a href={result.downloadUrl ?? result.outputUrl} className="mt-4 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99]">
-                <Download size={18} /> Download MP4
+              <a href={result.downloadUrl ?? result.outputUrl} className="group relative mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[18px] border border-[#ecd083]/40 bg-gradient-to-br from-[#ecd083] via-[#d9b45b] to-[#b88f38] px-4 py-3.5 text-[#17120a] shadow-[0_12px_32px_rgba(217,180,91,0.28)] transition active:scale-[0.99]">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#17120a]/90 text-[#ecd083] shadow-inner"><Download size={20} /></span>
+                <span className="min-w-0 flex-1 text-left">
+                  <b className="block text-base font-semibold leading-tight">Download your video</b>
+                  <span className="text-[13px] opacity-75">{fmtSec(result.metrics.outputDurationSec)} · MP4 · ready to post</span>
+                </span>
               </a>
               <button
                 type="button"
