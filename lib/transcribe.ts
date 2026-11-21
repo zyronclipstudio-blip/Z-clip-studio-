@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { GoogleGenAI, createPartFromUri, createUserContent } from "@google/genai";
-import { FFMPEG, GEMINI_API_KEY, GEMINI_FALLBACK_MODEL, GEMINI_MODEL, UPLOAD_DIR } from "./config";
+import { FFMPEG, GEMINI_API_KEY, GEMINI_MODEL_CHAIN, UPLOAD_DIR } from "./config";
 import { isImageName } from "./image";
 import { run } from "./media";
 import type { EditPlan, MediaAsset } from "./types/schema";
@@ -53,7 +53,7 @@ export async function transcribeUsedAssets(plan: EditPlan, assets: MediaAsset[])
 Return ONLY a JSON array. Each item is {"start":seconds,"end":seconds,"text":"words"} with 1 to 3 words per item, in order, times measured from the start of the audio, accurate to about 0.1 second.
 Write the words exactly as spoken in the original language (do not translate). If there is no speech, or it is only music or singing, return [].`;
         let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
-        for (const model of [GEMINI_MODEL, GEMINI_FALLBACK_MODEL]) {
+        for (const model of GEMINI_MODEL_CHAIN) {
           try {
             res = await ai.models.generateContent({ model, contents: createUserContent([createPartFromUri(file.uri, file.mimeType), prompt]), config: { responseMimeType: "application/json", temperature: 0 } });
             break;

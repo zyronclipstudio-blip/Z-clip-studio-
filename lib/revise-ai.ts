@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import { capabilityPrompt } from "./capabilities";
-import { GEMINI_API_KEY, GEMINI_FALLBACK_MODEL, GEMINI_MODEL } from "./config";
+import { GEMINI_API_KEY, GEMINI_MODEL_CHAIN, isModelGone } from "./config";
 import { EFFECT_IDS, type CutSegment, type EditPlan, type MediaAsset } from "./types/schema";
 
 // Revises an existing plan from a plain-language complaint. Text only: no footage is re-uploaded,
@@ -50,12 +50,13 @@ Return ONLY JSON: {"explanation":"...","segments":[{"assetId":"...","startSec":0
 
   let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
   let lastErr: unknown;
-  for (const model of [GEMINI_MODEL, GEMINI_MODEL, GEMINI_FALLBACK_MODEL]) {
+  for (const model of GEMINI_MODEL_CHAIN.flatMap((m) => [m, m])) {
     try {
       res = await ai.models.generateContent({ model, contents: prompt, config: { responseMimeType: "application/json", temperature: 0.3 } });
       break;
     } catch (e) {
       lastErr = e;
+      if (isModelGone(e instanceof Error ? e.message : "")) continue;
       if (!/503|429|UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|timeout/i.test(e instanceof Error ? e.message : "")) throw e;
       await new Promise((r) => setTimeout(r, 2000));
     }

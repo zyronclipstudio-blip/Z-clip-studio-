@@ -10,7 +10,7 @@ export const FFMPEG = process.env.FFMPEG_PATH || "ffmpeg";
 export const FFPROBE = process.env.FFPROBE_PATH || "ffprobe";
 
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
+export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.8-flash";
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 export const GEMINI_PRICE_IN_PER_M = Number(process.env.GEMINI_PRICE_IN_PER_M) || 0;
 export const GEMINI_PRICE_OUT_PER_M = Number(process.env.GEMINI_PRICE_OUT_PER_M) || 0;
@@ -43,3 +43,7 @@ export const MIME_BY_EXT: Record<string, string> = {
 
 // Maximum finished length per destination. ZClip never pads to reach this.
 export { PLATFORM_CAP_SECONDS } from "./caps";
+
+// Models to try in order. Google retires models (a retired one answers 404), so there is always a newer last resort.
+export const GEMINI_MODEL_CHAIN: string[] = [...new Set([GEMINI_MODEL, GEMINI_FALLBACK_MODEL, "gemini-3.8-flash"])];
+export const isModelGone = (msg: string) => /404|NOT_FOUND|no longer available|not found/i.test(msg);

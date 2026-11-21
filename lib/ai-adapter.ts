@@ -5,7 +5,7 @@ import { z } from "zod";
 import { GoogleGenAI, createPartFromUri, createUserContent } from "@google/genai";
 import {
   GEMINI_API_KEY,
-  GEMINI_FALLBACK_MODEL,
+  GEMINI_MODEL_CHAIN, isModelGone,
   GEMINI_MODEL,
   GEMINI_PRICE_IN_PER_M,
   GEMINI_PRICE_OUT_PER_M,
@@ -169,7 +169,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
     // Gemini sometimes answers "high demand" (503/429). Retry, then try a backup model,
     // so a busy moment does not turn a smart edit into a plain join of the clips.
     const contents = createUserContent([...parts, prompt]);
-    const attempts: string[] = [GEMINI_MODEL, GEMINI_MODEL, GEMINI_MODEL, GEMINI_FALLBACK_MODEL, GEMINI_FALLBACK_MODEL];
+    const attempts: string[] = GEMINI_MODEL_CHAIN.flatMap((m) => [m, m]);
     let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
     let usedModel = GEMINI_MODEL;
     let lastErr: unknown;
@@ -180,6 +180,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
       } catch (e) {
         lastErr = e;
         const msg = e instanceof Error ? e.message : "";
+        if (isModelGone(msg)) { while (n + 1 < attempts.length && attempts[n + 1] === usedModel) n++; continue; } // retired model: go straight to the next one
         if (!/503|429|UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|timeout/i.test(msg)) throw e;
         await new Promise((r) => setTimeout(r, 2500 * (n + 1)));
       }
