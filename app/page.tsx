@@ -91,28 +91,30 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 // Sends one file through ZClip in 1 MB pieces. Weak or switching networks only cost one piece, never the whole file.
-async function sendInPieces(projectId: string, path: string, file: File, onBytes: (sent: number) => void): Promise<void> {
+async function sendInPieces(projectId: string, path: string, file: File, onBytes: (sent: number) => void, signal?: AbortSignal): Promise<void> {
   const CH = 1024 * 1024;
   const pieces = Math.max(1, Math.ceil(file.size / CH));
   const base = `/api/projects/${projectId}/upload-chunk?path=${encodeURIComponent(path)}`;
   const have = new Set<number>();
   try {
-    const r = await fetch(base, { cache: "no-store" });
+    const r = await fetch(base, { cache: "no-store", signal });
     if (r.ok) for (const n of ((await r.json()) as { have?: number[] }).have ?? []) have.add(n);
   } catch { /* start from the beginning */ }
   let sent = 0;
   for (let n = 0; n < pieces; n++) {
+    if (signal?.aborted) throw new Error("CANCELLED");
     const part = file.slice(n * CH, Math.min(file.size, (n + 1) * CH));
     if (have.has(n)) { sent += part.size; onBytes(sent); continue; }
     let ok = false;
     for (let attempt = 0; attempt < 8 && !ok; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(8000, 1200 * attempt)));
       try {
-        const res = await fetch(`${base}&index=${n}&total=${pieces}&size=${file.size}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: part });
+        const res = await fetch(`${base}&index=${n}&total=${pieces}&size=${file.size}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: part, signal });
         if (res.ok) { ok = true; break; }
         const d = await res.json().catch(() => null);
         if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) throw new Error(d?.error || `Could not upload "${file.name}".`);
       } catch (e) {
+        if (signal?.aborted) throw new Error("CANCELLED");
         if (e instanceof Error && e.message && !/fetch|network|load failed|abort/i.test(e.message)) throw e;
       }
     }
@@ -123,7 +125,7 @@ async function sendInPieces(projectId: string, path: string, file: File, onBytes
 }
 
 // Create project -> get server-approved upload paths -> upload straight to private storage -> server verifies.
-async function uploadClips(files: File[], onProgress: (pct: number) => void): Promise<{ projectId: string; assets: PublicAsset[] }> {
+async function uploadClips(files: File[], onProgress: (pct: number) => void, signal?: AbortSignal, onProject?: (id: string) => void): Promise<{ projectId: string; assets: PublicAsset[] }> {
   // The same files as an interrupted upload? Carry on with that project instead of starting over.
   type Up = { path: string; token?: string; url?: string; name: string; contentType: string };
   const sig = files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|");
@@ -141,9 +143,11 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
     ({ uploads } = await postJson<{ uploads: Up[] }>(`/api/projects/${projectId}/sign`, { files: files.map((f) => ({ name: f.name, size: f.size })) }));
     try { localStorage.setItem("zclip-upload-session", JSON.stringify({ sig, projectId, uploads: uploads.map((u) => ({ ...u, url: undefined })), at: Date.now() })); } catch { /* ignore */ }
   }
+  onProject?.(projectId);
   const total = files.reduce((s, f) => s + f.size, 0);
   let done = 0;
   for (let i = 0; i < files.length; i++) {
+    if (signal?.aborted) throw new Error("CANCELLED");
     const upload = uploads[i];
     if (upload.url || !upload.token) {
       // Straight to storage is fastest, but some networks block it. If it fails once, ZClip remembers
@@ -154,14 +158,15 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
       try { directBroken = localStorage.getItem("zclip-direct") === "broken"; } catch { /* ignore */ }
       if (upload.url && !directBroken && files[i].size <= 25 * 1024 * 1024) {
         try {
-          const res = await fetch(upload.url as string, { method: "PUT", headers: { "Content-Type": upload.contentType }, body: files[i] });
+          const res = await fetch(upload.url as string, { method: "PUT", headers: { "Content-Type": upload.contentType }, body: files[i], signal });
           ok = res.ok;
         } catch {
+          if (signal?.aborted) throw new Error("CANCELLED");
           try { localStorage.setItem("zclip-direct", "broken"); } catch { /* ignore */ }
         }
       }
       if (!ok) {
-        await sendInPieces(projectId, upload.path, files[i], (bytes) => onProgress(Math.min(99, Math.round(((done + bytes) / total) * 100))));
+        await sendInPieces(projectId, upload.path, files[i], (bytes) => onProgress(Math.min(99, Math.round(((done + bytes) / total) * 100))), signal);
       }
     } else {
       // Fallback: Supabase Storage uploadToSignedUrl
@@ -273,12 +278,43 @@ export default function Home() {
     setFiles(next);
   }
 
+  // Phone back gesture / back button: go one step back inside ZClip instead of leaving the app and losing work.
+  const navRef = useRef({ step, inEditor, busy });
+  navRef.current = { step, inEditor, busy };
+  useEffect(() => {
+    try { window.history.pushState({ zclip: true }, ""); } catch { /* ignore */ }
+  }, [step, inEditor]);
+  useEffect(() => {
+    const onBack = () => {
+      const { step: st, inEditor: ed, busy: b } = navRef.current;
+      try { window.history.pushState({ zclip: true }, ""); } catch { /* ignore */ }
+      if (b || st === "processing") return; // never interrupt work in progress
+      if (st === "review") setStep(mode === "auto" ? "setup" : "canvas");
+      else if (st === "preflight") setStep("setup");
+      else if (st === "setup" || st === "canvas") setStep("upload");
+      else if (ed) setInEditor(false);
+    };
+    window.addEventListener("popstate", onBack);
+    return () => window.removeEventListener("popstate", onBack);
+  }, [mode]);
+
+  const uploadAbort = useRef<AbortController | null>(null);
+  const uploadProjectId = useRef("");
+
+  // Stops the upload right now, throws away the half-sent files, and keeps the picked clips so they can be changed.
+  function cancelUpload() {
+    uploadAbort.current?.abort();
+  }
+
   async function handleUpload() {
+    const ctl = new AbortController();
+    uploadAbort.current = ctl;
+    uploadProjectId.current = "";
     setBusy(true);
     setError("");
     setProgress(0);
     try {
-      const uploaded = await uploadClips(files, setProgress);
+      const uploaded = await uploadClips(files, setProgress, ctl.signal, (id) => { uploadProjectId.current = id; });
       setProject(uploaded);
       soundKeyRef.current = "";
       void clearDraft();
@@ -302,8 +338,17 @@ export default function Home() {
       if (mode === "manual") setStep("canvas");
       else await autoStart(uploaded.projectId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed.");
+      if (ctl.signal.aborted || (e instanceof Error && e.message === "CANCELLED")) {
+        try { localStorage.removeItem("zclip-upload-session"); } catch { /* ignore */ }
+        const pid = uploadProjectId.current;
+        if (pid) void fetch(`/api/projects/${pid}`, { method: "DELETE" }).catch(() => undefined);
+        setProgress(0);
+        setNotice("Upload cancelled. Your clips are still selected: change them, then tap Continue.");
+      } else {
+        setError(e instanceof Error ? e.message : "Upload failed.");
+      }
     } finally {
+      uploadAbort.current = null;
       setBusy(false);
     }
   }
@@ -659,6 +704,11 @@ export default function Home() {
                 </div>
               </div>
               {soundFile && <p className="mt-2 text-xs leading-5 text-[#8d97a8]">ZClip will cut your clips to the beat of this sound. Only use sounds you have the right to use.</p>}
+              {busy && (
+                <button type="button" onClick={cancelUpload} className="mt-4 w-full rounded-[14px] border border-[#242a35] bg-[#11141b] min-h-12 px-4 text-sm font-medium text-[#eceff4] transition hover:border-[#d9b45b]/50">
+                  Cancel upload
+                </button>
+              )}
               <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
                 {busy ? `Uploading… ${progress}%` : "Continue"}
               </button>
