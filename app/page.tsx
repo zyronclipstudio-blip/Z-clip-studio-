@@ -8,6 +8,7 @@ import { AppShell, type Tab } from "@/components/AppShell";
 import { ManualEditor } from "@/components/ManualEditor";
 import { PLATFORM_CAP_SECONDS } from "@/lib/caps";
 import { EditPlanSchema } from "@/lib/types/schema";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { createClient } from "@/lib/supabase/browser";
 import { useOnline } from "@/lib/useOnline";
 import type { EditPlan, PublicAsset, QAReport, Setup } from "@/lib/types/schema";
@@ -123,25 +124,37 @@ async function sendInPieces(projectId: string, path: string, file: File, onBytes
 
 // Create project -> get server-approved upload paths -> upload straight to private storage -> server verifies.
 async function uploadClips(files: File[], onProgress: (pct: number) => void): Promise<{ projectId: string; assets: PublicAsset[] }> {
-  const { projectId } = await postJson<{ projectId: string }>("/api/projects", {});
-  const { uploads } = await postJson<{ uploads: { path: string; token?: string; url?: string; name: string; contentType: string }[] }>(
-    `/api/projects/${projectId}/sign`,
-    { files: files.map((f) => ({ name: f.name, size: f.size })) },
-  );
+  // The same files as an interrupted upload? Carry on with that project instead of starting over.
+  type Up = { path: string; token?: string; url?: string; name: string; contentType: string };
+  const sig = files.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|");
+  let resumed: { projectId: string; uploads: Up[] } | null = null;
+  try {
+    const saved = JSON.parse(localStorage.getItem("zclip-upload-session") || "null");
+    if (saved && saved.sig === sig && Date.now() - saved.at < 3600_000) resumed = { projectId: saved.projectId, uploads: saved.uploads };
+  } catch { /* ignore */ }
+  let projectId: string;
+  let uploads: Up[];
+  if (resumed) {
+    ({ projectId, uploads } = resumed);
+  } else {
+    ({ projectId } = await postJson<{ projectId: string }>("/api/projects", {}));
+    ({ uploads } = await postJson<{ uploads: Up[] }>(`/api/projects/${projectId}/sign`, { files: files.map((f) => ({ name: f.name, size: f.size })) }));
+    try { localStorage.setItem("zclip-upload-session", JSON.stringify({ sig, projectId, uploads: uploads.map((u) => ({ ...u, url: undefined })), at: Date.now() })); } catch { /* ignore */ }
+  }
   const total = files.reduce((s, f) => s + f.size, 0);
   let done = 0;
   for (let i = 0; i < files.length; i++) {
     const upload = uploads[i];
-    if (upload.url) {
+    if (upload.url || !upload.token) {
       // Straight to storage is fastest, but some networks block it. If it fails once, ZClip remembers
       // and sends the file in small pieces through itself: each piece retries on its own and an
       // interrupted upload resumes where it stopped.
       let ok = false;
       let directBroken = false;
       try { directBroken = localStorage.getItem("zclip-direct") === "broken"; } catch { /* ignore */ }
-      if (!directBroken && files[i].size <= 25 * 1024 * 1024) {
+      if (upload.url && !directBroken && files[i].size <= 25 * 1024 * 1024) {
         try {
-          const res = await fetch(upload.url, { method: "PUT", headers: { "Content-Type": upload.contentType }, body: files[i] });
+          const res = await fetch(upload.url as string, { method: "PUT", headers: { "Content-Type": upload.contentType }, body: files[i] });
           ok = res.ok;
         } catch {
           try { localStorage.setItem("zclip-direct", "broken"); } catch { /* ignore */ }
@@ -161,6 +174,7 @@ async function uploadClips(files: File[], onProgress: (pct: number) => void): Pr
     done += files[i].size;
     onProgress(Math.round((done / total) * 100));
   }
+  try { localStorage.removeItem("zclip-upload-session"); } catch { /* ignore */ }
   const fin = await postJson<{ projectId?: string; assets?: PublicAsset[] }>(`/api/projects/${projectId}/finalize`, {
     files: uploads.map((u) => ({ path: u.path, name: u.name })),
   });
@@ -201,6 +215,24 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  // Keep the picked clips on this phone, so a swipe-away or refresh never loses them.
+  useEffect(() => {
+    if (step === "upload" && files.length) void saveDraft({ files, sound: soundFile, mode });
+  }, [files, soundFile, mode, step]);
+  useEffect(() => {
+    let alive = true;
+    void loadDraft().then((d) => {
+      if (!alive || !d) return;
+      setFiles((cur) => (cur.length ? cur : d.files));
+      setSoundFile((cur) => cur ?? d.sound);
+      setMode(d.mode);
+      setInEditor(true);
+      setNotice("We kept your clips from last time. Tap Continue to carry on where you stopped.");
+    });
+    return () => { alive = false; };
+  }, []);
   // Tells the quiet auto-updater not to reload while an upload or render is running.
   useEffect(() => {
     (window as unknown as { __zclipBusy?: boolean }).__zclipBusy = busy;
@@ -247,6 +279,8 @@ export default function Home() {
       const uploaded = await uploadClips(files, setProgress);
       setProject(uploaded);
       soundKeyRef.current = "";
+      void clearDraft();
+      setNotice("");
       if (soundFile) {
         // Their own sound is optional. If it can't be saved, the edit simply goes ahead without it.
         const ext = soundFile.name.slice(soundFile.name.lastIndexOf(".")).toLowerCase();
@@ -375,6 +409,8 @@ export default function Home() {
 
   function reset() {
     setStep("upload");
+    void clearDraft();
+    setNotice("");
     setFiles([]);
     setSoundFile(null);
     soundKeyRef.current = "";
@@ -508,6 +544,12 @@ export default function Home() {
             </div>
           </header>
 
+      {notice && !error && (
+        <div role="status" className="mb-4 flex items-start gap-2 rounded-[14px] border border-[#d9b45b]/40 bg-[#d9b45b]/10 px-4 py-3 text-sm text-[#ecd083]">
+          <span className="flex-1">{notice}</span>
+          <button aria-label="Dismiss" onClick={() => setNotice("")} className="rounded p-1"><X size={14} /></button>
+        </div>
+      )}
       {error && (
         <div role="alert" className="mb-4 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
