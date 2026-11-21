@@ -56,6 +56,8 @@ export const EditPlanSchema = z.object({
       key: z.string().min(1).max(300),
       startSec: z.number().min(0).max(3600),
       volume: z.number().min(0).max(2).default(1),
+      /** Level of the clips' own audio under the sound: 0 silences it. */
+      clipVolume: z.number().min(0).max(1).default(0.2),
       bpm: z.number().min(0).max(400).optional(),
     })
     .optional(),

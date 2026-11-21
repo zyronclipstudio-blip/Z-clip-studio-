@@ -26,6 +26,7 @@ const BodySchema = z.object({
   approvedCeiling: z.number().int().positive(),
   setup: SetupSchema.default({}),
   soundKey: z.string().max(300).optional(),
+  clipVolume: z.number().min(0).max(1).optional(),
 });
 
 const fail = (error: string, status: number) =>
@@ -155,7 +156,10 @@ export async function POST(req: Request) {
             const info = await analyzeSoundFile(soundLocal);
             const cap = PLATFORM_CAP_SECONDS[body.setup.platform] ?? PLATFORM_CAP_SECONDS.auto;
             const snapped = snapPlanToBeats(planned.plan, assets, info, body.soundKey, cap);
-            if (snapped.sound) planned.plan = snapped;
+            if (snapped.sound) {
+              snapped.sound.clipVolume = body.clipVolume ?? 0;
+              planned.plan = snapped;
+            }
             else soundLocal = null;
           } catch {
             soundLocal = null;

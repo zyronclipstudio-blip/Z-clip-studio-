@@ -211,6 +211,7 @@ export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
   const [soundFile, setSoundFile] = useState<File | null>(null);
   const soundKeyRef = useRef("");
+  const [clipLow, setClipLow] = useState(false); // false = silence the clips' own audio under the sound
   const soundInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -355,7 +356,7 @@ export default function Home() {
       targetDurationSec: segments.reduce((t, g) => t + g.endSec - g.startSec, 0),
       summary: "Manual edit. Cut, arrange and export it yourself.",
       segments,
-      ...(soundKeyRef.current ? { sound: { key: soundKeyRef.current, startSec: 0, volume: 1 } } : {}),
+      ...(soundKeyRef.current ? { sound: { key: soundKeyRef.current, startSec: 0, volume: 1, clipVolume: clipLow ? 0.2 : 0 } } : {}),
     });
     setVersions([]);
     setResult({ status: "ready", plan, qa: { passed: true, hardChecks: [], warnings: [] }, metrics: { provider: "deterministic", renderMs: 0, outputDurationSec: plan.targetDurationSec, clipCount: project.assets.length } } as Result);
@@ -373,7 +374,7 @@ export default function Home() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup, soundKey: soundKeyRef.current || undefined }),
+        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup, soundKey: soundKeyRef.current || undefined, clipVolume: soundKeyRef.current ? clipLow ? 0.2 : 0 : undefined }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -608,6 +609,16 @@ export default function Home() {
                   <Music size={16} className="text-[#d9b45b]" />
                   Add your sound (optional)
                 </button>
+              )}
+              {soundFile && (
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-[14px] border border-[#242a35] bg-[#11141b] px-3 py-2 text-sm">
+                  <span className="text-[#eceff4]">Original sound</span>
+                  <div className="flex gap-1">
+                    {([["Off", false], ["Low", true]] as const).map(([label, v]) => (
+                      <button key={label} type="button" disabled={busy} onClick={() => setClipLow(v)} className={`min-h-11 rounded-[10px] px-4 text-sm ${clipLow === v ? "zy-btn-gold" : "border border-[#242a35] text-[#8d97a8]"}`}>{label}</button>
+                    ))}
+                  </div>
+                </div>
               )}
               {soundFile && <p className="mt-2 text-xs leading-5 text-[#8d97a8]">ZClip will cut your clips to the beat of this sound. Only use sounds you have the right to use.</p>}
               <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
