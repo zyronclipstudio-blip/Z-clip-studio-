@@ -769,6 +769,8 @@ export default function Home() {
             </div>
             {styleList.find((x) => x.id === setup.style)?.tagline && <p className="mt-2 text-xs text-[#8d97a8]">{styleList.find((x) => x.id === setup.style)?.tagline}</p>}
           </fieldset>
+          <details className="mt-5 rounded-[14px] border border-[#242a35] bg-[#11141b] px-3 py-2">
+            <summary className="min-h-11 cursor-pointer list-none py-2 text-sm text-[#8d97a8]">More options (optional)</summary>
           {QUESTIONS.map((q) => (
             <fieldset key={q.key} className="mt-5">
               <legend className="mb-2 font-medium">{q.title}</legend>
@@ -790,12 +792,11 @@ export default function Home() {
               </div>
             </fieldset>
           ))}
+          </details>
           <button onClick={goPreflight} disabled={!online} className="mt-6 flex w-full items-center justify-center gap-2 zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
-            <Sparkles size={18} /> Review cost and edit
+            <Sparkles size={18} /> Make my video
           </button>
-          <button onClick={goPreflight} disabled={!online} className="mt-2 w-full py-2 text-sm text-[#8d97a8] hover:text-[#eceff4]">
-            Skip questions and let ZClip decide
-          </button>
+          <p className="mt-2 text-center text-xs text-[#8d97a8]">ZClip picks the cuts, filter, effects and captions for you. You only download.</p>
         </section>
       )}
 

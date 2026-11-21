@@ -14,6 +14,21 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
   const fixes: string[] = [];
   const segs: Seg[] = input.segments.map((s) => ({ ...s, effects: [...(s.effects ?? [])] }));
 
+  // 0. Showing the same footage twice looks like a glitch. Drop later pieces that overlap an earlier one by over half.
+  if (segs.length > 3) {
+    const kept: Seg[] = [];
+    for (const s of segs) {
+      const len = s.endSec - s.startSec;
+      const dup = kept.some((k) => k.assetId === s.assetId && Math.min(k.endSec, s.endSec) - Math.max(k.startSec, s.startSec) > len * 0.5);
+      if (!dup) kept.push(s);
+    }
+    const dropped = segs.length - kept.length;
+    if (dropped > 0 && kept.length >= 3) {
+      segs.splice(0, segs.length, ...kept);
+      fixes.push(`Removed ${dropped} repeated shot${dropped > 1 ? "s" : ""} so nothing plays twice.`);
+    }
+  }
+
   // 1. The same effect on two neighbouring pieces looks like a mistake.
   let repeats = 0;
   for (let i = 1; i < segs.length; i++) {
