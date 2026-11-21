@@ -55,6 +55,7 @@ export async function GET() {
     storageKeyId: has("B2_KEY_ID"),
     storageApplicationKey: has("B2_APPLICATION_KEY"),
     geminiKey: has("GEMINI_API_KEY"),
+    youtubeKey: has("YOUTUBE_API_KEY"),
     ffmpeg: await ffmpegAvailable(),
   };
   const database = await databaseAccess();
