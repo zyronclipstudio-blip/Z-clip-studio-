@@ -31,6 +31,10 @@ export const STYLES: Style[] = [
     directorNote: "Travel and scenery. Let wide, beautiful shots breathe. Whip transitions between locations. Alternate wide, medium and detail. End on the most beautiful view." },
   { id: "talking", name: "Talking head", tagline: "Clear words, clean edit", pacing: "medium", effects: { allowed: [], maxShare: 0 }, captions: "pop", look: "none",
     directorNote: "Someone talking to camera. Never cut mid-word or mid-sentence. Remove long pauses, false starts and repeats. No effects. Captions carry the message. Start on the strongest line." },
+  { id: "business", name: "Business", tagline: "Credible, clear, professional", pacing: "medium", effects: { allowed: ["punch"], maxShare: 0.1 }, captions: "clean", look: "none",
+    directorNote: "Business and brand content: credible, clear and confident. Open with the strongest claim, result or product moment. Keep speech whole, remove pauses, steady pacing, minimal movement. Show proof (results, product, people at work). End on a clear takeaway or call to action." },
+  { id: "cars", name: "Cars", tagline: "Speed, shine, impact", pacing: "fast", effects: { allowed: ["punch", "whip", "flash", "shake"], maxShare: 0.4 }, captions: "off", look: "cinematic",
+    directorNote: "Car content: open on the most striking angle (front, wheels, headlights or a launch). Cut on engine revs and motion, whip between exterior, interior and detail shots, punch or flash on the loudest moment or the burnout. Finish on a hero shot of the car." },
   { id: "cinematic", name: "Cinematic", tagline: "Film mood, slow and deliberate", pacing: "slow", effects: { allowed: ["punch"], maxShare: 0.1 }, captions: "off", look: "cinematic",
     directorNote: "Cinematic mood: slow, deliberate, composed shots. Longer holds, fewer cuts, strong opening image and a quiet, memorable ending." },
 ];

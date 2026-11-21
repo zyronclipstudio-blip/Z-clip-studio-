@@ -17,6 +17,8 @@ const NICHES: { id: string; q: string }[] = [
   { id: "talking", q: "talking to camera storytime shorts" },
   { id: "dance", q: "dance trend shorts" },
   { id: "fashion", q: "outfit fashion grwm shorts" },
+  { id: "business", q: "business entrepreneur startup shorts" },
+  { id: "cars", q: "car edit supercar cinematic shorts" },
 ];
 
 interface Candidate { id: string; title: string; views: number; ageDays: number }
