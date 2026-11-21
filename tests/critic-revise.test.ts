@@ -43,3 +43,15 @@ test("silence request sets clip volume to zero", () => {
 test("unknown complaint is passed on to the AI", () => {
   assert.equal(reviseByRules(plan([seg([])]), "make the ending more emotional").handled, false);
 });
+
+import { wordsForPiece } from "../lib/renderer";
+test("caption words move into the piece's own time and skip other clips", () => {
+  const w = [
+    { assetId: "a", startSec: 10.2, endSec: 10.8, text: "hi" },
+    { assetId: "a", startSec: 20, endSec: 21, text: "outside" },
+    { assetId: "b", startSec: 10.5, endSec: 11, text: "other" },
+  ];
+  const r = wordsForPiece(w, "a", 10, 13);
+  assert.equal(r.length, 1);
+  assert.ok(Math.abs(r[0].start - 0.2) < 1e-6);
+});

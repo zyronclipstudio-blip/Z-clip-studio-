@@ -53,7 +53,20 @@ export async function renderPlan(
       expected += dur;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
-      await run(FFMPEG, segmentArgs(path.join(UPLOAD_DIR, asset.storedName), out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, isImageName(asset.originalName)), LIMITS.renderTimeoutMs);
+      const src = path.join(UPLOAD_DIR, asset.storedName);
+      const still = isImageName(asset.originalName);
+      let capVf = "";
+      if (plan.captions?.enabled && !still && (await canDrawText())) {
+        const pw = wordsForPiece(plan.captions.words, seg.assetId, seg.startSec, seg.endSec);
+        if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
+      }
+      try {
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf), LIMITS.renderTimeoutMs);
+      } catch (err) {
+        if (!capVf) throw err;
+        // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, ""), LIMITS.renderTimeoutMs);
+      }
       partFiles.push(out);
     }
 
@@ -94,6 +107,42 @@ export async function renderPlan(
   }
 }
 
+// ---- Word-by-word captions (burned in per piece, in the piece's own time).
+const CAPTION_FONT = path.join(process.cwd(), "assets", "fonts", "Poppins-Bold.ttf");
+let drawtextOk: boolean | undefined;
+async function canDrawText(): Promise<boolean> {
+  if (drawtextOk !== undefined) return drawtextOk;
+  try {
+    const { stdout } = await run(FFMPEG, ["-hide_banner", "-filters"], 20_000);
+    drawtextOk = /\bdrawtext\b/.test(stdout) && (await fs.access(CAPTION_FONT).then(() => true, () => false));
+  } catch {
+    drawtextOk = false;
+  }
+  return drawtextOk;
+}
+
+export interface PieceWord { start: number; end: number; text: string }
+
+// Words from the source clip that fall inside this piece, moved into the piece's own timeline.
+export function wordsForPiece(words: { assetId: string; startSec: number; endSec: number; text: string }[], assetId: string, segStart: number, segEnd: number): PieceWord[] {
+  const dur = segEnd - segStart;
+  return words
+    .filter((w) => w.assetId === assetId && w.endSec > segStart && w.startSec < segEnd)
+    .map((w) => ({ start: Math.max(0, w.startSec - segStart), end: Math.min(dur, Math.max(w.endSec - segStart, w.startSec - segStart + 0.25)), text: w.text }))
+    .filter((w) => w.end - w.start >= 0.12);
+}
+
+export async function captionFilter(words: PieceWord[], dir: string, tag: string, w: number, h: number, style: "pop" | "clean"): Promise<string> {
+  let vf = "";
+  for (let i = 0; i < words.length; i++) {
+    const f = path.join(dir, `cap-${tag}-${i}.txt`);
+    await fs.writeFile(f, style === "pop" ? words[i].text.toUpperCase() : words[i].text);
+    const size = Math.round(w * (style === "pop" ? 0.085 : 0.06));
+    vf += `,drawtext=fontfile='${CAPTION_FONT}':textfile='${f}':expansion=none:fontsize=${size}:fontcolor=white:borderw=${Math.max(3, Math.round(size / 11))}:bordercolor=black:x=(w-text_w)/2:y=h*0.70:enable='between(t,${words[i].start.toFixed(2)},${words[i].end.toFixed(2)})'`;
+  }
+  return vf;
+}
+
 // Motion effects. Each one acts on the start of a piece, where the beat lands.
 // Filters are chained after the base crop; every one keeps the frame size and pixel format.
 export function effectFilter(effect: EffectId, w: number, h: number): string {
@@ -123,11 +172,13 @@ function segmentArgs(
   volume = 1,
   effects: EffectId[] = [],
   still = false,
+  captionVf = "",
 ): string[] {
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
   for (const e of effects) vf += effectFilter(e, w, h);
+  vf += captionVf;
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
   if (volume !== 1) af += `,volume=${Math.min(2, Math.max(0, volume)).toFixed(2)}`;
   if (fade) {

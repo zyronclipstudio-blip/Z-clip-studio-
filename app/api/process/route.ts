@@ -4,6 +4,8 @@ import { z } from "zod";
 import { createEditPlan } from "@/lib/ai-adapter";
 import { analyzeSoundFile } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
+import { critiquePlan } from "@/lib/critic";
+import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
 import { isOwnSoundKey } from "@/lib/sound";
 import { PLATFORM_CAP_SECONDS } from "@/lib/config";
 import { downloadToWorkDir, removeLocal, rowToAsset } from "@/lib/assets";
@@ -27,6 +29,7 @@ const BodySchema = z.object({
   setup: SetupSchema.default({}),
   soundKey: z.string().max(300).optional(),
   clipVolume: z.number().min(0).max(1).optional(),
+  captions: z.boolean().optional(),
 });
 
 const fail = (error: string, status: number) =>
@@ -163,6 +166,29 @@ export async function POST(req: Request) {
             else soundLocal = null;
           } catch {
             soundLocal = null;
+          }
+        }
+
+        // Word-by-word captions from the clips' own speech. Only when that speech will actually be heard.
+        const clipsAudible = !planned.plan.sound || (planned.plan.sound.clipVolume ?? 0) > 0;
+        if (body.captions !== false && clipsAudible && !flag(settings.kill_switch_ai)) {
+          try {
+            const t = await transcribeUsedAssets(planned.plan, assets);
+            const used = wordsForPlan(planned.plan, t.words);
+            if (used.length >= 3) planned.plan = { ...planned.plan, captions: { enabled: true, style: "pop", words: used } };
+            if (t.tokensIn || t.tokensOut)
+              await db.from("cost_ledger").insert({ owner_id: user.id, project_id: project.id, render_job_id: jobId, category: "ai", provider: "gemini", detail: { task: "captions", tokensIn: t.tokensIn, tokensOut: t.tokensOut } });
+          } catch {
+            // No captions is fine.
+          }
+        }
+
+        // Self-check: repair clear mistakes in the plan (repeated or excess effects, messy ending) before rendering.
+        {
+          const checked = critiquePlan(planned.plan);
+          if (checked.fixes.length) {
+            planned.plan = { ...checked.plan, summary: `${checked.plan.summary} Self-check: ${checked.fixes.join(" ")}`.slice(0, 600) };
+            await logEvent("self_check", "info", checked.fixes.join(" "), { projectId: project.id }, user.id);
           }
         }
 

@@ -211,6 +211,7 @@ export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
   const [soundFile, setSoundFile] = useState<File | null>(null);
   const soundKeyRef = useRef("");
+  const [captionsOn, setCaptionsOn] = useState(true);
   const [clipLow, setClipLow] = useState(false); // false = silence the clips' own audio under the sound
   const soundInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
@@ -374,7 +375,7 @@ export default function Home() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup, soundKey: soundKeyRef.current || undefined, clipVolume: soundKeyRef.current ? clipLow ? 0.2 : 0 : undefined }),
+        body: JSON.stringify({ projectId, idempotencyKey: crypto.randomUUID(), approvedCeiling: estimateNow.ceiling, setup, soundKey: soundKeyRef.current || undefined, clipVolume: soundKeyRef.current ? clipLow ? 0.2 : 0 : undefined, captions: captionsOn }),
       });
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));
@@ -649,6 +650,14 @@ export default function Home() {
                   </div>
                 </div>
               )}
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-[14px] border border-[#242a35] bg-[#11141b] px-3 py-2 text-sm">
+                <span className="text-[#eceff4]">Captions <span className="text-xs text-[#8d97a8]">(when people speak)</span></span>
+                <div className="flex gap-1">
+                  {([["On", true], ["Off", false]] as const).map(([label, v]) => (
+                    <button key={label} type="button" disabled={busy} onClick={() => setCaptionsOn(v)} className={`min-h-11 rounded-[10px] px-4 text-sm ${captionsOn === v ? "zy-btn-gold" : "border border-[#242a35] text-[#8d97a8]"}`}>{label}</button>
+                  ))}
+                </div>
+              </div>
               {soundFile && <p className="mt-2 text-xs leading-5 text-[#8d97a8]">ZClip will cut your clips to the beat of this sound. Only use sounds you have the right to use.</p>}
               <button onClick={handleUpload} disabled={busy || !online} className="mt-4 w-full zy-btn-gold rounded-[14px] min-h-14 px-4 py-3 text-base transition active:scale-[0.99] disabled:opacity-60">
                 {busy ? `Uploading… ${progress}%` : "Continue"}

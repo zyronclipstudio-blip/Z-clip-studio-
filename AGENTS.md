@@ -32,4 +32,4 @@ You are the implementation engineer for **ZClip (Zyron Clip Studio)**. This file
 - End each task with: files changed, migrations added, env vars needed, tests run and results, known gaps.
 
 ## Known gaps (do not pretend these exist)
-Background render worker, correction controls, payments/subscriptions, monthly allowance warnings, workspaces, promotional-grant and account-integrity logic, captions/music in the edit plan, approved brand icons (the ones in `public/icons` are placeholders).
+Background render worker, payments/subscriptions, monthly allowance warnings, workspaces, promotional-grant and account-integrity logic, approved brand icons (the ones in `public/icons` are placeholders).
