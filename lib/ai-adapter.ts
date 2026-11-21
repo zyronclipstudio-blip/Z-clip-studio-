@@ -39,9 +39,16 @@ export interface PlanResult {
   fallbackReason?: string;
 }
 
-export function aspectFor(platform: Setup["platform"]): AspectRatio {
+export function aspectFor(platform: Setup["platform"], assets: Pick<MediaAsset, "width" | "height">[] = []): AspectRatio {
   if (platform === "shorts") return "9:16";
   if (platform === "other") return "1:1";
+  if (platform === "auto" && assets.length) {
+    // Follow the footage: phone clips are mostly upright, and a wide frame would crop heads off.
+    const portrait = assets.filter((a) => a.height > a.width * 1.1).length;
+    const wide = assets.filter((a) => a.width > a.height * 1.1).length;
+    if (portrait > wide) return "9:16";
+    if (portrait === 0 && wide === 0) return "1:1";
+  }
   return "16:9";
 }
 
@@ -234,7 +241,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
   return EditPlanSchema.parse({
     version: 1,
     source,
-    aspectRatio: aspectFor(setup.platform),
+    aspectRatio: aspectFor(setup.platform, assets),
     pacing: parsed.pacing,
     targetDurationSec: round(segments.reduce((sum, segment) => sum + segment.endSec - segment.startSec, 0)),
     summary: parsed.summary || "Automatic edit.",
@@ -290,7 +297,7 @@ export function planDeterministic(assets: MediaAsset[], setup: Setup): PlanResul
   const plan = EditPlanSchema.parse({
     version: 1,
     source: "deterministic",
-    aspectRatio: aspectFor(setup.platform),
+    aspectRatio: aspectFor(setup.platform, assets),
     pacing,
     targetDurationSec: round(segments.reduce((sum, segment) => sum + segment.endSec - segment.startSec, 0)),
     summary: `Your first cut: ${assets.length} clip${assets.length === 1 ? "" : "s"} in upload order. Trim, reorder or remove anything below.`,
