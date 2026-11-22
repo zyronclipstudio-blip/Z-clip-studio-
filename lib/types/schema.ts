@@ -42,6 +42,10 @@ export const CutSegmentSchema = z.object({
   effects: z.array(EffectSchema).max(3).optional(),
   /** Playback speed of this piece: 0.75 slow-motion up to 1.5 faster. 1 or missing = normal. */
   speed: z.number().min(0.75).max(1.5).optional(),
+  /** Hold the last frame for this many seconds (a beat hit or a reveal). */
+  freeze: z.number().min(0.2).max(1.5).optional(),
+  /** Play this short piece backwards (only pieces up to 4 seconds). */
+  reverse: z.boolean().optional(),
 });
 export type CutSegment = z.infer<typeof CutSegmentSchema>;
 
@@ -64,6 +68,8 @@ export const EditPlanSchema = z.object({
       bpm: z.number().min(0).max(400).optional(),
     })
     .optional(),
+  /** Automatic clean-up: audio noise reduction for speech, mild sharpening. */
+  polish: z.object({ audio: z.boolean().default(false), sharpen: z.boolean().default(false) }).optional(),
   /** Colour look applied to every piece. */
   look: z.enum(["none", "soft", "punchy", "cinematic"]).optional(),
   /** Spoken words from the clips, in each clip's own time, burned in as captions. */

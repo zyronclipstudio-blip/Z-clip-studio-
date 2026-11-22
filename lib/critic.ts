@@ -29,6 +29,16 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
     }
   }
 
+  // 0b. Rare tools stay rare: at most 2 freezes, 1 reverse, 2 speed changes; none on the opening piece.
+  {
+    let fz = 0, rv = 0, sp = 0;
+    segs.forEach((s, i) => {
+      if (s.freeze) { if (i === 0 || ++fz > 2) { delete s.freeze; } }
+      if (s.reverse) { if (i === 0 || ++rv > 1) { delete s.reverse; } }
+      if (s.speed) { if (++sp > 2) { delete s.speed; } }
+    });
+  }
+
   // 1. The same effect on two neighbouring pieces looks like a mistake.
   let repeats = 0;
   for (let i = 1; i < segs.length; i++) {

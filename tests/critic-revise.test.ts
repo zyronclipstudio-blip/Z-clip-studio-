@@ -91,3 +91,27 @@ test("score rewards performance and clarity, and slugs are safe", () => {
   assert.ok(scoreRecipe(1_000_000, 2, 90) > scoreRecipe(2_000, 10, 30));
   assert.equal(slugFor("AbC-12_x!"), "radar-abc-12_x");
 });
+
+import { parseSilence, trimEdges } from "../lib/silence";
+
+test("silence: trims dead air at the edges only", () => {
+  const spans = parseSilence("silence_start: 0\nsilence_end: 0.9 | silence_duration: 0.9\nsilence_start: 2.0\nsilence_end: 2.6\nsilence_start: 4.2", 5);
+  const { head, tail } = trimEdges(spans, 5);
+  assert.ok(head > 0.7 && head < 0.9);
+  assert.ok(tail > 0.7 && tail < 0.8);
+});
+
+test("silence: never trims a piece below one second", () => {
+  const { head, tail } = trimEdges([{ start: 0, end: 1.2 }, { start: 1.4, end: 2 }], 2);
+  assert.deepEqual({ head, tail }, { head: 0, tail: 0 });
+});
+
+test("critic: rare tools stay rare", () => {
+  let n = 0;
+  const seg = (extra: object) => ({ assetId: "a", startSec: n * 3, endSec: n++ * 3 + 2, reason: "", confidence: 0.8, transition: "cut" as const, ...extra });
+  const plan: any = { version: 1, source: "gemini", aspectRatio: "9:16", pacing: "fast", targetDurationSec: 10, summary: "x", segments: [seg({ freeze: 0.5 }), seg({ freeze: 0.5, reverse: true }), seg({ freeze: 0.5, reverse: true }), seg({ freeze: 0.5 }), seg({})] };
+  const out = critiquePlan(plan).plan.segments;
+  assert.equal(out[0].freeze, undefined);
+  assert.equal(out.filter((s) => s.freeze).length, 2);
+  assert.equal(out.filter((s) => s.reverse).length, 1);
+});

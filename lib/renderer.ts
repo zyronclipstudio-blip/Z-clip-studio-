@@ -52,7 +52,9 @@ export async function renderPlan(
       const dur = Math.round((seg.endSec - seg.startSec) * 1000) / 1000;
       if (dur <= 0 || seg.endSec > asset.durationSec + 0.05) throw new Error("Plan contains an invalid time range");
       const spd = seg.speed && seg.speed !== 1 ? seg.speed : 1;
-      expected += dur / spd;
+      const hold = seg.freeze && !isImageName(asset.originalName) ? seg.freeze : 0;
+      const rev = seg.reverse === true && dur <= 4 && !isImageName(asset.originalName);
+      expected += dur / spd + hold;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
       const src = path.join(UPLOAD_DIR, asset.storedName);
@@ -64,11 +66,11 @@ export async function renderPlan(
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold, rev, plan.polish), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade, hold, rev, plan.polish), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
     }
@@ -86,7 +88,7 @@ export async function renderPlan(
         [
           "-y", "-hide_banner", "-i", joined, "-ss", String(plan.sound.startSec), "-i", soundFile,
           "-filter_complex",
-          `[0:a]volume=${(plan.sound.clipVolume ?? 0.2).toFixed(2)}[a0];[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${plan.sound.volume.toFixed(2)},afade=t=out:st=${fadeAt}:d=0.6[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${total},loudnorm=I=-16:TP=-1.5:LRA=11[a]`,
+          `[0:a]asplit=2[s1][s2];[s1]volume=${(plan.sound.clipVolume ?? 0.2).toFixed(2)}[a0];[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${plan.sound.volume.toFixed(2)},afade=t=out:st=${fadeAt}:d=0.6[m];[m][s2]sidechaincompress=threshold=0.04:ratio=6:attack=20:release=300:makeup=1[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${total},loudnorm=I=-16:TP=-1.5:LRA=11[a]`,
           "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", total, "-movflags", "+faststart", outputPath,
         ],
         LIMITS.renderTimeoutMs,
@@ -190,19 +192,30 @@ function segmentArgs(
   look: EditPlan["look"] = "none",
   speed = 1,
   grade = "",
+  hold = 0,
+  reverse = false,
+  polish?: EditPlan["polish"],
 ): string[] {
   // Speed: the source range is read as is; the piece plays shorter or longer.
-  const outDur = dur / speed;
+  const outDur = dur / speed + hold;
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
   if (speed !== 1) vf = `setpts=PTS/${speed.toFixed(3)},` + vf;
+  if (reverse) vf = `reverse,` + vf;
+  if (polish?.sharpen) vf += ",unsharp=5:5:0.5:5:5:0.0";
   vf += grade;
   vf += lookFilter(look);
   for (const e of effects) vf += effectFilter(e, w, h);
   vf += captionVf;
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
+  if (reverse) af = `areverse,` + af;
+  if (polish?.audio) af += ",afftdn=nr=12:nf=-40";
   if (speed !== 1) af += `,atempo=${speed.toFixed(3)}`;
+  if (hold > 0) {
+    vf += `,tpad=stop_mode=clone:stop_duration=${hold.toFixed(3)}`;
+    af += `,apad=pad_dur=${hold.toFixed(3)}`;
+  }
   if (volume !== 1) af += `,volume=${Math.min(2, Math.max(0, volume)).toFixed(2)}`;
   if (fade) {
     const f = Math.min(0.2, outDur / 4).toFixed(3);

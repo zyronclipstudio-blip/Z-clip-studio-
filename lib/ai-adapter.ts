@@ -87,6 +87,8 @@ const GeminiPlanSchema = z.object({
       transition: z.enum(["cut", "fade"]).catch("cut"),
       effects: z.array(z.string()).catch([]),
       speed: z.coerce.number().min(0.75).max(1.5).optional().catch(undefined),
+      freeze: z.coerce.number().min(0.2).max(1.5).optional().catch(undefined),
+      reverse: z.boolean().optional().catch(undefined),
     }),
   ),
 });
@@ -161,6 +163,8 @@ Rules:
 - ORDER: arrange clips so they flow. For footage that tells a story (for example AI-generated scenes), keep the story logical and keep a character or look consistent across neighbouring cuts. Put wide shots before close-ups unless a close-up is the hook.
 ${capabilityPrompt()}
 - "speed" (0.75 to 1.5, default 1): 0.75 = slow motion for the single best moment (a reveal, a hit, a dance move); up to 1.5 to tighten a dull stretch. Use on at most 2 segments, never on speech.
+- "freeze" (0.3 to 1.0 seconds, optional): holds the last frame of a segment to land a beat hit or reveal. At most 2 per video, never on speech.
+- "reverse" (true, optional): plays a short segment (under 4 seconds) backwards for a surprising moment. At most 1 per video, never on people talking.
 - DIRECTOR: build a shape, not a pile. Hook first, then build energy, put the biggest moment about two thirds in, and END on a strong, clean moment (never mid-action or on a fade of nothing). Do not place two near-identical shots next to each other; alternate wide, medium and close, and alternate subjects when you can. Prefer moments with clear faces, clear motion or clear results. If a clip has speech, keep whole sentences together and do not cut off a word.
 - VARIETY: spread effects across the video with space between them; the same effect never twice in a row. Use "flash" or "punch" on the hook and on the peak only when the style is energetic.
 - CONTINUITY: group shots of the same person, outfit and place together; change outfit or location only with a deliberate cut. End on a clear face or finished moment, never a tight crop of clothing or a blurry frame.
@@ -235,6 +239,8 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
       reason: s.reason || "Selected as a strong moment.",
       confidence: s.confidence,
       transition: s.transition,
+      freeze: s.freeze && s.freeze >= 0.2 ? Math.round(s.freeze * 10) / 10 : undefined,
+      reverse: s.reverse === true && end - start <= 4 ? true : undefined,
       speed: s.speed && Math.abs(s.speed - 1) > 0.04 ? Math.round(s.speed * 100) / 100 : undefined,
       effects: (() => {
         const ok = s.effects.filter((e): e is (typeof EFFECT_IDS)[number] => (EFFECT_IDS as readonly string[]).includes(e));

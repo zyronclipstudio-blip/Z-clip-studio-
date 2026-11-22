@@ -5,6 +5,7 @@ import { createEditPlan } from "@/lib/ai-adapter";
 import { analyzeSoundFile } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
+import { trimDeadAir } from "@/lib/silence";
 import { applyStyleRules } from "@/lib/styles";
 import { approvedRules, resolveStyle } from "@/lib/styles-db";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
@@ -185,6 +186,19 @@ export async function POST(req: Request) {
           } catch {
             // No captions is fine.
           }
+        }
+
+        // Clean-up tools, automatic: cut dead air at the edges of spoken pieces, reduce noise on speech, sharpen lightly.
+        {
+          const speech = (planned.plan.captions?.words.length ?? 0) >= 3;
+          if (speech && clipsAudible && !planned.plan.sound && !flag(settings.kill_switch_ai)) {
+            const t = await trimDeadAir(planned.plan, assets).catch(() => null);
+            if (t && t.trimmedSec > 0) {
+              planned.plan = t.plan;
+              await logEvent("dead_air_trim", "info", `Trimmed ${t.trimmedSec}s of dead air`, { projectId: project.id }, user.id);
+            }
+          }
+          planned.plan = { ...planned.plan, polish: { audio: speech && clipsAudible, sharpen: true } };
         }
 
         // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
