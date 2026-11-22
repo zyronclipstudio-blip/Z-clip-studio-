@@ -134,3 +134,20 @@ test("shots: measured on real frames (sharp vs blurred vs dark)", async () => {
   assert.equal(isWeakShot(blur!), "blurry");
   assert.equal(isWeakShot(dark!), "dark");
 });
+
+import { parseTechniques, summarizeObservations } from "../lib/radar-core";
+
+test("techniques: parses a checklist and rejects junk", () => {
+  const t = parseTechniques({ avgShotSec: 2.1, firstCutSec: 1.2, transitions: ["Spin", "whip"], hasSpeedRamp: true, grade: "dark-contrasty", unknown: ["logo animation"] });
+  assert.equal(t?.avgShotSec, 2.1);
+  assert.deepEqual(t?.transitions, ["spin", "whip"]);
+  assert.equal(parseTechniques({ grade: "nonsense" }), null);
+  assert.equal(parseTechniques("x"), null);
+});
+
+test("insights: needs enough videos, then states measured facts", () => {
+  const row = (extra: object) => ({ avg_shot_sec: 2, transitions: ["spin"], has_speed_ramp: false, has_title_card: true, has_end_card: false, grade: "dark-contrasty", ...extra });
+  assert.equal(summarizeObservations([row({}), row({})]), null);
+  const s = summarizeObservations([row({}), row({}), row({}), row({ transitions: ["whip"] }), row({})]);
+  assert.ok(s?.includes("spin (80%)") && s.includes("title or logo card in 100%") && s.includes("dark-contrasty grade"));
+});

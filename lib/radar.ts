@@ -3,7 +3,7 @@ import { z } from "zod";
 import { GEMINI_API_KEY, GEMINI_MODEL_CHAIN, isModelGone } from "./config";
 import { num } from "./settings";
 import { admin } from "./supabase/admin";
-import { safeText, scoreRecipe, slugFor, toStyle, type RawRecipe } from "./radar-core";
+import { parseTechniques, safeText, scoreRecipe, slugFor, toStyle, type RawRecipe } from "./radar-core";
 
 // The trend radar and the rule learner. Run by the in-app scheduler (see lib/scheduler.ts).
 // Nothing here downloads or stores anyone's video: YouTube gives us public links and numbers,
@@ -50,6 +50,8 @@ Ignore the people and the topic; describe only HOW it is edited. Return ONLY JSO
 {"name":"2-3 word style name","tagline":"under 8 words","pacing":"fast|medium|slow","effects":["punch","shake","flash","glitch","whip","spin","zoomblur"],"maxShare":0.0-0.5,"captions":"pop|clean|off","look":"none|soft|punchy|cinematic","directorNote":"2-4 sentences telling an editor how to cut footage in this style: hook, cut rhythm, how it ends, what makes it work","quality":0-100}
 "effects" lists ONLY effects you actually see, chosen from: punch (push-in), shake (jitter), flash (white flash), glitch (colour split), whip (blur transition), spin (shot swings in from a tilt), zoomblur (fast zoom-out with blur). Use [] if none.
 "maxShare" is the share of cuts that carry an effect. "quality" is how clearly this video shows a repeatable editing style (0 = unclear).
+Also return "techniques" measured as carefully as you can, as an object:
+{"avgShotSec": number (average seconds per shot), "firstCutSec": number (when the first cut happens), "transitions": [short names like spin, whip, zoom, flash, fade, slide, glitch], "hasSpeedRamp": true|false, "hasTitleCard": true|false (a title, logo or brand card), "hasEndCard": true|false, "grade": "flat|warm|cool|dark-contrasty|bright-soft|black-and-white|vivid", "unknown": [up to 5 short names of editing techniques you see that are NOT in the effects list above, e.g. "rotation transition", "freeze frame", "logo animation", "text pop"]}
 Do not mention names, brands, links, or anything the video says. Describe technique only.`;
 
 async function recipeFromVideo(ai: InstanceType<typeof GoogleGenAI>, videoId: string): Promise<RawRecipe | null> {
@@ -87,6 +89,13 @@ export async function runRadar(settings: Record<string, unknown>): Promise<{ ana
       done++;
       analysed++;
       const style = raw ? toStyle(raw, slug) : null;
+      const tech = raw ? parseTechniques((raw as { techniques?: unknown }).techniques) : null;
+      if (tech) {
+        await db.from("technique_observations").upsert(
+          { video_id: c.id, niche: niche.id, avg_shot_sec: tech.avgShotSec, first_cut_sec: tech.firstCutSec, transitions: tech.transitions, has_speed_ramp: tech.hasSpeedRamp, has_title_card: tech.hasTitleCard, has_end_card: tech.hasEndCard, grade: tech.grade, unknown_techniques: tech.unknown },
+          { onConflict: "video_id", ignoreDuplicates: true },
+        );
+      }
       if (!style) continue;
       const score = scoreRecipe(c.views, c.ageDays, style.quality);
       const status = score >= minScore ? "approved" : "draft"; // the AI approves itself; the bar is a setting
