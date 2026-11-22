@@ -1,5 +1,6 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Trash2 } from "lucide-react";
 
 // A calm bottom sheet for decisions that cannot be undone. Gold hairline, soft blur, big thumb-sized buttons.
@@ -15,9 +16,12 @@ export function ConfirmSheet({
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [open, busy, onCancel]);
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => !busy && onCancel()} role="presentation">
+  // Rendered at the top of the page so no parent layer (like the bottom bar) can cover the buttons.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!open || !mounted) return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => !busy && onCancel()} role="presentation">
       <div
         role="alertdialog"
         aria-modal="true"
@@ -35,6 +39,7 @@ export function ConfirmSheet({
           <button type="button" disabled={busy} onClick={onConfirm} className="min-h-14 rounded-[14px] bg-[#e5484d] px-4 text-base font-semibold text-white shadow-[0_8px_24px_rgba(229,72,77,0.35)] transition active:scale-[0.99] disabled:opacity-60">{busy ? busyLabel ?? "Deleting…" : confirmLabel}</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
