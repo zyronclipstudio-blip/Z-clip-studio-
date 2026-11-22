@@ -31,12 +31,13 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
 
   // 0b. Rare tools stay rare: at most 2 freezes, 1 reverse, 2 speed changes; none on the opening piece.
   {
-    let fz = 0, rv = 0, sp = 0;
+    let fz = 0, rv = 0, sp = 0, removed = 0;
     segs.forEach((s, i) => {
-      if (s.freeze) { if (i === 0 || ++fz > 2) { delete s.freeze; } }
-      if (s.reverse) { if (i === 0 || ++rv > 1) { delete s.reverse; } }
-      if (s.speed) { if (++sp > 2) { delete s.speed; } }
+      if (s.freeze && (i === 0 || ++fz > 2)) { delete s.freeze; removed++; }
+      if (s.reverse && (i === 0 || ++rv > 1)) { delete s.reverse; removed++; }
+      if (s.speed && ++sp > 2) { delete s.speed; removed++; }
     });
+    if (removed) fixes.push("Kept freeze, reverse and speed changes rare.");
   }
 
   // 1. The same effect on two neighbouring pieces looks like a mistake.
