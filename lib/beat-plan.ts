@@ -20,7 +20,9 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
 
   // How long the edit should be: a fair share of the footage (at least 15s), within the platform cap and the sound.
   const footage = assets.reduce((t, a) => t + a.durationSec, 0);
-  const goal = Math.min(maxTotalSec, info.durationSec - info.beats[0], Math.max(Math.min(15, footage), footage * 0.6, plan.targetDurationSec));
+  // Short edits hold attention: a fast edit stops near 30s, medium 40s, slow 60s, so the same footage is not looped to fill a long song.
+  const lengthCap = plan.pacing === "fast" ? 30 : plan.pacing === "slow" ? 60 : 40;
+  const goal = Math.min(maxTotalSec, lengthCap, info.durationSec - info.beats[0], Math.max(Math.min(15, footage), footage * 0.6, plan.targetDurationSec));
 
   // Start where the music kicks in, as long as the sound still has room for the whole edit.
   const room = info.durationSec - goal;
@@ -29,7 +31,7 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
   const out: CutSegment[] = [];
   const cursor = plan.segments.map((s) => s.startSec); // where the next piece of each moment begins
   let used = 0;
-  for (let round_ = 0; round_ < 6 && used < goal - 0.3; round_++) {
+  for (let round_ = 0; round_ < 4 && used < goal - 0.3; round_++) {
     let added = false;
     plan.segments.forEach((s, k) => {
       const a = byId.get(s.assetId);
