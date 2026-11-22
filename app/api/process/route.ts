@@ -6,6 +6,7 @@ import { analyzeSoundFile } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
 import { trimDeadAir } from "@/lib/silence";
+import { dropWeakShots } from "@/lib/shots";
 import { applyStyleRules } from "@/lib/styles";
 import { approvedRules, resolveStyle } from "@/lib/styles-db";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
@@ -185,6 +186,15 @@ export async function POST(req: Request) {
               await db.from("cost_ledger").insert({ owner_id: user.id, project_id: project.id, render_job_id: jobId, category: "ai", provider: "gemini", detail: { task: "captions", tokensIn: t.tokensIn, tokensOut: t.tokensOut } });
           } catch {
             // No captions is fine.
+          }
+        }
+
+        // Shot quality: skip accidental dark or blurry shots (only on edits without a beat-locked sound, so the rhythm is never broken).
+        if (!planned.plan.sound) {
+          const q = await dropWeakShots(planned.plan, assets).catch(() => null);
+          if (q && q.dropped.length) {
+            planned.plan = q.plan;
+            await logEvent("shot_quality", "info", `Skipped ${q.dropped.length} weak shot(s): ${q.dropped.join(", ")}`, { projectId: project.id }, user.id);
           }
         }
 

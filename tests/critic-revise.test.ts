@@ -115,3 +115,22 @@ test("critic: rare tools stay rare", () => {
   assert.equal(out.filter((s) => s.freeze).length, 2);
   assert.equal(out.filter((s) => s.reverse).length, 1);
 });
+
+import { isWeakShot, measureShot } from "../lib/shots";
+
+test("shots: dark and blurry frames are weak, normal ones are kept", () => {
+  assert.equal(isWeakShot({ luma: 20, detail: 3 }), "dark");
+  assert.equal(isWeakShot({ luma: 120, detail: 0.2 }), "blurry");
+  assert.equal(isWeakShot({ luma: 120, detail: 3 }), null);
+});
+
+test("shots: measured on real frames (sharp vs blurred vs dark)", async () => {
+  const S = process.env.SHOT_DIR;
+  if (!S) return;
+  const sharp = await measureShot(`${S}/sharp.mp4`, 1);
+  const blur = await measureShot(`${S}/blur.mp4`, 1);
+  const dark = await measureShot(`${S}/dark.mp4`, 1);
+  assert.equal(isWeakShot(sharp!), null);
+  assert.equal(isWeakShot(blur!), "blurry");
+  assert.equal(isWeakShot(dark!), "dark");
+});
