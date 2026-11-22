@@ -10,6 +10,8 @@ import { dropNearDuplicates, dropWeakShots } from "@/lib/shots";
 import { nicheInsight } from "@/lib/insights";
 import { reviewInBackground } from "@/lib/review";
 import { applyStyleRules } from "@/lib/styles";
+import { addPhraseHits } from "@/lib/director";
+import type { EffectId } from "@/lib/types/schema";
 import { approvedRules, resolveStyle } from "@/lib/styles-db";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
 import { isOwnSoundKey } from "@/lib/sound";
@@ -227,7 +229,7 @@ export async function POST(req: Request) {
         }
 
         // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
-        planned.plan = applyStyleRules(planned.plan, style);
+        planned.plan = applyStyleRules(addPhraseHits(planned.plan, (style?.effects.allowed ?? ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur"]) as EffectId[]), style);
 
         // Self-check: repair clear mistakes in the plan (repeated or excess effects, messy ending) before rendering.
         {

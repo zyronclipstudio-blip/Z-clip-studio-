@@ -183,3 +183,19 @@ test("shots: identical frames match, different frames do not", () => {
 test("download names are unique per minute and end in .mp4", () => {
   assert.match(freshName(), /^zclip-\d{12}\.mp4$/);
 });
+
+import { addPhraseHits } from "../lib/director";
+
+test("director: transitions land on the musical phrase, take turns, and the ending stays clean", () => {
+  const seg = (n: number) => ({ assetId: "a", startSec: n * 5, endSec: n * 5 + 1.5, reason: "", confidence: 0.8, transition: "cut" as const });
+  // 80 BPM: a phrase (8 beats) is 6 seconds, pieces are 1.5 s, so a phrase starts every 4 pieces.
+  const plan: any = { version: 1, source: "gemini", aspectRatio: "9:16", pacing: "fast", targetDurationSec: 18, summary: "x", sound: { key: "k", startSec: 0, volume: 1, clipVolume: 0, bpm: 80 }, segments: Array.from({ length: 12 }, (_, i) => seg(i)) };
+  const out = addPhraseHits(plan, ["zoomblur", "spin", "whip", "flash", "punch"]).segments;
+  const hit = out.map((s, i) => (s.effects?.length ? i : -1)).filter((i) => i >= 0);
+  assert.deepEqual(hit, [4, 8]);
+  assert.notEqual(out[4].effects?.[0], out[8].effects?.[0]);
+  assert.equal(out[11].effects, undefined);
+  assert.equal(out[0].effects, undefined);
+  const silent = { ...plan, sound: undefined };
+  assert.equal(addPhraseHits(silent, ["spin"]), silent);
+});
