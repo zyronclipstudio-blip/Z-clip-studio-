@@ -1,6 +1,9 @@
 // Saves a video without sending the person to a raw storage page.
 // Fetches the file from ZClip's own download address and saves it from here, so the person stays in the app.
-export async function saveVideo(url: string, name = "zclip-video.mp4"): Promise<"saved"> {
+// A new name each time, so the phone never asks "Download file again?" for a copy it already has.
+export const freshName = () => `zclip-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}.mp4`;
+
+export async function saveVideo(url: string, name = freshName()): Promise<"saved"> {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(String(res.status));

@@ -169,3 +169,17 @@ test("review: extracts evenly spaced frames from a real video", async () => {
   const frames = await extractFrames(`${S}/sharp.mp4`, 2, 4);
   assert.ok(frames.length >= 3 && frames[0].length > 200);
 });
+
+import { hamming, hashBits } from "../lib/shots";
+import { freshName } from "../lib/save-video";
+
+test("shots: identical frames match, different frames do not", () => {
+  const a = hashBits(new Uint8Array(Array.from({ length: 256 }, (_, i) => (i % 7) * 30)));
+  const b = hashBits(new Uint8Array(Array.from({ length: 256 }, (_, i) => ((i * 5) % 11) * 20)));
+  assert.equal(hamming(a, a), 0);
+  assert.ok(hamming(a, b) > 60);
+});
+
+test("download names are unique per minute and end in .mp4", () => {
+  assert.match(freshName(), /^zclip-\d{12}\.mp4$/);
+});

@@ -28,6 +28,8 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
   const room = info.durationSec - goal;
   const start = room <= 0 ? info.beats[0] : info.dropSec <= room ? info.dropSec : info.beats.filter((b) => b <= room).pop() ?? info.beats[0];
 
+  // Rhythm: pros mix longer holds with quick bursts, so piece lengths follow a pattern of whole, even beat counts.
+  const RHYTHM = [1, 1, 0.5, 1, 0.5, 0.5];
   const out: CutSegment[] = [];
   const cursor = plan.segments.map((s) => s.startSec); // where the next piece of each moment begins
   let used = 0;
@@ -38,7 +40,8 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
       if (!a || used >= goal - 0.3) return;
       const from = round_ === 0 ? s.startSec : cursor[k];
       const have = a.durationSec - from;
-      let beats = Math.min(pieceBeats, Math.floor(have / period + 0.05));
+      const want = Math.max(2, Math.round((pieceBeats * RHYTHM[out.length % RHYTHM.length]) / 2) * 2);
+      let beats = Math.min(want, Math.floor(have / period + 0.05));
       if (beats < 1) return;
       if (beats > 1 && beats % 2 === 1) beats -= 1;
       let len = beats * period;

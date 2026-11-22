@@ -6,7 +6,7 @@ import { analyzeSoundFile } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
 import { trimDeadAir } from "@/lib/silence";
-import { dropWeakShots } from "@/lib/shots";
+import { dropNearDuplicates, dropWeakShots } from "@/lib/shots";
 import { nicheInsight } from "@/lib/insights";
 import { reviewInBackground } from "@/lib/review";
 import { applyStyleRules } from "@/lib/styles";
@@ -190,6 +190,16 @@ export async function POST(req: Request) {
               await db.from("cost_ledger").insert({ owner_id: user.id, project_id: project.id, render_job_id: jobId, category: "ai", provider: "gemini", detail: { task: "captions", tokensIn: t.tokensIn, tokensOut: t.tokensOut } });
           } catch {
             // No captions is fine.
+          }
+        }
+
+        // Near-identical shots (a parked car filmed for ten seconds) look like a mistake: keep the first one.
+        // Pieces are whole beats long, so removing one keeps the rest on the beat.
+        {
+          const d = await dropNearDuplicates(planned.plan, assets).catch(() => null);
+          if (d && d.dropped > 0) {
+            planned.plan = d.plan;
+            await logEvent("near_duplicates", "info", `Dropped ${d.dropped} near-identical shot(s)`, { projectId: project.id }, user.id);
           }
         }
 
