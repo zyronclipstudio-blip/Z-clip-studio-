@@ -10,8 +10,13 @@ export async function radarTick(): Promise<void> {
   if (!flag(settings.radar_enabled) || flag(settings.kill_switch_ai)) return;
   const hours = num(settings.radar_interval_hours, 24);
   const db = admin();
-  const { data: row } = await db.from("app_settings").select("value, updated_at").eq("key", "radar_last_run").maybeSingle();
-  if (!row) return;
+  let { data: row } = await db.from("app_settings").select("value, updated_at").eq("key", "radar_last_run").maybeSingle();
+  if (!row) {
+    // No record yet means a run is due now. Create it (one instance wins the insert), then read it back.
+    await db.from("app_settings").upsert({ key: "radar_last_run", value: new Date(0).toISOString() }, { onConflict: "key", ignoreDuplicates: true });
+    ({ data: row } = await db.from("app_settings").select("value, updated_at").eq("key", "radar_last_run").maybeSingle());
+    if (!row) return;
+  }
   const last = Date.parse(String(row.value)) || 0;
   if (Date.now() - last < hours * 3_600_000) return;
   // Claim the run: only the instance whose update matches the old timestamp wins.
