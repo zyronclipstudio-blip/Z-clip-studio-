@@ -30,8 +30,10 @@ export function ConfirmSheet({
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[#ff8a96]/30 bg-[#ff8a96]/10 text-[#ff8a96]"><Trash2 size={22} /></div>
         <h2 className="mt-4 text-center text-lg font-semibold text-[#eceff4]">{title}</h2>
         <p className="mt-2 text-center text-sm leading-6 text-[#8d97a8]">{body}</p>
-        <button type="button" disabled={busy} onClick={onCancel} className="mt-6 w-full zy-btn-gold rounded-[14px] min-h-14 px-4 text-base font-medium transition active:scale-[0.99] disabled:opacity-60">Keep it</button>
-        <button type="button" disabled={busy} onClick={onConfirm} className="mt-2 w-full rounded-[14px] border border-[#ff8a96]/30 min-h-12 px-4 text-sm font-medium text-[#ff8a96] transition hover:bg-[#ff8a96]/10 active:scale-[0.99] disabled:opacity-60">{busy ? busyLabel ?? "Deleting…" : confirmLabel}</button>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button type="button" disabled={busy} onClick={onCancel} className="min-h-14 rounded-[14px] border border-[#242a35] bg-[#181c25] px-4 text-base font-medium text-[#eceff4] transition active:scale-[0.99] disabled:opacity-60">Keep it</button>
+          <button type="button" disabled={busy} onClick={onConfirm} className="min-h-14 rounded-[14px] bg-[#e5484d] px-4 text-base font-semibold text-white shadow-[0_8px_24px_rgba(229,72,77,0.35)] transition active:scale-[0.99] disabled:opacity-60">{busy ? busyLabel ?? "Deleting…" : confirmLabel}</button>
+        </div>
       </div>
     </div>
   );

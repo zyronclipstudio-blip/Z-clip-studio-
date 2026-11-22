@@ -558,9 +558,15 @@ export default function Home() {
   async function handleSave(url: string) {
     if (!url || saveState === "saving") return;
     setSaveState("saving");
-    const how = await saveVideo(url);
-    setSaveState("done");
-    if (how === "saved") void notify("Saved", "Your video is in your downloads.", "zclip-saved");
+    try {
+      await saveVideo(url);
+      setSaveState("done");
+      void notify("Saved", "Your video is in your downloads.", "zclip-saved");
+    } catch (e) {
+      setSaveState("idle");
+      setError(e instanceof Error ? e.message : "Could not save the video.");
+      return;
+    }
     setTimeout(() => setSaveState("idle"), 4000);
   }
   async function handleFix() {
@@ -886,7 +892,7 @@ export default function Home() {
               <button
                 type="button"
                 disabled={saveState === "saving"}
-                onClick={() => void handleSave(result.downloadUrl ?? result.outputUrl ?? "")}
+                onClick={() => void handleSave(`/api/projects/${project?.projectId}/download`)}
                 className="group relative mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[18px] border border-[#ecd083]/40 bg-gradient-to-br from-[#ecd083] via-[#d9b45b] to-[#b88f38] px-4 py-3.5 text-[#17120a] shadow-[0_12px_32px_rgba(217,180,91,0.28)] transition active:scale-[0.99] disabled:opacity-80"
               >
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#17120a]/90 text-[#ecd083] shadow-inner">{saveState === "done" ? <Check size={20} /> : <Download size={20} className={saveState === "saving" ? "animate-pulse" : ""} />}</span>

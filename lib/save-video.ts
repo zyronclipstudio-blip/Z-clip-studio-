@@ -1,6 +1,6 @@
 // Saves a video without sending the person to a raw storage page.
-// First try: fetch it and save it from here (stays in the app). If the storage host blocks that, fall back to a hidden download link.
-export async function saveVideo(url: string, name = "zclip-video.mp4"): Promise<"saved" | "started"> {
+// Fetches the file from ZClip's own download address and saves it from here, so the person stays in the app.
+export async function saveVideo(url: string, name = "zclip-video.mp4"): Promise<"saved"> {
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(String(res.status));
@@ -10,8 +10,8 @@ export async function saveVideo(url: string, name = "zclip-video.mp4"): Promise<
     setTimeout(() => URL.revokeObjectURL(href), 60_000);
     return "saved";
   } catch {
-    clickLink(url, name);
-    return "started";
+    // Same-origin saves rarely fail; if one does, say so instead of opening a raw storage page.
+    throw new Error("Could not save the video. Check your connection and try again.");
   }
 }
 
