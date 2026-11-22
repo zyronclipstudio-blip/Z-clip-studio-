@@ -59,11 +59,12 @@ export async function POST(req: Request) {
     return fail("Invalid request.", 400);
   }
 
-  if (!(await rateLimitDb(`process:${user.id}`, LIMITS.maxProcessPerHour, 3_600_000))) {
+  const limitSettings = await getSettings().catch(() => ({} as Record<string, unknown>));
+  if (!(await rateLimitDb(`process:${user.id}`, num(limitSettings.max_process_per_hour, LIMITS.maxProcessPerHour), 3_600_000))) {
     await logEvent("rate_limited", "block", "Process rate limit hit", {}, user.id);
     return fail("You have started too many edits this hour. Please try again later.", 429);
   }
-  if (!(await rateLimitDb(`process-day:${user.id}`, LIMITS.maxProcessPerDay, 86_400_000))) {
+  if (!(await rateLimitDb(`process-day:${user.id}`, num(limitSettings.max_process_per_day, LIMITS.maxProcessPerDay), 86_400_000))) {
     await logEvent("daily_cap", "block", "Daily edit cap hit", {}, user.id);
     return fail("You have reached today's edit limit. Please come back tomorrow.", 429);
   }

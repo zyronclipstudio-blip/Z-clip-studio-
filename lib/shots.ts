@@ -71,7 +71,7 @@ export const DUPLICATE_DISTANCE = 30; // of 256 bits (~12%); same scene measured
 async function frameHash(src: string, at: number): Promise<boolean[] | null> {
   try {
     const buf = await new Promise<Buffer>((resolve, reject) =>
-      execFile(FFMPEG, ["-hide_banner", "-loglevel", "error", "-ss", String(at), "-i", src, "-frames:v", "1", "-vf", "scale=16:16:flags=area,format=gray", "-f", "rawvideo", "-"], { encoding: "buffer", timeout: 20_000, maxBuffer: 4096 }, (e, out) => (e ? reject(e) : resolve(out))),
+      execFile(FFMPEG, ["-hide_banner", "-loglevel", "error", "-ss", String(at), "-i", src, "-frames:v", "1", "-vf", "crop='min(iw,ih*9/16)':ih,scale=16:16:flags=area,format=gray", "-f", "rawvideo", "-"], { encoding: "buffer", timeout: 20_000, maxBuffer: 4096 }, (e, out) => (e ? reject(e) : resolve(out))),
     );
     return buf.length >= 256 ? hashBits(new Uint8Array(buf.subarray(0, 256))) : null;
   } catch {
