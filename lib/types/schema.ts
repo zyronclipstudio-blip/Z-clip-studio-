@@ -27,7 +27,7 @@ export interface MediaAsset {
 export type PublicAsset = Omit<MediaAsset, "storedName">;
 
 /** Motion effects the render engine can apply to the start of a piece. */
-export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip"] as const;
+export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur"] as const;
 export const EffectSchema = z.enum(EFFECT_IDS);
 export type EffectId = z.infer<typeof EffectSchema>;
 

@@ -178,6 +178,10 @@ export function effectFilter(effect: EffectId, w: number, h: number): string {
       return `,rgbashift=rh=-10:bh=10:enable='lt(mod(t,0.4),0.1)'`;
     case "whip": // blur streak into the piece
       return `,boxblur=luma_radius=14:luma_power=1:enable='lt(t,0.2)'`;
+    case "spin": // the shot swings in from a tilt and settles (oversized first so no corners show)
+      return `,scale=iw*1.7:ih*1.7,rotate=a='0.5*pow(max(0,1-t/0.4),2)':ow=iw:oh=ih:fillcolor=black,crop=${w}:${h},setsar=1,format=yuv420p`;
+    case "zoomblur": // fast zoom-out with a short blur, like a lens pull
+      return `,scale=w='iw*(1+0.4*pow(max(0,1-t/0.35),2))':h=-2:eval=frame,crop=${w}:${h},boxblur=luma_radius=9:luma_power=1:enable='lt(t,0.2)',setsar=1,format=yuv420p`;
   }
 }
 

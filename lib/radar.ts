@@ -47,8 +47,8 @@ async function topShorts(q: string, take: number): Promise<Candidate[]> {
 
 const RECIPE_PROMPT = `You are studying a short video to learn its EDITING style, so an automatic editor can imitate the style on different footage.
 Ignore the people and the topic; describe only HOW it is edited. Return ONLY JSON:
-{"name":"2-3 word style name","tagline":"under 8 words","pacing":"fast|medium|slow","effects":["punch","shake","flash","glitch","whip"],"maxShare":0.0-0.5,"captions":"pop|clean|off","look":"none|soft|punchy|cinematic","directorNote":"2-4 sentences telling an editor how to cut footage in this style: hook, cut rhythm, how it ends, what makes it work","quality":0-100}
-"effects" lists ONLY effects you actually see, chosen from: punch (push-in), shake (jitter), flash (white flash), glitch (colour split), whip (blur transition). Use [] if none.
+{"name":"2-3 word style name","tagline":"under 8 words","pacing":"fast|medium|slow","effects":["punch","shake","flash","glitch","whip","spin","zoomblur"],"maxShare":0.0-0.5,"captions":"pop|clean|off","look":"none|soft|punchy|cinematic","directorNote":"2-4 sentences telling an editor how to cut footage in this style: hook, cut rhythm, how it ends, what makes it work","quality":0-100}
+"effects" lists ONLY effects you actually see, chosen from: punch (push-in), shake (jitter), flash (white flash), glitch (colour split), whip (blur transition), spin (shot swings in from a tilt), zoomblur (fast zoom-out with blur). Use [] if none.
 "maxShare" is the share of cuts that carry an effect. "quality" is how clearly this video shows a repeatable editing style (0 = unclear).
 Do not mention names, brands, links, or anything the video says. Describe technique only.`;
 

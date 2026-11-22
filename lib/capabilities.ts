@@ -15,6 +15,8 @@ export const CAPABILITIES: Capability[] = [
   { id: "flash", purpose: "short white flash", useWhen: "the hook or the biggest beat", avoidWhen: "more than twice in one video" },
   { id: "glitch", purpose: "colour-split bursts", useWhen: "edgy, energetic or AI-visual moments", avoidWhen: "wedding, education, product or emotional content" },
   { id: "whip", purpose: "blur streak that links two shots", useWhen: "changing location or outfit between shots", avoidWhen: "inside one continuous moment" },
+  { id: "spin", purpose: "the shot swings in from a tilt and settles, a strong hook or transition", useWhen: "the very first piece, or a hard change between very different shots (cars, anime, gym, dance)", avoidWhen: "calm, professional or emotional content, talking to camera, twice in a row" },
+  { id: "zoomblur", purpose: "fast lens-pull zoom with a short blur", useWhen: "a reveal or a beat drop, moving from wide to detail", avoidWhen: "faces up close, calm scenes, more than twice in one video" },
 ];
 
 export function capabilityPrompt(): string {
