@@ -206,7 +206,7 @@ export const PlanPlayer = forwardRef<PlanPlayerHandle, Props>(function PlanPlaye
           // eslint-disable-next-line @next/next/no-img-element
           <img src={still} alt="" onClick={toggle} className="absolute inset-0 h-full w-full object-cover" />
         )}
-        {nextUrl && <video src={nextUrl} preload="auto" muted playsInline className="hidden" />}
+        {nextUrl && <video src={nextUrl} preload="metadata" muted playsInline className="hidden" />}
         {!hasPreview && (
           <div className="absolute inset-0 grid place-items-center px-6 text-center text-[13px] leading-5 text-[#8d97a8]">
             Preview isn&apos;t available for this clip. You can still edit and render.

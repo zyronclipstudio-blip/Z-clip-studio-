@@ -882,7 +882,7 @@ export default function Home() {
                   <p className="text-xs text-[#8d97a8]">Watch it, download it, or fix anything below.</p>
                 </div>
               </div>
-              <video src={result.outputUrl} controls playsInline className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
+              <video src={result.outputUrl} controls playsInline preload="metadata" className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
               <button
                 type="button"
                 disabled={saveState === "saving"}

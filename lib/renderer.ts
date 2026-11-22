@@ -83,12 +83,17 @@ export async function renderPlan(
       await run(FFMPEG, ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined], LIMITS.renderTimeoutMs);
       const total = (Math.round(expected * 1000) / 1000).toFixed(3);
       const fadeAt = Math.max(0, expected - 0.6).toFixed(3);
+      // The music dips under the clips' own sound only when that sound is actually kept in the mix.
+      const cv = plan.sound.clipVolume ?? 0.2;
+      const duck = cv >= 0.1;
       await run(
         FFMPEG,
         [
           "-y", "-hide_banner", "-i", joined, "-ss", String(plan.sound.startSec), "-i", soundFile,
           "-filter_complex",
-          `[0:a]asplit=2[s1][s2];[s1]volume=${(plan.sound.clipVolume ?? 0.2).toFixed(2)}[a0];[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${plan.sound.volume.toFixed(2)},afade=t=out:st=${fadeAt}:d=0.6[m];[m][s2]sidechaincompress=threshold=0.04:ratio=6:attack=20:release=300:makeup=1[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${total},loudnorm=I=-16:TP=-1.5:LRA=11[a]`,
+          duck
+            ? `[0:a]asplit=2[s1][s2];[s1]volume=${cv.toFixed(2)}[a0];[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${plan.sound.volume.toFixed(2)},afade=t=out:st=${fadeAt}:d=0.6[m];[m][s2]sidechaincompress=threshold=0.12:ratio=2.5:attack=30:release=500:makeup=1[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${total},loudnorm=I=-16:TP=-1.5:LRA=11[a]`
+            : `[0:a]volume=${cv.toFixed(2)}[a0];[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${plan.sound.volume.toFixed(2)},afade=t=out:st=${fadeAt}:d=0.6[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0,atrim=0:${total},loudnorm=I=-16:TP=-1.5:LRA=11[a]`,
           "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", total, "-movflags", "+faststart", outputPath,
         ],
         LIMITS.renderTimeoutMs,
@@ -238,7 +243,7 @@ function segmentArgs(
     "-vf", vf, "-af", af,
     // Low-memory encode: few threads, short look-ahead, so a small server is not killed for memory.
     "-threads", "2", "-filter_threads", "1",
-    "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-maxrate", "3500k", "-bufsize", "7000k",
     "-x264-params", "rc-lookahead=10:sync-lookahead=0:threads=2",
     "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2",
     "-movflags", "+faststart",
