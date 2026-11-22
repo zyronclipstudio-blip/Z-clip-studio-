@@ -151,3 +151,21 @@ test("insights: needs enough videos, then states measured facts", () => {
   const s = summarizeObservations([row({}), row({}), row({}), row({ transitions: ["whip"] }), row({})]);
   assert.ok(s?.includes("spin (80%)") && s.includes("title or logo card in 100%") && s.includes("dark-contrasty grade"));
 });
+
+import { extractFrames, parseReview } from "../lib/review-core";
+
+test("review: parses a score and cleans notes, rejects junk", () => {
+  const r = parseReview('```json\n{"score": 6.5, "hook": 8, "issues": ["ends on a dashboard close-up", "<script>x</script>"]}\n```');
+  assert.equal(r?.score, 6.5);
+  assert.equal(r?.issues.length, 2);
+  assert.ok(!r?.issues[1].includes("<"));
+  assert.equal(parseReview("nope"), null);
+  assert.equal(parseReview('{"score": "high"}'), null);
+});
+
+test("review: extracts evenly spaced frames from a real video", async () => {
+  const S = process.env.SHOT_DIR;
+  if (!S) return;
+  const frames = await extractFrames(`${S}/sharp.mp4`, 2, 4);
+  assert.ok(frames.length >= 3 && frames[0].length > 200);
+});

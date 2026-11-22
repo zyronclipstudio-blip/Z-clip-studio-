@@ -5,7 +5,7 @@ import { ConfirmSheet } from "@/components/ConfirmSheet";
 import { askNotifyPermission, notify } from "@/lib/notify";
 import { STYLES } from "@/lib/styles";
 import { saveVideo } from "@/lib/save-video";
-import { Check, Download, Trash2, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
+import { Check, ThumbsDown, ThumbsUp, Download, Trash2, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
 import { AppShell, type Tab } from "@/components/AppShell";
@@ -554,6 +554,13 @@ export default function Home() {
   const [fixNote, setFixNote] = useState("");
 
   // "Change this": free-text complaint -> corrected plan -> re-render. Feedback never costs credits.
+  const [rated, setRated] = useState<"like" | "dislike" | null>(null);
+  useEffect(() => setRated(null), [result?.outputUrl]);
+  async function rate(signal: "like" | "dislike") {
+    if (!project?.projectId) return;
+    setRated(signal);
+    await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId: project.projectId, signal }) }).catch(() => undefined);
+  }
   const [saveState, setSaveState] = useState<"idle" | "saving" | "done">("idle");
   async function handleSave(url: string) {
     if (!url || saveState === "saving") return;
@@ -901,6 +908,13 @@ export default function Home() {
                   <span className="text-[13px] opacity-75">{fmtSec(result.metrics.outputDurationSec)} · MP4 · ready to post</span>
                 </span>
               </button>
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-[16px] border border-[#242a35] bg-[#11141b] px-4 py-2.5">
+                <span className="text-sm text-[#8d97a8]">{rated ? "Thanks, ZClip learns from this." : "How is this edit?"}</span>
+                <span className="flex gap-2">
+                  <button type="button" onClick={() => void rate("like")} aria-label="Good edit" aria-pressed={rated === "like"} className={`grid h-11 w-11 place-items-center rounded-full border transition active:scale-95 ${rated === "like" ? "border-[#d9b45b] bg-[#d9b45b] text-[#17120a]" : "border-[#242a35] text-[#eceff4]"}`}><ThumbsUp size={18} /></button>
+                  <button type="button" onClick={() => void rate("dislike")} aria-label="Not good" aria-pressed={rated === "dislike"} className={`grid h-11 w-11 place-items-center rounded-full border transition active:scale-95 ${rated === "dislike" ? "border-[#ff8a96] bg-[#ff8a96]/15 text-[#ff8a96]" : "border-[#242a35] text-[#eceff4]"}`}><ThumbsDown size={18} /></button>
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => void shareVideo(result.downloadUrl ?? result.outputUrl ?? "")}

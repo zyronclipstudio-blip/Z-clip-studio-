@@ -8,6 +8,7 @@ import { critiquePlan } from "@/lib/critic";
 import { trimDeadAir } from "@/lib/silence";
 import { dropWeakShots } from "@/lib/shots";
 import { nicheInsight } from "@/lib/insights";
+import { reviewInBackground } from "@/lib/review";
 import { applyStyleRules } from "@/lib/styles";
 import { approvedRules, resolveStyle } from "@/lib/styles-db";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
@@ -269,6 +270,11 @@ export async function POST(req: Request) {
           await uploadBuffer(B2_BUCKET_EXPORTS, outputKey, await fs.readFile(outputLocal), "video/mp4");
           outputUrl = await getDownloadPresignedUrl(B2_BUCKET_EXPORTS, outputKey, { expiresIn: 3600 });
           downloadUrl = await getDownloadPresignedUrl(B2_BUCKET_EXPORTS, outputKey, { downloadName: "zclip-video.mp4", expiresIn: 3600 });
+        }
+
+        // The AI watches its own result and scores it (in the background; it never delays the customer).
+        if (ready && flag(settings.ai_review_enabled) && !flag(settings.kill_switch_ai)) {
+          await reviewInBackground({ videoPath: outputLocal, durationSec: rendered.durationSec, ownerId: user.id, projectId: project.id, styleId: style?.id ?? "auto", styleName: style?.name ?? "automatic" }).catch(() => undefined);
         }
 
         await db.from("quality_reports").insert({

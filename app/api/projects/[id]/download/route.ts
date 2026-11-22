@@ -25,6 +25,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       .limit(1);
     const key = jobs?.[0]?.output_object_key as string | undefined;
     if (!key) return Response.json({ error: "This video is no longer available." }, { status: 404 });
+    void admin().from("feedback_events").insert({ owner_id: user.id, project_id: id, signal: "download", detail: {} }).then(() => undefined, () => undefined);
     const obj = await getB2Client().send(new GetObjectCommand({ Bucket: B2_BUCKET_EXPORTS, Key: key }));
     if (!obj.Body) return Response.json({ error: "This video is no longer available." }, { status: 404 });
     const headers = new Headers({
