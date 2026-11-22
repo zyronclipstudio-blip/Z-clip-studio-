@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ConfirmSheet } from "@/components/ConfirmSheet";
 import { askNotifyPermission, notify } from "@/lib/notify";
 import { STYLES } from "@/lib/styles";
+import { saveVideo } from "@/lib/save-video";
 import { Check, Download, Trash2, Film, Music, Share2, Sparkles, Upload, X } from "lucide-react";
 import { NetflixSplash } from "@/components/NetflixSplash";
 import { StudioDashboard } from "@/components/StudioDashboard";
@@ -553,6 +554,15 @@ export default function Home() {
   const [fixNote, setFixNote] = useState("");
 
   // "Change this": free-text complaint -> corrected plan -> re-render. Feedback never costs credits.
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "done">("idle");
+  async function handleSave(url: string) {
+    if (!url || saveState === "saving") return;
+    setSaveState("saving");
+    const how = await saveVideo(url);
+    setSaveState("done");
+    if (how === "saved") void notify("Saved", "Your video is in your downloads.", "zclip-saved");
+    setTimeout(() => setSaveState("idle"), 4000);
+  }
   async function handleFix() {
     if (!project || !result || fixText.trim().length < 2) return;
     setFixing(true);
@@ -873,13 +883,18 @@ export default function Home() {
                 </div>
               </div>
               <video src={result.outputUrl} controls playsInline className="mx-auto max-h-[70vh] w-full rounded-lg bg-black" />
-              <a href={result.downloadUrl ?? result.outputUrl} className="group relative mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[18px] border border-[#ecd083]/40 bg-gradient-to-br from-[#ecd083] via-[#d9b45b] to-[#b88f38] px-4 py-3.5 text-[#17120a] shadow-[0_12px_32px_rgba(217,180,91,0.28)] transition active:scale-[0.99]">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#17120a]/90 text-[#ecd083] shadow-inner"><Download size={20} /></span>
+              <button
+                type="button"
+                disabled={saveState === "saving"}
+                onClick={() => void handleSave(result.downloadUrl ?? result.outputUrl ?? "")}
+                className="group relative mt-4 flex w-full items-center gap-4 overflow-hidden rounded-[18px] border border-[#ecd083]/40 bg-gradient-to-br from-[#ecd083] via-[#d9b45b] to-[#b88f38] px-4 py-3.5 text-[#17120a] shadow-[0_12px_32px_rgba(217,180,91,0.28)] transition active:scale-[0.99] disabled:opacity-80"
+              >
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#17120a]/90 text-[#ecd083] shadow-inner">{saveState === "done" ? <Check size={20} /> : <Download size={20} className={saveState === "saving" ? "animate-pulse" : ""} />}</span>
                 <span className="min-w-0 flex-1 text-left">
-                  <b className="block text-base font-semibold leading-tight">Download your video</b>
+                  <b className="block text-base font-semibold leading-tight">{saveState === "saving" ? "Saving to your phone…" : saveState === "done" ? "Saved. Check your downloads" : "Download your video"}</b>
                   <span className="text-[13px] opacity-75">{fmtSec(result.metrics.outputDurationSec)} · MP4 · ready to post</span>
                 </span>
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => void shareVideo(result.downloadUrl ?? result.outputUrl ?? "")}
