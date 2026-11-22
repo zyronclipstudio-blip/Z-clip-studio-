@@ -40,6 +40,17 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
     if (removed) fixes.push("Kept freeze, reverse and speed changes rare.");
   }
 
+  // 0c. Smooth blends: never the same one twice in a row, none on the opening piece, at most about half of the boundaries.
+  {
+    let changed = 0, used = 0;
+    segs.forEach((s, i) => {
+      if (!s.blend) return;
+      const bad = i === 0 || segs[i - 1].blend === s.blend || ++used > Math.max(1, Math.ceil(segs.length / 2));
+      if (bad) { delete s.blend; changed++; }
+    });
+    if (changed) fixes.push("Kept the smooth blends varied and not too frequent.");
+  }
+
   // 1. The same effect on two neighbouring pieces looks like a mistake.
   let repeats = 0;
   for (let i = 1; i < segs.length; i++) {

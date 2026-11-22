@@ -31,6 +31,11 @@ export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip", "spin", 
 export const EffectSchema = z.enum(EFFECT_IDS);
 export type EffectId = z.infer<typeof EffectSchema>;
 
+/** Smooth blends between this piece and the one before it. */
+export const BLEND_IDS = ["dissolve", "slide", "zoom", "wipe", "circle", "fadeblack"] as const;
+export const BlendSchema = z.enum(BLEND_IDS);
+export type BlendId = z.infer<typeof BlendSchema>;
+
 export const CutSegmentSchema = z.object({
   assetId: z.string().min(1),
   startSec: z.number().min(0),
@@ -44,6 +49,8 @@ export const CutSegmentSchema = z.object({
   speed: z.number().min(0.75).max(1.5).optional(),
   /** Hold the last frame for this many seconds (a beat hit or a reveal). */
   freeze: z.number().min(0.2).max(1.5).optional(),
+  /** How this piece arrives: a smooth blend from the previous piece (instead of a hard cut). */
+  blend: BlendSchema.optional(),
   /** Play this short piece backwards (only pieces up to 4 seconds). */
   reverse: z.boolean().optional(),
 });

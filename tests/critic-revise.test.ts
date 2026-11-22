@@ -199,3 +199,11 @@ test("director: transitions land on the musical phrase, take turns, and the endi
   const silent = { ...plan, sound: undefined };
   assert.equal(addPhraseHits(silent, ["spin"]), silent);
 });
+
+test("critic keeps smooth blends varied and off the opening piece", () => {
+  const plan: any = { version: 1, source: "gemini", aspectRatio: "9:16", pacing: "fast", targetDurationSec: 10, summary: "x", segments: [seg({ blend: "zoom" }), seg({ blend: "slide" }), seg({ blend: "slide" }), seg({}), seg({})] };
+  const out = critiquePlan(plan).plan.segments;
+  assert.equal(out[0].blend, undefined);
+  assert.equal(out[1].blend, "slide");
+  assert.equal(out[2].blend, undefined);
+});

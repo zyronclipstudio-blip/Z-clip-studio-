@@ -44,6 +44,8 @@ export async function renderPlan(
     const partFiles: string[] = [];
     const grades = new Map<string, string>();
     let expected = 0;
+    const blending = plan.segments.some((x) => x.blend) && plan.segments.length >= 2 && plan.segments.length <= 60 && (await canXfade());
+    const bases: number[] = [];
 
     for (let i = 0; i < plan.segments.length; i++) {
       const seg = plan.segments[i];
@@ -55,6 +57,9 @@ export async function renderPlan(
       const hold = seg.freeze && !isImageName(asset.originalName) ? seg.freeze : 0;
       const rev = seg.reverse === true && dur <= 4 && !isImageName(asset.originalName);
       expected += dur / spd + hold;
+      // A blend into the NEXT piece overlaps the end of this one, so this piece is held a little longer to cover it.
+      const next = plan.segments[i + 1];
+      const tail = blending && next ? blendLength(next) : 0;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
       const src = path.join(UPLOAD_DIR, asset.storedName);
@@ -66,21 +71,29 @@ export async function renderPlan(
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold, rev, plan.polish), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade, hold, rev, plan.polish), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
+      bases.push(dur / spd + hold);
+    }
+
+    // Smooth blends: one pass that overlaps each piece into the next (video and sound together).
+    let blended: string | null = null;
+    if (blending) {
+      blended = path.join(tmp, "blended.mp4");
+      await run(FFMPEG, blendJoinArgs(partFiles, plan.segments, bases, blended), LIMITS.renderTimeoutMs);
     }
 
     const list = path.join(tmp, "list.txt");
     await fs.writeFile(list, partFiles.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n"));
     if (soundFile && plan.sound) {
       // Their own sound leads; the clips' own audio stays quietly underneath. The edit's length decides the end.
-      const joined = path.join(tmp, "joined.mp4");
-      await run(FFMPEG, ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined], LIMITS.renderTimeoutMs);
+      const joined = blended ?? path.join(tmp, "joined.mp4");
+      if (!blended) await run(FFMPEG, ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined], LIMITS.renderTimeoutMs);
       const total = (Math.round(expected * 1000) / 1000).toFixed(3);
       const fadeAt = Math.max(0, expected - 0.6).toFixed(3);
       // The music dips under the clips' own sound only when that sound is actually kept in the mix.
@@ -102,7 +115,7 @@ export async function renderPlan(
       await run(
         FFMPEG,
         // Even loudness across clips: video is copied, only the audio is levelled.
-        ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", outputPath],
+        ["-y", "-hide_banner", ...(blended ? ["-i", blended] : ["-f", "concat", "-safe", "0", "-i", list]), "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", outputPath],
         LIMITS.renderTimeoutMs,
       );
     }
@@ -330,4 +343,47 @@ async function exposureFix(src: string, durationSec: number, cache: Map<string, 
   }
   cache.set(src, filter);
   return filter;
+}
+
+// ---- Smooth blends between pieces ----
+const XFADE: Record<string, string> = { dissolve: "fade", slide: "slideleft", zoom: "zoomin", wipe: "wipeleft", circle: "circleopen", fadeblack: "fadeblack" };
+const BLEND_SEC = 0.3; // a visible blend
+const CUT_SEC = 0.04; // about one frame: looks like a cut but keeps the timing maths exact
+
+export function blendLength(seg: { blend?: string }): number {
+  return seg.blend && XFADE[seg.blend] ? BLEND_SEC : CUT_SEC;
+}
+
+let xfadeOk: boolean | undefined;
+async function canXfade(): Promise<boolean> {
+  if (xfadeOk !== undefined) return xfadeOk;
+  try {
+    const { stdout } = await run(FFMPEG, ["-hide_banner", "-filters"], 20_000);
+    xfadeOk = /\bxfade\b/.test(stdout) && /\bacrossfade\b/.test(stdout);
+  } catch {
+    xfadeOk = false;
+  }
+  return xfadeOk;
+}
+
+// bases[i] is piece i's own length (without its overlap tail). Piece i starts at the sum of the bases before it,
+// so beats and captions keep their exact timing; the tails are what the blends overlap.
+export function blendJoinArgs(parts: string[], segs: { blend?: string }[], bases: number[], out: string): string[] {
+  const args = ["-y", "-hide_banner"];
+  for (const p of parts) args.push("-i", p);
+  const v: string[] = [];
+  const a: string[] = [];
+  let start = 0;
+  for (let i = 1; i < parts.length; i++) {
+    start += bases[i - 1];
+    const d = blendLength(segs[i]);
+    const name = segs[i].blend ? XFADE[segs[i].blend as string] : "fade";
+    const vin = i === 1 ? "[0:v]" : `[v${i - 1}]`;
+    const ain = i === 1 ? "[0:a]" : `[a${i - 1}]`;
+    v.push(`${vin}[${i}:v]xfade=transition=${name}:duration=${d}:offset=${start.toFixed(3)}[v${i}]`);
+    a.push(`${ain}[${i}:a]acrossfade=d=${d}:c1=tri:c2=tri[a${i}]`);
+  }
+  const last = parts.length - 1;
+  args.push("-filter_complex", [...v, ...a].join(";"), "-map", `[v${last}]`, "-map", `[a${last}]`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", out);
+  return args;
 }
