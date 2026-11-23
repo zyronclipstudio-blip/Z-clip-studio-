@@ -207,3 +207,11 @@ test("critic keeps smooth blends varied and off the opening piece", () => {
   assert.equal(out[1].blend, "slide");
   assert.equal(out[2].blend, undefined);
 });
+
+test("critic opens on the strongest shot and breaks up three alike", () => {
+  const m = (shot: string, confidence: number) => ({ ...(seg([], confidence) as object), shot }) as never;
+  const segs = (critiquePlan(plan([m("wide", 0.5), m("wide", 0.5), m("wide", 0.6), m("medium", 0.5), m("detail", 0.95)])).plan as { segments: { shot?: string; confidence: number }[] }).segments;
+  assert.equal(segs[0].confidence, 0.95);
+  const kinds = segs.map((x) => x.shot).join(",");
+  assert.ok(!/(wide,wide,wide)|(detail,detail,detail)/.test(kinds), kinds);
+});

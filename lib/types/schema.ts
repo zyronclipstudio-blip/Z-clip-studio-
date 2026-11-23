@@ -36,6 +36,10 @@ export const BLEND_IDS = ["dissolve", "slide", "zoom", "wipe", "circle", "fadebl
 export const BlendSchema = z.enum(BLEND_IDS);
 export type BlendId = z.infer<typeof BlendSchema>;
 
+/** What kind of shot a piece is, so the edit can flow like a pro one (wide to detail, never three alike in a row). */
+export const SHOT_IDS = ["wide", "medium", "detail"] as const;
+export const ShotSchema = z.enum(SHOT_IDS);
+
 export const CutSegmentSchema = z.object({
   assetId: z.string().min(1),
   startSec: z.number().min(0),
@@ -49,6 +53,8 @@ export const CutSegmentSchema = z.object({
   speed: z.number().min(0.75).max(1.5).optional(),
   /** Hold the last frame for this many seconds (a beat hit or a reveal). */
   freeze: z.number().min(0.2).max(1.5).optional(),
+  /** The kind of shot this piece is. */
+  shot: ShotSchema.optional(),
   /** How this piece arrives: a smooth blend from the previous piece (instead of a hard cut). */
   blend: BlendSchema.optional(),
   /** Play this short piece backwards (only pieces up to 4 seconds). */

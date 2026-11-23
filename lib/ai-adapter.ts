@@ -88,6 +88,7 @@ const GeminiPlanSchema = z.object({
       effects: z.array(z.string()).catch([]),
       speed: z.coerce.number().min(0.75).max(1.5).optional().catch(undefined),
       freeze: z.coerce.number().min(0.2).max(1.5).optional().catch(undefined),
+      shot: z.enum(["wide", "medium", "detail"]).optional().catch(undefined),
       blend: z.enum(["dissolve", "slide", "zoom", "wipe", "circle", "fadeblack"]).optional().catch(undefined),
       reverse: z.boolean().optional().catch(undefined),
     }),
@@ -164,6 +165,7 @@ Rules:
 - ORDER: arrange clips so they flow. For footage that tells a story (for example AI-generated scenes), keep the story logical and keep a character or look consistent across neighbouring cuts. Put wide shots before close-ups unless a close-up is the hook.
 ${capabilityPrompt()}
 - "speed" (0.75 to 1.5, default 1): 0.75 = slow motion for the single best moment (a reveal, a hit, a dance move); up to 1.5 to tighten a dull stretch. Use on at most 2 segments, never on speech.
+- "shot" (optional): label what the segment shows: "wide" (whole scene, location, full body), "medium" (waist-up, a person or object in context), "detail" (close-up: face, hands, wheel, product, texture). Pro edits mix them: open on the strongest shot, then move wide to medium to detail, and never put three of the same kind in a row.
 - "blend" (optional): how this segment arrives from the previous one, a smooth 0.3s blend instead of a hard cut: "dissolve" (calm, time passing, emotional), "slide" (energetic, outfit or location change), "zoom" (reveal, beat drop), "wipe", "circle" (playful), "fadeblack" (scene or chapter change). Use on about a third of the boundaries, only where the shots differ in place or subject; keep hard cuts inside one continuous action and on strong beats. Never the same blend twice in a row.
 - "freeze" (0.3 to 1.0 seconds, optional): holds the last frame of a segment to land a beat hit or reveal. At most 2 per video, never on speech.
 - "reverse" (true, optional): plays a short segment (under 4 seconds) backwards for a surprising moment. At most 1 per video, never on people talking.
@@ -243,6 +245,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
       transition: s.transition,
       freeze: s.freeze && s.freeze >= 0.2 ? Math.round(s.freeze * 10) / 10 : undefined,
       blend: s.blend,
+      shot: s.shot,
       reverse: s.reverse === true && end - start <= 4 ? true : undefined,
       speed: s.speed && Math.abs(s.speed - 1) > 0.04 ? Math.round(s.speed * 100) / 100 : undefined,
       effects: (() => {

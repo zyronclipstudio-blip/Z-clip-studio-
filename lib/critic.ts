@@ -40,6 +40,31 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
     if (removed) fixes.push("Kept freeze, reverse and speed changes rare.");
   }
 
+  // 0b2. Open strong: a clearly stronger moment moves to the front (not for speech, whose captions follow the order).
+  if (!input.captions?.enabled && segs.length >= 4) {
+    let best = 0;
+    segs.forEach((s, i) => { if (s.confidence > segs[best].confidence) best = i; });
+    if (best > 0 && segs[best].confidence - segs[0].confidence >= 0.15) {
+      const [hero] = segs.splice(best, 1);
+      segs.unshift(hero);
+      fixes.push("Opened on the strongest shot.");
+    }
+  }
+
+  // 0b3. Flow: never three of the same kind of shot in a row (swap the third with the next different one).
+  if (!input.captions?.enabled) {
+    let swapped = 0;
+    for (let i = 2; i < segs.length; i++) {
+      const k = segs[i].shot;
+      if (!k || segs[i - 1].shot !== k || segs[i - 2].shot !== k) continue;
+      const j = segs.findIndex((x, n) => n > i && x.shot && x.shot !== k);
+      if (j < 0) continue;
+      [segs[i], segs[j]] = [segs[j], segs[i]];
+      swapped++;
+    }
+    if (swapped) fixes.push("Mixed up the shot types so the edit flows.");
+  }
+
   // 0c. Smooth blends: never the same one twice in a row, none on the opening piece, at most about half of the boundaries.
   {
     let changed = 0, used = 0;
