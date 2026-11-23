@@ -94,9 +94,34 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-// Sends one file through ZClip in 1 MB pieces. Weak or switching networks only cost one piece, never the whole file.
+// Sends one file through ZClip in small pieces. Weak or switching networks only cost one piece, never the whole file.
+// A stalled piece is cancelled after a short time and retried (instead of hanging for minutes), pieces are small on
+// purpose, and if the server lost its pieces (for example during an update) the file is simply sent again from the start.
 async function sendInPieces(projectId: string, path: string, file: File, onBytes: (sent: number) => void, signal?: AbortSignal): Promise<void> {
-  const CH = 1024 * 1024;
+  for (let round = 0; round < 2; round++) {
+    try {
+      await sendPiecesOnce(projectId, path, file, onBytes, signal);
+      return;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (round === 0 && /did not add up|wrong size|UPLOAD_RESTART/i.test(msg)) continue;
+      throw e;
+    }
+  }
+}
+
+async function waitOnline(signal?: AbortSignal): Promise<void> {
+  if (typeof navigator === "undefined" || navigator.onLine) return;
+  await new Promise<void>((resolve) => {
+    const done = () => { window.removeEventListener("online", done); resolve(); };
+    window.addEventListener("online", done);
+    signal?.addEventListener("abort", done, { once: true });
+    setTimeout(done, 60_000);
+  });
+}
+
+async function sendPiecesOnce(projectId: string, path: string, file: File, onBytes: (sent: number) => void, signal?: AbortSignal): Promise<void> {
+  const CH = Math.min(2 * 1024 * 1024, Math.max(256 * 1024, Math.ceil(file.size / 900 / 65536) * 65536));
   const pieces = Math.max(1, Math.ceil(file.size / CH));
   const base = `/api/projects/${projectId}/upload-chunk?path=${encodeURIComponent(path)}`;
   const have = new Set<number>();
@@ -110,16 +135,26 @@ async function sendInPieces(projectId: string, path: string, file: File, onBytes
     const part = file.slice(n * CH, Math.min(file.size, (n + 1) * CH));
     if (have.has(n)) { sent += part.size; onBytes(sent); continue; }
     let ok = false;
-    for (let attempt = 0; attempt < 8 && !ok; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(8000, 1200 * attempt)));
+    for (let attempt = 0; attempt < 10 && !ok; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(6000, 1000 * attempt)));
+      await waitOnline(signal);
+      // This piece gets a fair time to arrive (at least ~15 KB/s), then it is cancelled and retried.
+      const stall = new AbortController();
+      const timer = setTimeout(() => stall.abort(), 20_000 + (part.size / 15_000) * 1000);
+      const onAbort = () => stall.abort();
+      signal?.addEventListener("abort", onAbort, { once: true });
       try {
-        const res = await fetch(`${base}&index=${n}&total=${pieces}&size=${file.size}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: part, signal });
+        const res = await fetch(`${base}&index=${n}&total=${pieces}&size=${file.size}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: part, signal: stall.signal });
         if (res.ok) { ok = true; break; }
         const d = await res.json().catch(() => null);
+        if (res.status === 422) throw new Error("UPLOAD_RESTART");
         if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) throw new Error(d?.error || `Could not upload "${file.name}".`);
       } catch (e) {
         if (signal?.aborted) throw new Error("CANCELLED");
         if (e instanceof Error && e.message && !/fetch|network|load failed|abort/i.test(e.message)) throw e;
+      } finally {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
       }
     }
     if (!ok) throw new Error(`"${file.name}" (${fmtMB(file.size)}) stopped uploading. Your connection looks weak. Your progress is kept: tap Continue to carry on. Code: UPLOAD_NETWORK`);
