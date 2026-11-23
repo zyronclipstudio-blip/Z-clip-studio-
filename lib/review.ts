@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { GEMINI_API_KEY, GEMINI_MODEL_CHAIN, isModelGone } from "./config";
 import { admin } from "./supabase/admin";
+import { getSettings } from "./settings";
 import { extractFrames, parseReview, type Review } from "./review-core";
 
 const PROMPT = (style: string) => `These are evenly spaced frames, in order, from a short vertical video made by an automatic editor in the "${style}" style.
@@ -11,7 +12,11 @@ export async function reviewFrames(frames: string[], styleName: string): Promise
   if (!GEMINI_API_KEY || frames.length < 3) return null;
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   const parts = [...frames.map((data) => ({ inlineData: { mimeType: "image/jpeg", data } })), { text: PROMPT(styleName) }];
-  for (const model of GEMINI_MODEL_CHAIN) {
+  // The judge is its own slot: the model comes from the app_settings key "judge_model" (so it can change without a deploy)
+  // and defaults to a different model from the one that plans the edit, so the AI does not simply grade its own work.
+  const picked = (await getSettings().catch(() => ({} as Record<string, unknown>))).judge_model;
+  const chain = [...new Set([typeof picked === "string" && picked ? picked : "gemini-3.8-flash", ...GEMINI_MODEL_CHAIN])];
+  for (const model of chain) {
     try {
       const res = await ai.models.generateContent({ model, contents: [{ role: "user", parts }], config: { responseMimeType: "application/json", temperature: 0.1 } });
       return parseReview(res.text ?? "");
