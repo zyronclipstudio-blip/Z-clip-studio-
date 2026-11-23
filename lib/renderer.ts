@@ -59,7 +59,7 @@ export async function renderPlan(
       expected += dur / spd + hold;
       // A blend into the NEXT piece overlaps the end of this one, so this piece is held a little longer to cover it.
       const next = plan.segments[i + 1];
-      const tail = blending && next ? blendLength(next) : 0;
+      const tail = blending && next?.blend ? blendLength(next) : 0;
 
       const out = path.join(tmp, `part-${String(i).padStart(3, "0")}.mp4`);
       const src = path.join(UPLOAD_DIR, asset.storedName);
@@ -81,19 +81,33 @@ export async function renderPlan(
       bases.push(dur / spd + hold);
     }
 
-    // Smooth blends: one pass that overlaps each piece into the next (video and sound together).
-    let blended: string | null = null;
-    if (blending) {
-      blended = path.join(tmp, "blended.mp4");
-      await run(FFMPEG, blendJoinArgs(partFiles, plan.segments, bases, blended), LIMITS.renderTimeoutMs);
+    // Smooth blends: only the runs of pieces that are linked by a blend are merged (small, cheap passes);
+    // everything else is joined without re-encoding. If a blend pass fails, those pieces are simply cut together instead.
+    const entries: string[] = [];
+    const q = (f: string) => f.replace(/'/g, "'\\''");
+    for (let i = 0; i < partFiles.length; ) {
+      let j = i;
+      while (blending && j + 1 < partFiles.length && plan.segments[j + 1].blend) j++;
+      if (j === i) {
+        entries.push(`file '${q(partFiles[i])}'`);
+        i++;
+        continue;
+      }
+      const grp = path.join(tmp, `group-${i}.mp4`);
+      try {
+        await run(FFMPEG, blendJoinArgs(partFiles.slice(i, j + 1), plan.segments.slice(i, j + 1), bases.slice(i, j + 1), grp), LIMITS.renderTimeoutMs);
+        entries.push(`file '${q(grp)}'`);
+      } catch {
+        for (let k = i; k <= j; k++) entries.push(`file '${q(partFiles[k])}'\noutpoint ${bases[k].toFixed(3)}`);
+      }
+      i = j + 1;
     }
-
     const list = path.join(tmp, "list.txt");
-    await fs.writeFile(list, partFiles.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n"));
+    await fs.writeFile(list, entries.join("\n"));
     if (soundFile && plan.sound) {
       // Their own sound leads; the clips' own audio stays quietly underneath. The edit's length decides the end.
-      const joined = blended ?? path.join(tmp, "joined.mp4");
-      if (!blended) await run(FFMPEG, ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined], LIMITS.renderTimeoutMs);
+      const joined = path.join(tmp, "joined.mp4");
+      await run(FFMPEG, ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined], LIMITS.renderTimeoutMs);
       const total = (Math.round(expected * 1000) / 1000).toFixed(3);
       const fadeAt = Math.max(0, expected - 0.6).toFixed(3);
       // The music dips under the clips' own sound only when that sound is actually kept in the mix.
@@ -115,7 +129,7 @@ export async function renderPlan(
       await run(
         FFMPEG,
         // Even loudness across clips: video is copied, only the audio is levelled.
-        ["-y", "-hide_banner", ...(blended ? ["-i", blended] : ["-f", "concat", "-safe", "0", "-i", list]), "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", outputPath],
+        ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", outputPath],
         LIMITS.renderTimeoutMs,
       );
     }
@@ -348,10 +362,9 @@ async function exposureFix(src: string, durationSec: number, cache: Map<string, 
 // ---- Smooth blends between pieces ----
 const XFADE: Record<string, string> = { dissolve: "fade", slide: "slideleft", zoom: "zoomin", wipe: "wipeleft", circle: "circleopen", fadeblack: "fadeblack" };
 const BLEND_SEC = 0.3; // a visible blend
-const CUT_SEC = 0.04; // about one frame: looks like a cut but keeps the timing maths exact
 
 export function blendLength(seg: { blend?: string }): number {
-  return seg.blend && XFADE[seg.blend] ? BLEND_SEC : CUT_SEC;
+  return seg.blend && XFADE[seg.blend] ? BLEND_SEC : 0;
 }
 
 let xfadeOk: boolean | undefined;
@@ -377,13 +390,13 @@ export function blendJoinArgs(parts: string[], segs: { blend?: string }[], bases
   for (let i = 1; i < parts.length; i++) {
     start += bases[i - 1];
     const d = blendLength(segs[i]);
-    const name = segs[i].blend ? XFADE[segs[i].blend as string] : "fade";
+    const name = XFADE[segs[i].blend as string] ?? "fade";
     const vin = i === 1 ? "[0:v]" : `[v${i - 1}]`;
     const ain = i === 1 ? "[0:a]" : `[a${i - 1}]`;
     v.push(`${vin}[${i}:v]xfade=transition=${name}:duration=${d}:offset=${start.toFixed(3)}[v${i}]`);
     a.push(`${ain}[${i}:a]acrossfade=d=${d}:c1=tri:c2=tri[a${i}]`);
   }
   const last = parts.length - 1;
-  args.push("-filter_complex", [...v, ...a].join(";"), "-map", `[v${last}]`, "-map", `[a${last}]`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", out);
+  args.push("-filter_complex", [...v, ...a].join(";"), "-map", `[v${last}]`, "-map", `[a${last}]`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-maxrate", "3500k", "-bufsize", "7000k", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2", out);
   return args;
 }
