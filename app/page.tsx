@@ -135,8 +135,8 @@ async function sendPiecesOnce(projectId: string, path: string, file: File, onByt
     const part = file.slice(n * CH, Math.min(file.size, (n + 1) * CH));
     if (have.has(n)) { sent += part.size; onBytes(sent); continue; }
     let ok = false;
-    for (let attempt = 0; attempt < 10 && !ok; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(6000, 1000 * attempt)));
+    for (let attempt = 0; attempt < 30 && !ok; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * attempt)));
       await waitOnline(signal);
       // This piece gets a fair time to arrive (at least ~15 KB/s), then it is cancelled and retried.
       const stall = new AbortController();
