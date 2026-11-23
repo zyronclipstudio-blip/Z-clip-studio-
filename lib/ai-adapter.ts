@@ -113,9 +113,8 @@ async function planWithGemini(assets: MediaAsset[], setup: Setup, style: Style |
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "zclip-watch-"));
 
   try {
-    const parts: (string | ReturnType<typeof createPartFromUri>)[] = [];
-    for (let ai_i = 0; ai_i < assets.length; ai_i++) {
-      const a = assets[ai_i];
+    // Clips are shrunk, sent to Gemini and processed 4 at a time (not one after another), keeping their order.
+    const prepare = async (a: MediaAsset, ai_i: number): Promise<(string | ReturnType<typeof createPartFromUri>)[]> => {
       const original = path.join(UPLOAD_DIR, a.storedName);
       let source = original;
       let mimeType = MIME_BY_EXT[path.extname(a.storedName).toLowerCase()] ?? "video/mp4";
@@ -133,15 +132,28 @@ async function planWithGemini(assets: MediaAsset[], setup: Setup, style: Style |
       const started = Date.now();
       while (String(file.state) === "PROCESSING") {
         if (Date.now() - started > 180_000) throw new Error("Gemini took too long to process a clip");
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 1500));
         file = await ai.files.get({ name: file.name as string });
       }
       if (String(file.state) === "FAILED" || !file.uri || !file.mimeType)
         throw new Error("Gemini could not process one of the clips");
 
-      parts.push(isImageName(a.originalName) ? `Clip ID: ${a.id} (a PHOTO, "${a.originalName}"; it can be shown for at most ${a.durationSec.toFixed(0)} seconds, always from 0):` : `Clip ID: ${a.id} (file "${a.originalName}", ${a.durationSec.toFixed(1)} seconds):`);
-      parts.push(createPartFromUri(file.uri, file.mimeType));
-    }
+      return [
+        isImageName(a.originalName) ? `Clip ID: ${a.id} (a PHOTO, "${a.originalName}"; it can be shown for at most ${a.durationSec.toFixed(0)} seconds, always from 0):` : `Clip ID: ${a.id} (file "${a.originalName}", ${a.durationSec.toFixed(1)} seconds):`,
+        createPartFromUri(file.uri, file.mimeType),
+      ];
+    };
+    const prepared: (string | ReturnType<typeof createPartFromUri>)[][] = new Array(assets.length);
+    let nextClip = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(4, assets.length) }, async () => {
+        while (nextClip < assets.length) {
+          const i = nextClip++;
+          prepared[i] = await prepare(assets[i], i);
+        }
+      }),
+    );
+    const parts: (string | ReturnType<typeof createPartFromUri>)[] = prepared.flat();
 
     const cap = PLATFORM_CAP_SECONDS[setup.platform];
     const prompt = `You are the editing brain of ZClip, an automatic video editor.
