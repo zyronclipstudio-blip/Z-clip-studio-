@@ -12,3 +12,21 @@ export async function nicheInsight(nicheId?: string): Promise<string | null> {
     .limit(60);
   return summarizeObservations((data ?? []) as ObsRow[]);
 }
+
+// What the AI's own practice edits were marked down for, so the next edit in that style avoids it.
+// Only low-scoring runs count, and only the newest few distinct complaints are used.
+export async function practiceLesson(styleId?: string): Promise<string | null> {
+  if (!styleId) return null;
+  const { data } = await admin()
+    .from("practice_runs")
+    .select("score, issues")
+    .eq("style", styleId)
+    .not("score", "is", null)
+    .lte("score", 5)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  const seen = new Set<string>();
+  for (const r of data ?? []) for (const i of (r.issues as string[]) ?? []) seen.add(i.trim().toLowerCase());
+  const list = [...seen].slice(0, 4);
+  return list.length ? `Recent edits in this style were marked down for: ${list.join("; ")}. Avoid these mistakes.` : null;
+}

@@ -14,6 +14,7 @@ import { EXPORT_DIR, UPLOAD_DIR } from "./config";
 import { flag, getSettings, num } from "./settings";
 import { admin } from "./supabase/admin";
 import { logEvent } from "./guardian";
+import { nicheInsight, practiceLesson } from "./insights";
 import type { EffectId, MediaAsset } from "./types/schema";
 import { SetupSchema } from "./types/schema";
 
@@ -77,7 +78,8 @@ export async function practiceOnce(styleId: string): Promise<{ score: number | n
     if (assets.length < 3) throw new Error("Could not read enough clips");
 
     const setup = SetupSchema.parse({ purpose: "auto", mood: "auto", platform: "shorts", style: style.id });
-    const planned = await createEditPlan(assets, setup, { allowAI: true, style });
+    const rules = [await nicheInsight(style.id).catch(() => null), await practiceLesson(style.id).catch(() => null)].filter((x): x is string => !!x);
+    const planned = await createEditPlan(assets, setup, { allowAI: true, style, rules });
     let plan = planned.plan;
     const d = await dropNearDuplicates(plan, assets).catch(() => null);
     if (d?.dropped) plan = d.plan;
