@@ -556,10 +556,17 @@ export default function Home() {
   // "Change this": free-text complaint -> corrected plan -> re-render. Feedback never costs credits.
   const [rated, setRated] = useState<"like" | "dislike" | null>(null);
   useEffect(() => setRated(null), [result?.outputUrl]);
-  async function rate(signal: "like" | "dislike") {
+  const [reasons, setReasons] = useState<string[]>([]);
+  useEffect(() => setReasons([]), [result?.outputUrl]);
+  async function rate(signal: "like" | "dislike", why: string[] = []) {
     if (!project?.projectId) return;
     setRated(signal);
-    await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId: project.projectId, signal }) }).catch(() => undefined);
+    await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ projectId: project.projectId, signal, reasons: why }) }).catch(() => undefined);
+  }
+  function toggleReason(id: string) {
+    const next = reasons.includes(id) ? reasons.filter((r) => r !== id) : [...reasons, id];
+    setReasons(next);
+    void rate("dislike", next);
   }
   const [saveState, setSaveState] = useState<"idle" | "saving" | "done">("idle");
   async function handleSave(url: string) {
@@ -915,6 +922,16 @@ export default function Home() {
                   <button type="button" onClick={() => void rate("dislike")} aria-label="Not good" aria-pressed={rated === "dislike"} className={`grid h-11 w-11 place-items-center rounded-full border transition active:scale-95 ${rated === "dislike" ? "border-[#ff8a96] bg-[#ff8a96]/15 text-[#ff8a96]" : "border-[#242a35] text-[#eceff4]"}`}><ThumbsDown size={18} /></button>
                 </span>
               </div>
+              {rated === "dislike" && (
+                <div className="mt-2 rounded-[16px] border border-[#242a35] bg-[#11141b] px-4 py-3">
+                  <p className="mb-2 text-sm text-[#8d97a8]">What felt off? (tap any)</p>
+                  <div className="flex flex-wrap gap-2">
+                    {([["too_fast", "Too fast"], ["too_slow", "Too slow"], ["boring_start", "Boring start"], ["blurry_dark", "Blurry or dark"], ["repeated_shots", "Repeated shots"], ["bad_transitions", "Rough transitions"], ["music_timing", "Off the beat"], ["not_my_style", "Not my style"]] as const).map(([id, label]) => (
+                      <button key={id} type="button" onClick={() => toggleReason(id)} aria-pressed={reasons.includes(id)} className={`min-h-10 rounded-full border px-3 text-sm transition active:scale-95 ${reasons.includes(id) ? "border-[#d9b45b] bg-[#d9b45b] text-[#17120a]" : "border-[#242a35] text-[#eceff4]"}`}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => void shareVideo(result.downloadUrl ?? result.outputUrl ?? "")}
