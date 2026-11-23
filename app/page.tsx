@@ -121,7 +121,9 @@ async function waitOnline(signal?: AbortSignal): Promise<void> {
 }
 
 async function sendPiecesOnce(projectId: string, path: string, file: File, onBytes: (sent: number) => void, signal?: AbortSignal): Promise<void> {
-  const CH = Math.min(2 * 1024 * 1024, Math.max(256 * 1024, Math.ceil(file.size / 900 / 65536) * 65536));
+  // Pieces travel several at a time: on a slow, high-latency network (a request to a faraway server takes a second or
+  // more just to be answered) sending them one by one wastes almost all of the time.
+  const CH = Math.min(2 * 1024 * 1024, Math.max(512 * 1024, Math.ceil(file.size / 900 / 65536) * 65536));
   const pieces = Math.max(1, Math.ceil(file.size / CH));
   const base = `/api/projects/${projectId}/upload-chunk?path=${encodeURIComponent(path)}`;
   const have = new Set<number>();
@@ -130,22 +132,27 @@ async function sendPiecesOnce(projectId: string, path: string, file: File, onByt
     if (r.ok) for (const n of ((await r.json()) as { have?: number[] }).have ?? []) have.add(n);
   } catch { /* start from the beginning */ }
   let sent = 0;
+  const todo: number[] = [];
   for (let n = 0; n < pieces; n++) {
-    if (signal?.aborted) throw new Error("CANCELLED");
+    if (have.has(n)) sent += Math.min(file.size, (n + 1) * CH) - n * CH;
+    else todo.push(n);
+  }
+  onBytes(sent);
+
+  const sendOne = async (n: number) => {
     const part = file.slice(n * CH, Math.min(file.size, (n + 1) * CH));
-    if (have.has(n)) { sent += part.size; onBytes(sent); continue; }
-    let ok = false;
-    for (let attempt = 0; attempt < 30 && !ok; attempt++) {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      if (signal?.aborted) throw new Error("CANCELLED");
       if (attempt > 0) await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * attempt)));
       await waitOnline(signal);
-      // This piece gets a fair time to arrive (at least ~15 KB/s), then it is cancelled and retried.
+      // A piece gets a fair time to arrive (at least ~15 KB/s), then it is cancelled and retried.
       const stall = new AbortController();
       const timer = setTimeout(() => stall.abort(), 20_000 + (part.size / 15_000) * 1000);
       const onAbort = () => stall.abort();
       signal?.addEventListener("abort", onAbort, { once: true });
       try {
         const res = await fetch(`${base}&index=${n}&total=${pieces}&size=${file.size}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: part, signal: stall.signal });
-        if (res.ok) { ok = true; break; }
+        if (res.ok) { sent += part.size; onBytes(sent); return; }
         const d = await res.json().catch(() => null);
         if (res.status === 422) throw new Error("UPLOAD_RESTART");
         if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) throw new Error(d?.error || `Could not upload "${file.name}".`);
@@ -157,10 +164,17 @@ async function sendPiecesOnce(projectId: string, path: string, file: File, onByt
         signal?.removeEventListener("abort", onAbort);
       }
     }
-    if (!ok) throw new Error(`"${file.name}" (${fmtMB(file.size)}) stopped uploading. Your connection looks weak. Your progress is kept: tap Continue to carry on. Code: UPLOAD_NETWORK`);
-    sent += part.size;
-    onBytes(sent);
-  }
+    throw new Error(`"${file.name}" (${fmtMB(file.size)}) stopped uploading. Your connection looks weak. Your progress is kept: tap Continue to carry on. Code: UPLOAD_NETWORK`);
+  };
+
+  // The very last piece to arrive triggers the join on the server, so keep one piece back until the others are in.
+  const last = todo.length ? todo.pop() as number : null;
+  let next = 0;
+  const workers = Array.from({ length: Math.min(4, todo.length) }, async () => {
+    while (next < todo.length) await sendOne(todo[next++]);
+  });
+  await Promise.all(workers);
+  if (last !== null) await sendOne(last);
 }
 
 // Create project -> get server-approved upload paths -> upload straight to private storage -> server verifies.
