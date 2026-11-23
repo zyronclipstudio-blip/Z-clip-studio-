@@ -21,8 +21,9 @@ export async function reviewFrames(frames: string[], styleName: string): Promise
       const res = await ai.models.generateContent({ model, contents: [{ role: "user", parts }], config: { responseMimeType: "application/json", temperature: 0.1 } });
       return parseReview(res.text ?? "");
     } catch (e) {
-      if (isModelGone(e instanceof Error ? e.message : "")) continue;
-      return null;
+      // Any failure of this judge model (retired, busy, not available to this key) means: try the next one.
+      void isModelGone;
+      continue;
     }
   }
   return null;
