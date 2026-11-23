@@ -120,3 +120,11 @@ test("sanitize rejects a plan with nothing usable", () => {
   assert.throws(() => sanitize({ nonsense: true }, assets, setup, "gemini"));
   assert.throws(() => sanitize(null, assets, setup, "gemini"));
 });
+
+test("sanitize accepts a plan wrapped in a list, or a bare list of segments", () => {
+  const assets = [{ id: "a", originalName: "a.mp4", storedName: "a.mp4", sizeBytes: 1, durationSec: 10, width: 720, height: 1280, fps: 30, hasAudio: true, codec: "h264", createdAt: "" }];
+  const setup = { purpose: "auto", mood: "auto", platform: "shorts", style: "auto" } as never;
+  const seg = { assetId: "a", startSec: 0, endSec: 3, reason: "x", confidence: 0.8, transition: "cut" };
+  assert.equal(sanitize([{ pacing: "fast", summary: "s", segments: [seg] }], assets, setup, "gemini").segments.length, 1);
+  assert.equal(sanitize([seg], assets, setup, "gemini").segments.length, 1);
+});

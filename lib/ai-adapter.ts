@@ -218,8 +218,17 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
 }
 
 // Validates and repairs a provider plan so the renderer never sees impossible values.
+// Models sometimes wrap the answer in a list, or return only the list of segments. Accept both shapes.
+export function unwrapPlan(raw: unknown): unknown {
+  if (!Array.isArray(raw)) return raw;
+  const first = raw[0] as Record<string, unknown> | undefined;
+  if (raw.length === 1 && first && typeof first === "object" && !Array.isArray(first) && "segments" in first) return first;
+  if (raw.length && raw.every((x) => x && typeof x === "object" && "assetId" in (x as object))) return { pacing: "medium", summary: "Edit planned by the AI.", segments: raw };
+  return raw;
+}
+
 export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, source: EditPlan["source"]): EditPlan {
-  const parsed = GeminiPlanSchema.parse(raw);
+  const parsed = GeminiPlanSchema.parse(unwrapPlan(raw));
   const byId = new Map(assets.map((a) => [a.id, a]));
   const cap = PLATFORM_CAP_SECONDS[setup.platform];
   const segments: CutSegment[] = [];
