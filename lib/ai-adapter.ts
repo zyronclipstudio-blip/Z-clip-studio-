@@ -181,7 +181,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
     // Gemini sometimes answers "high demand" (503/429). Retry, then try a backup model,
     // so a busy moment does not turn a smart edit into a plain join of the clips.
     const contents = createUserContent([...parts, prompt]);
-    const attempts: string[] = GEMINI_MODEL_CHAIN.flatMap((m) => [m, m]);
+    const attempts: string[] = GEMINI_MODEL_CHAIN.flatMap((m) => [m, m, m]);
     let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
     let usedModel = GEMINI_MODEL;
     let lastErr: unknown;
@@ -194,7 +194,7 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
         const msg = e instanceof Error ? e.message : "";
         if (isModelGone(msg)) { while (n + 1 < attempts.length && attempts[n + 1] === usedModel) n++; continue; } // retired model: go straight to the next one
         if (!/503|429|UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|timeout/i.test(msg)) throw e;
-        await new Promise((r) => setTimeout(r, 2500 * (n + 1)));
+        await new Promise((r) => setTimeout(r, Math.min(2500 * (n + 1), 8000)));
       }
     }
     if (!res) throw lastErr instanceof Error ? lastErr : new Error("Gemini is busy");
