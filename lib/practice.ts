@@ -80,6 +80,8 @@ export async function practiceOnce(styleId: string): Promise<{ score: number | n
     const setup = SetupSchema.parse({ purpose: "auto", mood: "auto", platform: "shorts", style: style.id });
     const rules = [await nicheInsight(style.id).catch(() => null), await practiceLesson(style.id).catch(() => null)].filter((x): x is string => !!x);
     const planned = await createEditPlan(assets, setup, { allowAI: true, style, rules });
+    // A silent fallback to the basic editor is a failure the customer would feel: record it so it is seen.
+    if (planned.fallbackReason) row.error = `AI fallback: ${planned.fallbackReason}`.slice(0, 300);
     let plan = planned.plan;
     const d = await dropNearDuplicates(plan, assets).catch(() => null);
     if (d?.dropped) plan = d.plan;
