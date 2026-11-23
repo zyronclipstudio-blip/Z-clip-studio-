@@ -7,6 +7,7 @@ import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
 import { trimDeadAir } from "@/lib/silence";
 import { dropNearDuplicates, dropWeakShots } from "@/lib/shots";
+import { userTaste } from "@/lib/taste";
 import { nicheInsight, practiceLesson, userLesson } from "@/lib/insights";
 import { reviewInBackground } from "@/lib/review";
 import { applyStyleRules } from "@/lib/styles";
@@ -167,6 +168,8 @@ export async function POST(req: Request) {
         if (lesson) lessons.push(lesson);
         const heard = await userLesson(style?.id).catch(() => null);
         if (heard) lessons.push(heard);
+        const taste = await userTaste(user.id).catch(() => null);
+        if (taste) lessons.push(taste);
         const planned = await createEditPlan(assets, body.setup, { allowAI: !flag(settings.kill_switch_ai), style, rules: lessons });
 
         // Their own sound: find the beats, then cut the edit to them. If anything fails, the edit still works without it.
