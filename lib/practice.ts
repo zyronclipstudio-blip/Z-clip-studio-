@@ -125,6 +125,10 @@ export async function practiceTick(): Promise<void> {
   const last = lastRow?.[0] ? Date.parse(lastRow[0].created_at as string) : 0;
   // "Due" is spread out: one practice every interval / styles, so the whole round finishes within one interval.
   if (Date.now() - last < (hours * 3_600_000) / STYLES.length) return;
+  // If the AI said "quota used up" in the last 6 hours, stand down completely: real users come first.
+  const { data: recent } = await db.from("practice_runs").select("error, created_at").order("created_at", { ascending: false }).limit(1);
+  const lastErr = String(recent?.[0]?.error ?? "");
+  if (/429|quota/i.test(lastErr) && Date.now() - Date.parse(recent?.[0]?.created_at as string) < 6 * 3_600_000) return;
   // Customers come first: skip if anyone rendered recently.
   const since = new Date(Date.now() - 10 * 60_000).toISOString();
   const { count } = await db.from("render_jobs").select("id", { count: "exact", head: true }).gte("created_at", since);
