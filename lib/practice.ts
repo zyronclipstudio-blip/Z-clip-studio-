@@ -87,7 +87,7 @@ export async function practiceOnce(styleId: string): Promise<{ score: number | n
     if (d?.dropped) plan = d.plan;
     const q = await dropWeakShots(plan, assets).catch(() => null);
     if (q?.dropped.length) plan = q.plan;
-    plan = { ...plan, polish: { audio: false, sharpen: true } };
+    plan = { ...plan, polish: { audio: false, sharpen: true, sfx: true } };
     plan = applyStyleRules(addPhraseHits(plan, (style.effects.allowed ?? []) as EffectId[]), style);
     plan = critiquePlan(plan).plan;
 

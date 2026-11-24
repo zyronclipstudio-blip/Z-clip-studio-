@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { makeSfxFiles, sfxEvents, sfxMixArgs } from "./sfx";
 import { EXPORT_DIR, FFMPEG, LIMITS, UPLOAD_DIR } from "./config";
 import { probeMedia, run } from "./media";
 import { isImageName } from "./image";
@@ -132,6 +133,21 @@ export async function renderPlan(
         ["-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", list, "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", outputPath],
         LIMITS.renderTimeoutMs,
       );
+    }
+
+    // Sound effects (whooshes, impacts, a riser) go on last. A failure here must never cost the person their video.
+    if (plan.polish?.sfx) {
+      try {
+        const events = sfxEvents(plan.segments, bases);
+        if (events.length) {
+          const files = await makeSfxFiles(tmp, events.map((e) => e.kind));
+          const mixed = path.join(tmp, "with-sfx.mp4");
+          await run(FFMPEG, sfxMixArgs(outputPath, events, files, mixed), LIMITS.renderTimeoutMs);
+          await fs.copyFile(mixed, outputPath);
+        }
+      } catch {
+        /* keep the video as it was */
+      }
     }
 
     onStage?.("inspecting");

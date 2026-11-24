@@ -232,7 +232,7 @@ export async function POST(req: Request) {
               await logEvent("dead_air_trim", "info", `Trimmed ${t.trimmedSec}s of dead air`, { projectId: project.id }, user.id);
             }
           }
-          planned.plan = { ...planned.plan, polish: { audio: speech && clipsAudible, sharpen: true } };
+          planned.plan = { ...planned.plan, polish: { audio: speech && clipsAudible, sharpen: true, sfx: !speech } };
         }
 
         // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
