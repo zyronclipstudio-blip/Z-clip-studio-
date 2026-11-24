@@ -22,3 +22,12 @@ test("only one drop hit per video, and not in styles that forbid it", () => {
   const calm = applyStyleRules(plan, styleById("business"));
   assert.equal(calm.segments.filter((s) => s.effects?.includes("drophit")).length, 0);
 });
+
+test("energetic styles may stack two effects and repeat the big hit about every ten seconds", () => {
+  const seg = (fx: string[]) => ({ assetId: "a", startSec: 0, endSec: 1, reason: "r", confidence: 1, transition: "cut" as const, effects: fx as never });
+  const segments = Array.from({ length: 30 }, (_, i) => (i % 5 === 2 ? seg(["drophit"]) : i % 2 ? seg(["flash", "shake"]) : seg([])));
+  const out = applyStyleRules({ version: 1, source: "gemini", aspectRatio: "9:16", pacing: "fast", targetDurationSec: 30, summary: "s", segments } as never, styleById("anime"));
+  const hits = out.segments.filter((s) => s.effects?.includes("drophit")).length;
+  assert.ok(hits >= 2 && hits <= 3, `hits ${hits}`);
+  assert.ok(out.segments.some((s) => (s.effects?.length ?? 0) === 2));
+});

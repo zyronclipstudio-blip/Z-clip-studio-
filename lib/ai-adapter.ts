@@ -189,7 +189,7 @@ ${capabilityPrompt()}
 - "freeze" (0.3 to 1.0 seconds, optional): holds the last frame of a segment to land a beat hit or reveal. At most 2 per video, never on speech.
 - "reverse" (true, optional): plays a short segment (under 4 seconds) backwards for a surprising moment. At most 1 per video, never on people talking.
 - DIRECTOR: build a shape, not a pile. Hook first, then build energy, put the biggest moment about two thirds in, and END on a strong, clean moment (never mid-action or on a fade of nothing). Do not place two near-identical shots next to each other; alternate wide, medium and close, and alternate subjects when you can. Prefer moments with clear faces, clear motion or clear results. If a clip has speech, keep whole sentences together and do not cut off a word.
-- VARIETY: spread effects across the video with space between them; the same effect never twice in a row. Use "flash" or "punch" on the hook and on the peak only when the style is energetic.
+- VARIETY: spread effects across the video with space between them; the same effect never twice in a row. Be creative and bold: put "flash" or "punch" on the hook and the peak, stack two effects that belong together on the biggest hits, and give every section of the video its own energy (build, hit, release) instead of the same move all the way through.
 - CONTINUITY: group shots of the same person, outfit and place together; change outfit or location only with a deliberate cut. End on a clear face or finished moment, never a tight crop of clothing or a blurry frame.
 - "reason" is one plain sentence a customer can read explaining why this moment was chosen.
 - "confidence" is 0 to 1: how sure you are this segment belongs in the edit.

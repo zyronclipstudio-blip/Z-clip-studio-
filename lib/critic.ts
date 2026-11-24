@@ -9,7 +9,7 @@ export interface CritiqueResult {
 
 type Seg = CutSegment & { effects: NonNullable<CutSegment["effects"]> };
 const MOTION = (e: string) => !["grain", "glow", "leak", "steady"].includes(e); // overlays are a finish and follow their own rules
-const MAX_EFFECT_SHARE = 0.4; // at most this share of the pieces may carry an effect
+const MAX_EFFECT_SHARE = 0.8; // at most this share of the pieces may carry an effect
 
 export function critiquePlan(input: EditPlan): CritiqueResult {
   const fixes: string[] = [];
