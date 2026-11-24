@@ -8,6 +8,8 @@ export interface BeatInfo {
   durationSec: number;
   /** Where the music really kicks in (a beat time), good as the start of the edit. */
   dropSec: number;
+  /** How loud each beat is compared with the rest of the song, 0 (quietest) to 1 (loudest), smoothed over a bar. Same length as beats. */
+  energy?: number[];
 }
 
 const SR = 11025;
@@ -98,7 +100,30 @@ export function analyzeBeats(samples: Float32Array, sampleRate = SR): BeatInfo {
       dropSec = b;
     }
   }
-  return { bpm: Math.round(bpm * 10) / 10, beats, durationSec: Math.round(durationSec * 100) / 100, dropSec };
+  return { bpm: Math.round(bpm * 10) / 10, beats, durationSec: Math.round(durationSec * 100) / 100, dropSec, energy: beatEnergy(energy, beats, step, period) };
+}
+
+/** Loudness of every beat as a rank (0-1) within the song, smoothed over four beats, so "peak" and "calm" are always relative to this track. */
+export function beatEnergy(energy: ArrayLike<number>, beats: number[], step: number, period: number): number[] {
+  if (!beats.length) return [];
+  const span = Math.max(1, Math.round(period / step));
+  const raw = beats.map((b) => {
+    const from = Math.min(energy.length - 1, Math.max(0, Math.round(b / step)));
+    let sum = 0;
+    let n = 0;
+    for (let f = from; f < Math.min(energy.length, from + span); f++) { sum += energy[f]; n++; }
+    return n ? sum / n : 0;
+  });
+  const smooth = raw.map((_, i) => {
+    let sum = 0;
+    let n = 0;
+    for (let k = Math.max(0, i - 1); k <= Math.min(raw.length - 1, i + 2); k++) { sum += raw[k]; n++; }
+    return sum / n;
+  });
+  const order = smooth.map((v, i) => [v, i] as const).sort((a, b) => a[0] - b[0]);
+  const rank = new Array<number>(smooth.length).fill(0);
+  order.forEach(([, i], r) => (rank[i] = smooth.length > 1 ? Math.round((r / (smooth.length - 1)) * 1000) / 1000 : 0.5));
+  return rank;
 }
 
 /** Decodes a sound (or the sound of a video) to mono samples and analyses it. */

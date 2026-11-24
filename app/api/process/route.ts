@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { createEditPlan } from "@/lib/ai-adapter";
-import { analyzeSoundFile } from "@/lib/beats";
+import { analyzeSoundFile, type BeatInfo } from "@/lib/beats";
 import { snapPlanToBeats } from "@/lib/beat-plan";
 import { critiquePlan } from "@/lib/critic";
 import { trimDeadAir } from "@/lib/silence";
@@ -11,7 +11,7 @@ import { userTaste } from "@/lib/taste";
 import { nicheInsight, practiceLesson, userLesson } from "@/lib/insights";
 import { reviewInBackground } from "@/lib/review";
 import { applyStyleRules } from "@/lib/styles";
-import { addPhraseHits } from "@/lib/director";
+import { addPhraseHits, directToSong } from "@/lib/director";
 import type { EffectId } from "@/lib/types/schema";
 import { approvedRules, resolveStyle } from "@/lib/styles-db";
 import { transcribeUsedAssets, wordsForPlan } from "@/lib/transcribe";
@@ -173,6 +173,7 @@ export async function POST(req: Request) {
         const planned = await createEditPlan(assets, body.setup, { allowAI: !flag(settings.kill_switch_ai), style, rules: lessons });
 
         // Their own sound: find the beats, then cut the edit to them. If anything fails, the edit still works without it.
+        let songInfo: BeatInfo | undefined;
         if (body.soundKey && isOwnSoundKey(body.soundKey, user.id, project.id)) {
           try {
             soundLocal = await downloadToWorkDir(body.soundKey, `sound-${jobId}${path.extname(body.soundKey)}`);
@@ -180,6 +181,7 @@ export async function POST(req: Request) {
             const cap = PLATFORM_CAP_SECONDS[body.setup.platform] ?? PLATFORM_CAP_SECONDS.auto;
             const snapped = snapPlanToBeats(planned.plan, assets, info, body.soundKey, cap);
             if (snapped.sound) {
+              songInfo = info;
               snapped.sound.clipVolume = body.clipVolume ?? 0;
               planned.plan = snapped;
             }
@@ -236,7 +238,9 @@ export async function POST(req: Request) {
         }
 
         // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
-        planned.plan = applyStyleRules(addPhraseHits(planned.plan, (style?.effects.allowed ?? ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur"]) as EffectId[]), style);
+        const allowedFx = (style?.effects.allowed ?? ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur"]) as EffectId[];
+        const phrased = addPhraseHits(planned.plan, allowedFx);
+        planned.plan = applyStyleRules(songInfo ? directToSong(phrased, songInfo, allowedFx) : phrased, style);
 
         // Your handle closes every edit (set once in app_settings as "handle").
         if (typeof settings.handle === "string" && settings.handle.trim()) {
