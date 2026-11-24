@@ -172,7 +172,7 @@ export async function renderPlan(
 // ---- Word-by-word captions (burned in per piece, in the piece's own time).
 const CAPTION_FONT = path.join(process.cwd(), "assets", "fonts", "Poppins-Bold.ttf");
 let drawtextOk: boolean | undefined;
-async function canDrawText(): Promise<boolean> {
+export async function canDrawText(): Promise<boolean> {
   if (drawtextOk !== undefined) return drawtextOk;
   try {
     const { stdout } = await run(FFMPEG, ["-hide_banner", "-filters"], 20_000);
@@ -430,7 +430,7 @@ export function blendLength(seg: { blend?: string }): number {
 }
 
 let xfadeOk: boolean | undefined;
-async function canXfade(): Promise<boolean> {
+export async function canXfade(): Promise<boolean> {
   if (xfadeOk !== undefined) return xfadeOk;
   try {
     const { stdout } = await run(FFMPEG, ["-hide_banner", "-filters"], 20_000);

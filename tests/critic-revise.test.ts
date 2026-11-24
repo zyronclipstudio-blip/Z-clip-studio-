@@ -69,11 +69,11 @@ test("style rules strip disallowed effects and cap the rest", () => {
 });
 test("every style has a unique id and a known look", () => {
   assert.equal(new Set(STYLES.map((s) => s.id)).size, STYLES.length);
-  for (const s of STYLES) assert.ok(["none", "soft", "punchy", "cinematic"].includes(s.look));
+  for (const s of STYLES) assert.ok(["none", "soft", "punchy", "cinematic", "tealorange", "warm", "cold", "noir", "vibrant", "faded"].includes(s.look));
 });
 test("look filters render in ffmpeg", async () => {
   const { execFileSync } = await import("node:child_process");
-  for (const l of ["soft", "punchy", "cinematic"] as const)
+  for (const l of ["soft", "punchy", "cinematic", "tealorange", "warm", "cold", "noir", "vibrant", "faded"] as const)
     execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=720x1280:d=1:r=30", "-vf", "format=yuv420p" + lookFilter(l), "-frames:v", "5", "/tmp/look.mp4"]);
 });
 
@@ -214,4 +214,23 @@ test("critic opens on the strongest shot and breaks up three alike", () => {
   assert.equal(segs[0].confidence, 0.95);
   const kinds = segs.map((x) => x.shot).join(",");
   assert.ok(!/(wide,wide,wide)|(detail,detail,detail)/.test(kinds), kinds);
+});
+
+test("critic keeps ramps rare and drops pulse without music; overlays are not counted as hits", () => {
+  const m = (extra: object) => ({ ...(seg([]) as object), ...extra }) as never;
+  const out = (critiquePlan(plan([m({ ramp: "up" }), m({ ramp: "down", effects: ["pulse", "grain"] }), m({ ramp: "up" }), m({ ramp: "down" }), m({ effects: ["grain"] })])).plan as { segments: { ramp?: string; effects?: string[] }[] }).segments;
+  assert.equal(out[0].ramp, undefined);
+  assert.equal(out.filter((x) => x.ramp).length, 2);
+  assert.ok(!out[1].effects?.includes("pulse"));
+  assert.ok(out[1].effects?.includes("grain"));
+  assert.ok(out[4].effects?.includes("grain")); // an overlay may stay on the last piece
+});
+test("style rules: overlays do not use the effect share, ramps only where they fit", () => {
+  const m = (extra: object) => ({ ...(seg([]) as object), ...extra }) as never;
+  const p = plan([m({ effects: ["grain"], ramp: "up" }), m({ effects: ["grain"] }), m({ effects: ["grain"] })]);
+  const cars = (applyStyleRules(p, styleById("cars")) as { segments: { effects?: string[]; ramp?: string }[] }).segments;
+  assert.ok(cars.every((x) => x.effects?.includes("grain")));
+  assert.equal(cars[0].ramp, "up");
+  const biz = (applyStyleRules(p, styleById("business")) as { segments: { effects?: string[]; ramp?: string }[] }).segments;
+  assert.ok(biz.every((x) => !x.effects?.length) && biz[0].ramp === undefined);
 });

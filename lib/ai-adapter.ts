@@ -77,6 +77,7 @@ export async function createEditPlan(
 const GeminiPlanSchema = z.object({
   pacing: z.enum(["fast", "medium", "slow"]).catch("medium"),
   summary: z.string().catch(""),
+  hook: z.string().optional().catch(undefined),
   segments: z.array(
     z.object({
       assetId: z.string(),
@@ -91,6 +92,7 @@ const GeminiPlanSchema = z.object({
       shot: z.enum(["wide", "medium", "detail"]).optional().catch(undefined),
       blend: z.enum(["dissolve", "slide", "zoom", "wipe", "circle", "fadeblack"]).optional().catch(undefined),
       reverse: z.boolean().optional().catch(undefined),
+      ramp: z.enum(["up", "down"]).optional().catch(undefined),
     }),
   ),
 });
@@ -179,6 +181,8 @@ ${capabilityPrompt()}
 - "speed" (0.75 to 1.5, default 1): 0.75 = slow motion for the single best moment (a reveal, a hit, a dance move); up to 1.5 to tighten a dull stretch. Use on at most 2 segments, never on speech.
 - "shot" (optional): label what the segment shows: "wide" (whole scene, location, full body), "medium" (waist-up, a person or object in context), "detail" (close-up: face, hands, wheel, product, texture). Pro edits mix them: open on the strongest shot, then move wide to medium to detail, and never put three of the same kind in a row.
 - "blend" (optional): how this segment arrives from the previous one, a smooth 0.3s blend instead of a hard cut: "dissolve" (calm, time passing, emotional), "slide" (energetic, outfit or location change), "zoom" (reveal, beat drop), "wipe", "circle" (playful), "fadeblack" (scene or chapter change). Use on about a third of the boundaries, only where the shots differ in place or subject; keep hard cuts inside one continuous action and on strong beats. Never the same blend twice in a row.
+- "ramp" (optional, "up" or "down"): a smooth speed ramp inside the segment. "up" starts in slow motion and accelerates into the action, "down" starts fast and eases into slow motion on a hero moment. The segment keeps its length. Best on cars, sport, dance and anime action. At most 2 per video, never on the first segment, never together with "speed", never on speech.
+- "hook" (optional, top-level): 2 to 5 words of on-screen text for the first seconds that make people keep watching (for example "Wait for the drop"). Only for energetic or social content; leave it out for talking, business or cinematic edits.
 - "freeze" (0.3 to 1.0 seconds, optional): holds the last frame of a segment to land a beat hit or reveal. At most 2 per video, never on speech.
 - "reverse" (true, optional): plays a short segment (under 4 seconds) backwards for a surprising moment. At most 1 per video, never on people talking.
 - DIRECTOR: build a shape, not a pile. Hook first, then build energy, put the biggest moment about two thirds in, and END on a strong, clean moment (never mid-action or on a fade of nothing). Do not place two near-identical shots next to each other; alternate wide, medium and close, and alternate subjects when you can. Prefer moments with clear faces, clear motion or clear results. If a clip has speech, keep whole sentences together and do not cut off a word.
@@ -188,7 +192,7 @@ ${capabilityPrompt()}
 - "confidence" is 0 to 1: how sure you are this segment belongs in the edit.
 
 Return ONLY a JSON object, with no markdown and no commentary, in exactly this shape:
-{"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[],"speed":1}]}`;
+{"pacing":"fast|medium|slow","summary":"one or two sentences describing the edit","hook":"optional short on-screen text","segments":[{"assetId":"...","startSec":0,"endSec":0,"reason":"...","confidence":0.8,"transition":"cut","effects":[],"speed":1}]}`;
 
     // Gemini sometimes answers "high demand" (503/429). Retry, then try a backup model,
     // so a busy moment does not turn a smart edit into a plain join of the clips.
@@ -268,6 +272,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
       blend: s.blend,
       shot: s.shot,
       reverse: s.reverse === true && end - start <= 4 ? true : undefined,
+      ramp: s.ramp && !(s.speed && Math.abs(s.speed - 1) > 0.04) && end - start >= 1 ? s.ramp : undefined,
       speed: s.speed && Math.abs(s.speed - 1) > 0.04 ? Math.round(s.speed * 100) / 100 : undefined,
       effects: (() => {
         const ok = s.effects.filter((e): e is (typeof EFFECT_IDS)[number] => (EFFECT_IDS as readonly string[]).includes(e));
@@ -288,6 +293,7 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
     pacing: parsed.pacing,
     targetDurationSec: round(segments.reduce((sum, segment) => sum + segment.endSec - segment.startSec, 0)),
     summary: parsed.summary || "Automatic edit.",
+    title: parsed.hook?.trim() ? { hook: parsed.hook.trim().split(/\s+/).slice(0, 6).join(" ").slice(0, 40) } : undefined,
     segments,
   });
 }

@@ -51,7 +51,7 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
         len = beats * period;
         if (beats < 1 || len < 0.5) return;
       }
-      out.push({ ...s, startSec: round(from), endSec: round(from + len), effects: round_ === 0 ? s.effects : undefined, transition: "cut" });
+      out.push({ ...s, startSec: round(from), endSec: round(from + len), effects: round_ === 0 ? s.effects : undefined, ramp: round_ === 0 ? s.ramp : undefined, transition: "cut" });
       cursor[k] = from + len;
       used += len;
       added = true;

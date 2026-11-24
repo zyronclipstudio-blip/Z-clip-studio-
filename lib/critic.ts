@@ -8,6 +8,7 @@ export interface CritiqueResult {
 }
 
 type Seg = CutSegment & { effects: NonNullable<CutSegment["effects"]> };
+const MOTION = (e: string) => !["grain", "glow", "leak", "steady"].includes(e); // overlays are a finish and follow their own rules
 const MAX_EFFECT_SHARE = 0.4; // at most this share of the pieces may carry an effect
 
 export function critiquePlan(input: EditPlan): CritiqueResult {
@@ -65,6 +66,16 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
     if (swapped) fixes.push("Mixed up the shot types so the edit flows.");
   }
 
+  // 0b4. Speed ramps stay rare (2 at most), never on the opening piece or together with a speed change; pulse needs the person's music.
+  {
+    let ramps = 0, dropped = 0;
+    segs.forEach((s, i) => {
+      if (s.ramp && (i === 0 || s.speed || s.freeze || s.reverse || ++ramps > 2)) { delete s.ramp; dropped++; }
+      if (!input.sound?.bpm && s.effects.includes("pulse")) { s.effects = s.effects.filter((e) => e !== "pulse"); dropped++; }
+    });
+    if (dropped) fixes.push("Kept speed ramps rare and beat pulses only where there is music.");
+  }
+
   // 0c. Smooth blends: never the same one twice in a row, none on the opening piece, at most about half of the boundaries.
   {
     let changed = 0, used = 0;
@@ -79,8 +90,8 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
   // 1. The same effect on two neighbouring pieces looks like a mistake.
   let repeats = 0;
   for (let i = 1; i < segs.length; i++) {
-    const before = new Set(segs[i - 1].effects);
-    const kept = segs[i].effects.filter((e) => !before.has(e));
+    const before = new Set(segs[i - 1].effects.filter(MOTION));
+    const kept = segs[i].effects.filter((e) => !before.has(e) || !MOTION(e));
     if (kept.length !== segs[i].effects.length) {
       repeats++;
       segs[i].effects = kept;
@@ -90,20 +101,20 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
 
   // 2. Too many effects makes an edit look busy. Keep the ones on the most confident pieces.
   const limit = Math.max(1, Math.floor(segs.length * MAX_EFFECT_SHARE));
-  const withFx = segs.map((s, i) => ({ s, i })).filter((x) => x.s.effects.length > 0);
+  const withFx = segs.map((s, i) => ({ s, i })).filter((x) => x.s.effects.some(MOTION));
   if (withFx.length > limit) {
     const drop = withFx
       .filter((x) => x.i !== 0) // the hook keeps its effect
       .sort((a, b) => a.s.confidence - b.s.confidence)
       .slice(0, withFx.length - limit);
-    for (const d of drop) segs[d.i].effects = [];
+    for (const d of drop) segs[d.i].effects = segs[d.i].effects.filter((e) => !MOTION(e));
     if (drop.length) fixes.push(`Too many effects, so I kept the ${limit} that matter most.`);
   }
 
   // 3. End cleanly: no effect and no fade-out gimmick on the last piece.
   const last = segs[segs.length - 1];
-  if (last && last.effects.length) {
-    last.effects = [];
+  if (last && last.effects.some(MOTION)) {
+    last.effects = last.effects.filter((e) => !MOTION(e));
     fixes.push("Ended on a clean shot without an effect.");
   }
 
