@@ -71,6 +71,14 @@ export async function renderPlan(
         const pw = wordsForPiece(plan.captions.words, seg.assetId, seg.startSec, seg.endSec);
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
+      // On-screen text: a hook on the first piece and a closing line on the last. Both are a bonus and never block the render.
+      const played = dur / spd + hold;
+      const wantHook = i === 0 && plan.title?.hook && played >= 1.2;
+      const wantEnd = i === plan.segments.length - 1 && plan.title?.endCard && played >= 1.2;
+      if ((wantHook || wantEnd) && (await canDrawText())) {
+        if (wantHook) capVf += await titleFilter(plan.title!.hook as string, tmp, `h${i}`, w, h, 0.3, Math.min(2.8, played - 0.2), "top");
+        if (wantEnd) capVf += await titleFilter(plan.title!.endCard as string, tmp, `e${i}`, w, h, Math.max(0, played - 1.8), played - 0.05, "middle");
+      }
       try {
         await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
       } catch (err) {
@@ -184,6 +192,16 @@ export function wordsForPiece(words: { assetId: string; startSec: number; endSec
     .filter((w) => w.assetId === assetId && w.endSec > segStart && w.startSec < segEnd)
     .map((w) => ({ start: Math.max(0, w.startSec - segStart), end: Math.min(dur, Math.max(w.endSec - segStart, w.startSec - segStart + 0.25)), text: w.text }))
     .filter((w) => w.end - w.start >= 0.12);
+}
+
+// A title card text: fades in and out, large and centred, with a soft outline so it reads on any footage.
+export async function titleFilter(text: string, dir: string, tag: string, w: number, h: number, start: number, end: number, where: "top" | "middle"): Promise<string> {
+  const f = path.join(dir, `title-${tag}.txt`);
+  await fs.writeFile(f, text.toUpperCase());
+  const size = Math.round(Math.min(w * 0.09, (w * 0.88) / Math.max(6, text.length * 0.62)));
+  const y = where === "top" ? "h*0.16" : "(h-text_h)/2";
+  const a = `if(lt(t,${(start + 0.25).toFixed(2)}),(t-${start.toFixed(2)})/0.25,if(gt(t,${(end - 0.25).toFixed(2)}),(${end.toFixed(2)}-t)/0.25,1))`;
+  return `,drawtext=fontfile='${CAPTION_FONT}':textfile='${f}':expansion=none:fontsize=${size}:fontcolor=white:borderw=${Math.max(3, Math.round(size / 12))}:bordercolor=black@0.85:x=(w-text_w)/2:y=${y}:alpha='${a}':enable='between(t,${start.toFixed(2)},${end.toFixed(2)})'`;
 }
 
 export async function captionFilter(words: PieceWord[], dir: string, tag: string, w: number, h: number, style: "pop" | "clean"): Promise<string> {

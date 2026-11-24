@@ -85,6 +85,8 @@ export const EditPlanSchema = z.object({
     .optional(),
   /** Automatic clean-up: audio noise reduction for speech, mild sharpening. */
   polish: z.object({ audio: z.boolean().default(false), sharpen: z.boolean().default(false), sfx: z.boolean().optional() }).optional(),
+  /** On-screen text: a short hook at the start, and an optional closing line (for example the creator's handle) at the end. */
+  title: z.object({ hook: z.string().max(40).optional(), endCard: z.string().max(40).optional() }).optional(),
   /** Colour look applied to every piece. */
   look: z.enum(["none", "soft", "punchy", "cinematic", "tealorange", "warm", "cold", "noir", "vibrant", "faded"]).optional(),
   /** Spoken words from the clips, in each clip's own time, burned in as captions. */
