@@ -27,7 +27,7 @@ export interface MediaAsset {
 export type PublicAsset = Omit<MediaAsset, "storedName">;
 
 /** Motion effects the render engine can apply to the start of a piece. */
-export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur"] as const;
+export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur", "pulse", "grain", "glow", "leak", "steady"] as const;
 export const EffectSchema = z.enum(EFFECT_IDS);
 export type EffectId = z.infer<typeof EffectSchema>;
 
@@ -53,6 +53,8 @@ export const CutSegmentSchema = z.object({
   speed: z.number().min(0.75).max(1.5).optional(),
   /** Hold the last frame for this many seconds (a beat hit or a reveal). */
   freeze: z.number().min(0.2).max(1.5).optional(),
+  /** A smooth speed ramp inside the piece: "up" starts in slow motion and accelerates, "down" starts fast and slows. Total length is unchanged. */
+  ramp: z.enum(["up", "down"]).optional(),
   /** The kind of shot this piece is. */
   shot: ShotSchema.optional(),
   /** How this piece arrives: a smooth blend from the previous piece (instead of a hard cut). */
@@ -82,9 +84,9 @@ export const EditPlanSchema = z.object({
     })
     .optional(),
   /** Automatic clean-up: audio noise reduction for speech, mild sharpening. */
-  polish: z.object({ audio: z.boolean().default(false), sharpen: z.boolean().default(false) }).optional(),
+  polish: z.object({ audio: z.boolean().default(false), sharpen: z.boolean().default(false), sfx: z.boolean().optional() }).optional(),
   /** Colour look applied to every piece. */
-  look: z.enum(["none", "soft", "punchy", "cinematic"]).optional(),
+  look: z.enum(["none", "soft", "punchy", "cinematic", "tealorange", "warm", "cold", "noir", "vibrant", "faded"]).optional(),
   /** Spoken words from the clips, in each clip's own time, burned in as captions. */
   captions: z
     .object({

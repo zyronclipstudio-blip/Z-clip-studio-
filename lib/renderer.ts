@@ -71,11 +71,11 @@ export async function renderPlan(
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
       bases.push(dur / spd + hold);
@@ -187,13 +187,19 @@ export function lookFilter(look: EditPlan["look"] = "none"): string {
     case "soft": return ",eq=brightness=0.03:saturation=1.08:contrast=0.97,colorbalance=rs=0.03:bs=-0.03";
     case "punchy": return ",eq=contrast=1.1:saturation=1.2";
     case "cinematic": return ",eq=contrast=1.07:saturation=0.92,colorbalance=rs=-0.02:bs=0.04,vignette=angle=PI/6,format=yuv420p";
+    case "tealorange": return ",colorbalance=rs=-0.08:bs=0.08:gs=0.02:rh=0.10:bh=-0.10,eq=contrast=1.08:saturation=1.1,format=yuv420p";
+    case "warm": return ",colorbalance=rm=0.06:bm=-0.06:rh=0.05:bh=-0.05,eq=saturation=1.08:brightness=0.02,format=yuv420p";
+    case "cold": return ",colorbalance=rm=-0.05:bm=0.07,eq=saturation=0.95:contrast=1.06,format=yuv420p";
+    case "noir": return ",hue=s=0,eq=contrast=1.25:brightness=-0.03,vignette=angle=PI/5,format=yuv420p";
+    case "vibrant": return ",eq=saturation=1.35:contrast=1.08,format=yuv420p";
+    case "faded": return ",curves=m='0/0.06 1/0.94',eq=saturation=0.85,format=yuv420p";
     default: return "";
   }
 }
 
 // Motion effects. Each one acts on the start of a piece, where the beat lands.
 // Filters are chained after the base crop; every one keeps the frame size and pixel format.
-export function effectFilter(effect: EffectId, w: number, h: number): string {
+export function effectFilter(effect: EffectId, w: number, h: number, bpm?: number): string {
   switch (effect) {
     case "punch": // quick push-in that settles
       return `,scale=w='iw*(1+0.07*max(0,1-t/0.3))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
@@ -209,6 +215,18 @@ export function effectFilter(effect: EffectId, w: number, h: number): string {
       return `,scale=iw*1.7:ih*1.7,rotate=a='0.5*pow(max(0,1-t/0.4),2)':ow=iw:oh=ih:fillcolor=black,crop=${w}:${h},setsar=1,format=yuv420p`;
     case "zoomblur": // fast zoom-out with a short blur, like a lens pull
       return `,scale=w='iw*(1+0.4*pow(max(0,1-t/0.35),2))':h=-2:eval=frame,crop=${w}:${h},boxblur=luma_radius=9:luma_power=1:enable='lt(t,0.2)',setsar=1,format=yuv420p`;
+    case "pulse": { // the picture breathes in time with the music: a small push on every beat
+      const period = bpm && bpm >= 50 ? 60 / bpm : 0.5;
+      return `,scale=w='iw*(1+0.045*pow(max(0,1-mod(t,${period.toFixed(4)})/0.18),2))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+    }
+    case "grain": // film grain across the whole piece
+      return `,noise=alls=14:allf=t+u`;
+    case "glow": // soft bloom on the highlights
+      return `,split[gl_a][gl_b];[gl_b]gblur=sigma=16,eq=brightness=0.04[gl_g];[gl_a][gl_g]blend=all_mode=screen:all_opacity=0.35,format=yuv420p`;
+    case "leak": // a warm light flare that fades over the start of the piece
+      return `,eq=brightness='0.16*max(0,1-t/0.5)':saturation='1+0.4*max(0,1-t/0.5)':eval=frame,colorbalance=rs=0.12:rm=0.10:gm=0.03:enable='lt(t,0.5)'`;
+    case "steady": // calms handheld shake
+      return `,deshake=rx=16:ry=16:edge=mirror`;
   }
 }
 
@@ -231,18 +249,28 @@ function segmentArgs(
   hold = 0,
   reverse = false,
   polish?: EditPlan["polish"],
+  ramp?: "up" | "down",
+  bpm?: number,
 ): string[] {
   // Speed: the source range is read as is; the piece plays shorter or longer.
   const outDur = dur / speed + hold;
   let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
-  if (speed !== 1) vf = `setpts=PTS/${speed.toFixed(3)},` + vf;
+  if (ramp && speed === 1 && !still) {
+    // Smooth speed ramp: the playback speed changes steadily across the piece (0.5x <-> 1.76x), and the piece keeps its length.
+    const a = ramp === "up" ? 0.5 : 1.76;
+    const b = ramp === "up" ? 1.76 : 0.5;
+    const D = Math.max(0.2, dur);
+    vf = `setpts='(${(D / (b - a)).toFixed(5)})*log((${a}+${((b - a) / D).toFixed(5)}*PTS*TB)/${a})/TB',` + vf.replace('fps=30', 'minterpolate=fps=30:mi_mode=blend');
+  } else if (speed !== 1) {
+    vf = `setpts=PTS/${speed.toFixed(3)},` + (speed < 0.85 ? vf.replace('fps=30', 'minterpolate=fps=30:mi_mode=blend') : vf);
+  }
   if (reverse) vf = `reverse,` + vf;
   if (polish?.sharpen) vf += ",unsharp=5:5:0.5:5:5:0.0";
   vf += grade;
   vf += lookFilter(look);
-  for (const e of effects) vf += effectFilter(e, w, h);
+  for (const e of effects) vf += effectFilter(e, w, h, bpm);
   vf += captionVf;
   let af = "aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo";
   if (reverse) af = `areverse,` + af;

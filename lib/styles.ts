@@ -3,7 +3,7 @@ import type { CutSegment, EditPlan, EffectId } from "./types/schema";
 // A style is DATA: its own rules for pacing, effects, captions, colour and how the AI should think.
 // The AI still picks the moments from the real footage; the style decides how they are cut and dressed.
 // New styles (including ones learned from the trend radar) are just more entries of this shape.
-export type Look = "none" | "soft" | "punchy" | "cinematic";
+export type Look = "none" | "soft" | "punchy" | "cinematic" | "tealorange" | "warm" | "cold" | "noir" | "vibrant" | "faded";
 
 export interface Style {
   id: string;
