@@ -44,6 +44,10 @@ export async function renderPlan(
     onStage?.("rendering");
     const partFiles: string[] = [];
     const grades = new Map<string, string>();
+    const plannedTotal = plan.segments.reduce((t, x) => {
+      const a = byId.get(x.assetId);
+      return t + (x.endSec - x.startSec) / (x.speed && x.speed !== 1 ? x.speed : 1) + (x.freeze && a && !isImageName(a.originalName) ? x.freeze : 0);
+    }, 0);
     let expected = 0;
     const blending = plan.segments.some((x) => x.blend) && plan.segments.length >= 2 && plan.segments.length <= 60 && (await canXfade());
     const bases: number[] = [];
@@ -71,20 +75,30 @@ export async function renderPlan(
         const pw = wordsForPiece(plan.captions.words, seg.assetId, seg.startSec, seg.endSec);
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
       }
-      // On-screen text: a hook on the first piece and a closing line on the last. Both are a bonus and never block the render.
+      // On-screen text: a hook over the first ~2.6s and a closing line over the last ~1.8s, even when those span several short
+      // pieces. Both are a bonus and never block the render.
       const played = dur / spd + hold;
-      const wantHook = i === 0 && plan.title?.hook && played >= 1.2;
-      const wantEnd = i === plan.segments.length - 1 && plan.title?.endCard && played >= 1.2;
-      if ((wantHook || wantEnd) && (await canDrawText())) {
-        if (wantHook) capVf += await titleFilter(plan.title!.hook as string, tmp, `h${i}`, w, h, 0.3, Math.min(2.8, played - 0.2), "top");
-        if (wantEnd) capVf += await titleFilter(plan.title!.endCard as string, tmp, `e${i}`, w, h, Math.max(0, played - 1.8), played - 0.05, "middle");
+      const pieceStart = bases.reduce((t, b) => t + b, 0);
+      if ((plan.title?.hook || plan.title?.endCard) && (await canDrawText())) {
+        if (plan.title?.hook) {
+          const hs = 0.3, he = 2.6;
+          const ls = Math.max(0, hs - pieceStart), le = Math.min(played - 0.02, he - pieceStart);
+          if (pieceStart < he - 0.3 && le - ls >= 0.3) capVf += await titleFilter(plan.title.hook, tmp, `h${i}`, w, h, ls, le, "top", pieceStart <= hs + 0.25, he - pieceStart <= played);
+        }
+        if (plan.title?.endCard) {
+          const es = Math.max(0, plannedTotal - 1.8), ee = plannedTotal - 0.05;
+          const ls = Math.max(0, es - pieceStart), le = Math.min(played - 0.02, ee - pieceStart);
+          if (pieceStart + played > es + 0.3 && le - ls >= 0.3) capVf += await titleFilter(plan.title.endCard, tmp, `e${i}`, w, h, ls, le, "middle", pieceStart <= es + 0.25, ee - pieceStart <= played + 0.05);
+        }
       }
+      // Photos never sit frozen: unless a motion effect was chosen, they get a slow push-in or pull-out, alternating.
+      const fx = still && !(seg.effects ?? []).some((e) => ["punch", "pulse", "shake", "zoomblur", "spin"].includes(e)) ? [...(seg.effects ?? []), (i % 2 ? "driftout" : "drift") as EffectId] : seg.effects;
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, seg.effects, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
       bases.push(dur / spd + hold);
@@ -195,12 +209,12 @@ export function wordsForPiece(words: { assetId: string; startSec: number; endSec
 }
 
 // A title card text: fades in and out, large and centred, with a soft outline so it reads on any footage.
-export async function titleFilter(text: string, dir: string, tag: string, w: number, h: number, start: number, end: number, where: "top" | "middle"): Promise<string> {
+export async function titleFilter(text: string, dir: string, tag: string, w: number, h: number, start: number, end: number, where: "top" | "middle", fadeIn = true, fadeOut = true): Promise<string> {
   const f = path.join(dir, `title-${tag}.txt`);
   await fs.writeFile(f, text.toUpperCase());
-  const size = Math.round(Math.min(w * 0.09, (w * 0.88) / Math.max(6, text.length * 0.62)));
+  const size = Math.round(Math.min(w * 0.11, (w * 0.9) / Math.max(6, text.length * 0.6)));
   const y = where === "top" ? "h*0.16" : "(h-text_h)/2";
-  const a = `if(lt(t,${(start + 0.25).toFixed(2)}),(t-${start.toFixed(2)})/0.25,if(gt(t,${(end - 0.25).toFixed(2)}),(${end.toFixed(2)}-t)/0.25,1))`;
+  const a = `if(${fadeIn ? 1 : 0}*lt(t,${(start + 0.25).toFixed(2)}),(t-${start.toFixed(2)})/0.25,if(${fadeOut ? 1 : 0}*gt(t,${(end - 0.25).toFixed(2)}),(${end.toFixed(2)}-t)/0.25,1))`;
   return `,drawtext=fontfile='${CAPTION_FONT}':textfile='${f}':expansion=none:fontsize=${size}:fontcolor=white:borderw=${Math.max(3, Math.round(size / 12))}:bordercolor=black@0.85:x=(w-text_w)/2:y=${y}:alpha='${a}':enable='between(t,${start.toFixed(2)},${end.toFixed(2)})'`;
 }
 
@@ -259,6 +273,10 @@ export function effectFilter(effect: EffectId, w: number, h: number, bpm?: numbe
       return `,split[gl_a][gl_b];[gl_b]gblur=sigma=16,eq=brightness=0.04[gl_g];[gl_a][gl_g]blend=all_mode=screen:all_opacity=0.35,format=yuv420p`;
     case "leak": // a warm light flare that fades over the start of the piece
       return `,eq=brightness='0.16*max(0,1-t/0.5)':saturation='1+0.4*max(0,1-t/0.5)':eval=frame,colorbalance=rs=0.12:rm=0.10:gm=0.03:enable='lt(t,0.5)'`;
+    case "drift": // slow push-in so a photo is never frozen
+      return `,scale=w='iw*(1+0.06*min(t,3))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+    case "driftout": // slow pull-out
+      return `,scale=w='iw*(1+0.06*max(0,3-t))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
     case "steady": // calms handheld shake
       return `,deshake=rx=16:ry=16:edge=mirror`;
   }
