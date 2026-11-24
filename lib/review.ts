@@ -5,7 +5,7 @@ import { getSettings } from "./settings";
 import { extractFrames, parseReview, type Review } from "./review-core";
 
 const PROMPT = (style: string) => `These are evenly spaced frames, in order, from a short vertical video made by an automatic editor in the "${style}" style.
-Judge it like a strict professional editor. Look for: weak first frame (hook), repeated or near-identical shots, awkward crops (heads cut off, only torso), dark or blurry frames, unclear subject, a weak last frame.
+Judge ONLY the editing, like a strict professional editor: ignore what the footage is about, how good or random the source clips are, and their quality. Score pacing, the hook, variety of shots, crops and flow. Look for: weak first frame (hook), repeated or near-identical shots, awkward crops (heads cut off, only torso), dark or blurry frames, unclear subject, a weak last frame.
 Return ONLY JSON: {"score": 0-10 overall, "hook": 0-10 first frame strength, "issues": [up to 4 short plain phrases, e.g. "ends on a dashboard close-up"]}`;
 
 export async function reviewFrames(frames: string[], styleName: string): Promise<Review | null> {

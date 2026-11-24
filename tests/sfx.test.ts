@@ -15,3 +15,9 @@ test("whoosh before blends, impact on hits, riser before the first flash, never 
 test("no events without triggers", () => {
   assert.deepEqual(sfxEvents([{}, {}, {}], [1, 1, 1]), []);
 });
+
+test("the drop hit gets an impact and a riser", () => {
+  const ev = sfxEvents([{}, {}, { effects: ["drophit"] }], [1, 1, 1]);
+  assert.ok(ev.some((e) => e.kind === "impact" && e.at === 2));
+  assert.ok(ev.some((e) => e.kind === "riser"));
+});

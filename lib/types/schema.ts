@@ -27,7 +27,7 @@ export interface MediaAsset {
 export type PublicAsset = Omit<MediaAsset, "storedName">;
 
 /** Motion effects the render engine can apply to the start of a piece. */
-export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur", "pulse", "grain", "glow", "leak", "steady", "drift", "driftout"] as const;
+export const EFFECT_IDS = ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur", "pulse", "grain", "glow", "leak", "steady", "drift", "driftout", "panleft", "panright", "rise", "drophit"] as const;
 export const EffectSchema = z.enum(EFFECT_IDS);
 export type EffectId = z.infer<typeof EffectSchema>;
 
@@ -59,6 +59,9 @@ export const CutSegmentSchema = z.object({
   shot: ShotSchema.optional(),
   /** How this piece arrives: a smooth blend from the previous piece (instead of a hard cut). */
   blend: BlendSchema.optional(),
+  /** Where the subject sits in the frame (0 = left/top, 1 = right/bottom), so the vertical crop keeps faces and the main subject in view. */
+  focusX: z.number().min(0).max(1).optional(),
+  focusY: z.number().min(0).max(1).optional(),
   /** Play this short piece backwards (only pieces up to 4 seconds). */
   reverse: z.boolean().optional(),
 });

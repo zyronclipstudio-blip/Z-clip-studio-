@@ -19,9 +19,9 @@ export function sfxEvents(segs: SegLike[], bases: number[]): SfxEvent[] {
   segs.forEach((s, i) => {
     const fx = s.effects ?? [];
     if (i > 0 && (s.blend || fx.some((e) => ["whip", "spin", "zoomblur"].includes(e)))) raw.push({ kind: "whoosh", at: Math.max(0, at - 0.3), gain: GAIN.whoosh });
-    if (fx.some((e) => ["flash", "shake", "punch", "glitch"].includes(e))) {
+    if (fx.some((e) => ["flash", "shake", "punch", "glitch", "drophit"].includes(e))) {
       raw.push({ kind: "impact", at, gain: GAIN.impact });
-      if (!riser && at >= 1.6 && fx.includes("flash")) { raw.push({ kind: "riser", at: at - LEN.riser, gain: GAIN.riser }); riser = true; }
+      if (!riser && at >= 1.6 && (fx.includes("flash") || fx.includes("drophit"))) { raw.push({ kind: "riser", at: at - LEN.riser, gain: GAIN.riser }); riser = true; }
     }
     at += bases[i] ?? 0;
   });

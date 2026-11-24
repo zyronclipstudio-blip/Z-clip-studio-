@@ -15,6 +15,9 @@ const DIMENSIONS: Record<AspectRatio, [number, number]> = {
   "1:1": [720, 720],
 };
 
+// Photos never sit still: each one gets a different camera move so a run of photos does not feel repeated.
+const PHOTO_MOVES: EffectId[] = ["drift", "panleft", "driftout", "rise", "panright"];
+
 export type RenderStage = "rendering" | "inspecting";
 
 export interface RenderResult {
@@ -70,7 +73,7 @@ export async function renderPlan(
       const src = path.join(UPLOAD_DIR, asset.storedName);
       const still = isImageName(asset.originalName);
       let capVf = "";
-      const grade = still ? "" : await exposureFix(src, asset.durationSec, grades);
+      const grade = await exposureFix(src, still ? 0 : asset.durationSec / 2, grades);
       if (plan.captions?.enabled && !still && spd === 1 && (await canDrawText())) {
         const pw = wordsForPiece(plan.captions.words, seg.assetId, seg.startSec, seg.endSec);
         if (pw.length) capVf = await captionFilter(pw, tmp, String(i), w, h, plan.captions.style);
@@ -92,13 +95,13 @@ export async function renderPlan(
         }
       }
       // Photos never sit frozen: unless a motion effect was chosen, they get a slow push-in or pull-out, alternating.
-      const fx = still && !(seg.effects ?? []).some((e) => ["punch", "pulse", "shake", "zoomblur", "spin"].includes(e)) ? [...(seg.effects ?? []), (i % 2 ? "driftout" : "drift") as EffectId] : seg.effects;
+      const fx = still && !(seg.effects ?? []).some((e) => ["punch", "pulse", "shake", "zoomblur", "spin", "drophit", "panleft", "panright", "rise"].includes(e)) ? [...(seg.effects ?? []), PHOTO_MOVES[i % PHOTO_MOVES.length]] : seg.effects;
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm, { x: seg.focusX, y: seg.focusY }), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm, { x: seg.focusX, y: seg.focusY }), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
       bases.push(dur / spd + hold);
@@ -277,6 +280,14 @@ export function effectFilter(effect: EffectId, w: number, h: number, bpm?: numbe
       return `,scale=w='iw*(1+0.06*min(t,3))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
     case "driftout": // slow pull-out
       return `,scale=w='iw*(1+0.06*max(0,3-t))':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
+    case "panleft": // slow camera pan across an enlarged still
+      return `,scale=w='trunc(iw*1.22/2)*2':h='trunc(ih*1.22/2)*2',crop=${w}:${h}:'(in_w-out_w)*(1-min(t,3)/3)':'(in_h-out_h)/2',setsar=1,format=yuv420p`;
+    case "panright":
+      return `,scale=w='trunc(iw*1.22/2)*2':h='trunc(ih*1.22/2)*2',crop=${w}:${h}:'(in_w-out_w)*min(t,3)/3':'(in_h-out_h)/2',setsar=1,format=yuv420p`;
+    case "rise": // slow tilt up, like a camera lifting over the subject
+      return `,scale=w='trunc(iw*1.22/2)*2':h='trunc(ih*1.22/2)*2',crop=${w}:${h}:'(in_w-out_w)/2':'(in_h-out_h)*(1-min(t,3)/3)',setsar=1,format=yuv420p`;
+    case "drophit": // the big hit on the drop: punch-in, a few frames of shake and a white flash, all at once, then it settles
+      return `,scale=w='iw*(1+0.1*max(0,1-t/0.35))':h=-2:eval=frame,crop=${w}:${h}:'(in_w-out_w)/2+16*sin(t*61)*max(0,1-t/0.5)':'(in_h-out_h)/2+16*cos(t*73)*max(0,1-t/0.5)',setsar=1,format=yuv420p,eq=brightness='0.45*max(0,1-t/0.18)':eval=frame`;
     case "steady": // calms handheld shake
       return `,deshake=rx=16:ry=16:edge=mirror`;
   }
@@ -303,10 +314,15 @@ function segmentArgs(
   polish?: EditPlan["polish"],
   ramp?: "up" | "down",
   bpm?: number,
+  focus?: { x?: number; y?: number },
 ): string[] {
   // Speed: the source range is read as is; the piece plays shorter or longer.
   const outDur = dur / speed + hold;
-  let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,fps=30,format=yuv420p`;
+  // The crop follows the subject (focus) instead of always taking the centre, so faces and the main subject stay in view.
+  const fx0 = Math.min(1, Math.max(0, focus?.x ?? 0.5));
+  const fy0 = Math.min(1, Math.max(0, focus?.y ?? 0.5));
+  const cropAt = fx0 === 0.5 && fy0 === 0.5 ? `crop=${w}:${h}` : `crop=${w}:${h}:'(iw-ow)*${fx0.toFixed(3)}':'(ih-oh)*${fy0.toFixed(3)}'`;
+  let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,${cropAt},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
   if (ramp && speed === 1 && !still) {
@@ -419,19 +435,29 @@ export async function inspectOutput(file: string, w: number, h: number, expected
   return { passed: hardChecks.every((c) => c.ok), hardChecks, warnings };
 }
 
+// Pure: how much to correct a shot whose average brightness (0-255) is y. Dark shots get a real lift (gamma opens the shadows
+// without blowing out the highlights); bright ones a small pull-down. Capped, so a naturally moody scene is never flattened.
+export function exposureFilter(y: number): string {
+  if (!Number.isFinite(y)) return "";
+  if (y < 95) {
+    const gamma = Math.min(1.5, 1 + ((110 - y) / 110) * 0.8);
+    const lift = Math.min(0.05, ((110 - y) / 255) * 0.2);
+    return `,eq=gamma=${gamma.toFixed(3)}:brightness=${lift.toFixed(3)}:saturation=1.08`;
+  }
+  const delta = Math.max(-0.08, Math.min(0.08, ((118 - y) / 255) * 0.5));
+  return Math.abs(delta) > 0.015 ? `,eq=brightness=${delta.toFixed(3)}` : "";
+}
+
 // Even exposure across clips: measure one frame per source and nudge brightness toward a shared middle.
 // Small, capped correction so a naturally dark or bright scene is never flattened.
-async function exposureFix(src: string, durationSec: number, cache: Map<string, string>): Promise<string> {
+export async function exposureFix(src: string, atSec: number, cache: Map<string, string>): Promise<string> {
   const hit = cache.get(src);
   if (hit !== undefined) return hit;
   let filter = "";
   try {
-    const { stderr, stdout } = await run(FFMPEG, ["-hide_banner", "-ss", String(Math.max(0, durationSec / 2)), "-i", src, "-frames:v", "1", "-vf", "signalstats,metadata=print", "-f", "null", "-"], 20_000);
+    const { stderr, stdout } = await run(FFMPEG, ["-hide_banner", "-ss", String(Math.max(0, atSec)), "-i", src, "-frames:v", "1", "-vf", "signalstats,metadata=print", "-f", "null", "-"], 20_000);
     const m = /lavfi\.signalstats\.YAVG=([0-9.]+)/.exec(`${stdout}\n${stderr}`);
-    if (m) {
-      const delta = Math.max(-0.08, Math.min(0.08, ((118 - Number(m[1])) / 255) * 0.5));
-      if (Math.abs(delta) > 0.015) filter = `,eq=brightness=${delta.toFixed(3)}`;
-    }
+    if (m) filter = exposureFilter(Number(m[1]));
   } catch {
     filter = "";
   }

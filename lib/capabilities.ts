@@ -21,6 +21,7 @@ export const CAPABILITIES: Capability[] = [
   { id: "grain", purpose: "film grain across the whole piece", useWhen: "moody, cinematic, retro or night footage", avoidWhen: "clean product or business content, bright social content" },
   { id: "glow", purpose: "soft bloom on highlights, a dreamy shine", useWhen: "golden hour, lights, cars at night, fashion, romantic or beauty shots", avoidWhen: "gritty action, text-heavy or professional content" },
   { id: "leak", purpose: "a warm light flare that fades over the start of the piece", useWhen: "a transition into a new scene, a memory, a reveal", avoidWhen: "more than twice in one video, talking to camera" },
+  { id: "drophit", purpose: "THE big hit: punch-in, shake and white flash together, with a riser and boom in the sound", useWhen: "exactly on the music drop or the single biggest moment (the hero shot, the burnout, the reveal); at most ONE per video, put it about a third to two thirds in", avoidWhen: "calm, talking or professional content, edits with no big moment, more than once" },
   { id: "steady", purpose: "calms handheld camera shake", useWhen: "a shaky phone clip that should look smooth (walking, travel, selfie vlogs)", avoidWhen: "fast action where shake is the point, tripod footage" },
 ];
 

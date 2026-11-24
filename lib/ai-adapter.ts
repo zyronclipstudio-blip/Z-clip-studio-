@@ -93,6 +93,8 @@ const GeminiPlanSchema = z.object({
       blend: z.enum(["dissolve", "slide", "zoom", "wipe", "circle", "fadeblack"]).optional().catch(undefined),
       reverse: z.boolean().optional().catch(undefined),
       ramp: z.enum(["up", "down"]).optional().catch(undefined),
+      focusX: z.coerce.number().min(0).max(1).optional().catch(undefined),
+      focusY: z.coerce.number().min(0).max(1).optional().catch(undefined),
     }),
   ),
 });
@@ -180,6 +182,7 @@ Rules:
 ${capabilityPrompt()}
 - "speed" (0.75 to 1.5, default 1): 0.75 = slow motion for the single best moment (a reveal, a hit, a dance move); up to 1.5 to tighten a dull stretch. Use on at most 2 segments, never on speech.
 - "shot" (optional): label what the segment shows: "wide" (whole scene, location, full body), "medium" (waist-up, a person or object in context), "detail" (close-up: face, hands, wheel, product, texture). Pro edits mix them: open on the strongest shot, then move wide to medium to detail, and never put three of the same kind in a row.
+- "focusX" and "focusY" (optional, 0 to 1): where the main subject (a face, the car, the person) sits in the original frame, 0 = left/top, 0.5 = centre, 1 = right/bottom. The vertical crop follows it, so heads and the subject are never cut off. Set them whenever the subject is not in the centre of a wide or landscape clip.
 - "blend" (optional): how this segment arrives from the previous one, a smooth 0.3s blend instead of a hard cut: "dissolve" (calm, time passing, emotional), "slide" (energetic, outfit or location change), "zoom" (reveal, beat drop), "wipe", "circle" (playful), "fadeblack" (scene or chapter change). Use on about a third of the boundaries, only where the shots differ in place or subject; keep hard cuts inside one continuous action and on strong beats. Never the same blend twice in a row.
 - "ramp" (optional, "up" or "down"): a smooth speed ramp inside the segment. "up" starts in slow motion and accelerates into the action, "down" starts fast and eases into slow motion on a hero moment. The segment keeps its length. Best on cars, sport, dance and anime action. At most 2 per video, never on the first segment, never together with "speed", never on speech.
 - "hook" (optional, top-level): 2 to 5 words of on-screen text for the first seconds that make people keep watching (for example "Wait for the drop"). Only for energetic or social content; leave it out for talking, business or cinematic edits.
@@ -271,6 +274,8 @@ export function sanitize(raw: unknown, assets: MediaAsset[], setup: Setup, sourc
       freeze: s.freeze && s.freeze >= 0.2 ? Math.round(s.freeze * 10) / 10 : undefined,
       blend: s.blend,
       shot: s.shot,
+      focusX: s.focusX,
+      focusY: s.focusY,
       reverse: s.reverse === true && end - start <= 4 ? true : undefined,
       ramp: s.ramp && !(s.speed && Math.abs(s.speed - 1) > 0.04) && end - start >= 1 ? s.ramp : undefined,
       speed: s.speed && Math.abs(s.speed - 1) > 0.04 ? Math.round(s.speed * 100) / 100 : undefined,
