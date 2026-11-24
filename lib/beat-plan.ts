@@ -8,15 +8,11 @@ const round = (n: number) => Math.round(n * 1000) / 1000;
  * the edit starts where the music kicks in, and the big beats (every fourth piece) get a hit effect
  * when the AI has not already chosen one.
  */
-export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | "durationSec">[], info: BeatInfo, soundKey: string, maxTotalSec: number): EditPlan {
+export function snapPlanToBeats(plan: EditPlan, assets: (Pick<MediaAsset, "id" | "durationSec"> & { originalName?: string })[], info: BeatInfo, soundKey: string, maxTotalSec: number): EditPlan {
   if (info.beats.length < 4 || info.bpm < 50) return plan;
   const period = 60 / info.bpm;
   const byId = new Map(assets.map((a) => [a.id, a]));
 
-  // A piece lasts a whole, even number of beats, about 1.5s (fast), 3s (medium) or 5s (slow).
-  const aim = plan.pacing === "fast" ? 1.5 : plan.pacing === "slow" ? 5 : 3;
-  const pieceBeats = Math.max(2, Math.round(aim / period / 2) * 2);
-  const pieceLen = pieceBeats * period;
 
   // How long the edit should be: a fair share of the footage (at least 15s), within the platform cap and the sound.
   const footage = assets.reduce((t, a) => t + a.durationSec, 0);
@@ -28,8 +24,11 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
   const room = info.durationSec - goal;
   const start = room <= 0 ? info.beats[0] : info.dropSec <= room ? info.dropSec : info.beats.filter((b) => b <= room).pop() ?? info.beats[0];
 
-  // Rhythm: pros mix longer holds with quick bursts, so piece lengths follow a pattern of whole, even beat counts.
-  const RHYTHM = [1, 1, 0.5, 1, 0.5, 0.5];
+  // Rhythm: pros mix quick bursts with longer holds. Piece lengths follow a pattern of whole beat counts around the pacing's
+  // base (a 1-beat burst is only used when a beat is long enough to read as a shot).
+  const burst = period >= 0.45 ? 1 : 2;
+  const PATTERN: number[] =
+    plan.pacing === "fast" ? [2, 2, burst, burst, 2, 4, 2, burst, burst, 2, 2, 4] : plan.pacing === "slow" ? [4, 4, 8, 4, 2, 4, 8, 2] : [4, 2, 2, 4, burst, burst, 2, 4, 2, 4];
   const out: CutSegment[] = [];
   const cursor = plan.segments.map((s) => s.startSec); // where the next piece of each moment begins
   let used = 0;
@@ -38,12 +37,14 @@ export function snapPlanToBeats(plan: EditPlan, assets: Pick<MediaAsset, "id" | 
     plan.segments.forEach((s, k) => {
       const a = byId.get(s.assetId);
       if (!a || used >= goal - 0.3) return;
+      // A photo shows the same picture however far in you go, so it is used once (repeating it looks like a mistake).
+      if (round_ > 0 && /\.(jpe?g|png|webp|gif|heic)$/i.test(a.originalName ?? "")) return;
       const from = round_ === 0 ? s.startSec : cursor[k];
       const have = a.durationSec - from;
-      const want = Math.max(2, Math.round((pieceBeats * RHYTHM[out.length % RHYTHM.length]) / 2) * 2);
+      const want = PATTERN[out.length % PATTERN.length];
       let beats = Math.min(want, Math.floor(have / period + 0.05));
       if (beats < 1) return;
-      if (beats > 1 && beats % 2 === 1) beats -= 1;
+      if (beats > 2 && beats % 2 === 1) beats -= 1;
       let len = beats * period;
       if (len < 0.5) return;
       if (used + len > goal + 0.01) {

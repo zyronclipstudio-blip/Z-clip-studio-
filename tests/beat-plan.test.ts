@@ -36,3 +36,17 @@ test("beat plan: a fast edit never loops footage past about 30 seconds", () => {
   const out = snapPlanToBeats(plan, assets, { bpm: 80, beats, durationSec: 150, dropSec: 0 } as any, "k", 60);
   assert.ok(out.targetDurationSec <= 30.5, `got ${out.targetDurationSec}`);
 });
+
+test("rhythm varies: quick bursts and longer holds, not one metronome length", () => {
+  const out = snapPlanToBeats(plan, assets, info, "u/p/sound.mp3", 60);
+  const lengths = new Set(out.segments.map((s) => Math.round((s.endSec - s.startSec) * 100)));
+  assert.ok(lengths.size >= 3, `only ${[...lengths].join(",")}`);
+});
+
+test("photos are used once, never repeated to fill time", () => {
+  const photos = [{ id: "p1", durationSec: 5, originalName: "a.jpg" }, { id: "p2", durationSec: 5, originalName: "b.jpg" }];
+  const p = { ...plan, segments: [seg("p1", 0, 3), seg("p2", 0, 3)] };
+  const out = snapPlanToBeats(p, photos, info, "k", 60);
+  assert.equal(out.segments.filter((s) => s.assetId === "p1").length, 1);
+  assert.equal(out.segments.filter((s) => s.assetId === "p2").length, 1);
+});
