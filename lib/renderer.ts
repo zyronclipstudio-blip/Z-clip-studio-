@@ -91,7 +91,11 @@ export async function renderPlan(
         if (plan.title?.endCard) {
           const es = Math.max(0, plannedTotal - 1.8), ee = plannedTotal - 0.05;
           const ls = Math.max(0, es - pieceStart), le = Math.min(played - 0.02, ee - pieceStart);
-          if (pieceStart + played > es + 0.3 && le - ls >= 0.3) capVf += await titleFilter(plan.title.endCard, tmp, `e${i}`, w, h, ls, le, "middle", pieceStart <= es + 0.25, ee - pieceStart <= played + 0.05);
+          if (pieceStart + played > es + 0.3 && le - ls >= 0.3) {
+            // The picture sinks into the dark under the closing line, which glows gold.
+            capVf += `,eq=brightness='-0.4*min(1,max(0,(t-${ls.toFixed(2)})/0.7))':eval=frame`;
+            capVf += await titleFilter(plan.title.endCard, tmp, `e${i}`, w, h, ls, le, "middle", pieceStart <= es + 0.25, ee - pieceStart <= played + 0.05, true);
+          }
         }
       }
       // Photos never sit frozen: unless a motion effect was chosen, they get a slow push-in or pull-out, alternating.
@@ -212,13 +216,13 @@ export function wordsForPiece(words: { assetId: string; startSec: number; endSec
 }
 
 // A title card text: fades in and out, large and centred, with a soft outline so it reads on any footage.
-export async function titleFilter(text: string, dir: string, tag: string, w: number, h: number, start: number, end: number, where: "top" | "middle", fadeIn = true, fadeOut = true): Promise<string> {
+export async function titleFilter(text: string, dir: string, tag: string, w: number, h: number, start: number, end: number, where: "top" | "middle", fadeIn = true, fadeOut = true, gold = false): Promise<string> {
   const f = path.join(dir, `title-${tag}.txt`);
   await fs.writeFile(f, text.toUpperCase());
   const size = Math.round(Math.min(w * 0.11, (w * 0.9) / Math.max(6, text.length * 0.6)));
   const y = where === "top" ? "h*0.16" : "(h-text_h)/2";
   const a = `if(${fadeIn ? 1 : 0}*lt(t,${(start + 0.25).toFixed(2)}),(t-${start.toFixed(2)})/0.25,if(${fadeOut ? 1 : 0}*gt(t,${(end - 0.25).toFixed(2)}),(${end.toFixed(2)}-t)/0.25,1))`;
-  return `,drawtext=fontfile='${CAPTION_FONT}':textfile='${f}':expansion=none:fontsize=${size}:fontcolor=white:borderw=${Math.max(3, Math.round(size / 12))}:bordercolor=black@0.85:x=(w-text_w)/2:y=${y}:alpha='${a}':enable='between(t,${start.toFixed(2)},${end.toFixed(2)})'`;
+  return `,drawtext=fontfile='${CAPTION_FONT}':textfile='${f}':expansion=none:fontsize=${size}:fontcolor=${gold ? "0xecd083" : "white"}:borderw=${Math.max(3, Math.round(size / 12))}:bordercolor=black@0.85${gold ? ":shadowcolor=0xd9b45b@0.55:shadowx=0:shadowy=0" : ""}:x=(w-text_w)/2:y=${y}:alpha='${a}':enable='between(t,${start.toFixed(2)},${end.toFixed(2)})'`;
 }
 
 export async function captionFilter(words: PieceWord[], dir: string, tag: string, w: number, h: number, style: "pop" | "clean"): Promise<string> {

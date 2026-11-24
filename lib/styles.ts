@@ -19,7 +19,7 @@ export interface Style {
 export const STYLES: Style[] = [
   { id: "clean", name: "Clean", tagline: "Simple, tidy cuts", pacing: "medium", effects: { allowed: [], maxShare: 0 }, captions: "clean", look: "none",
     directorNote: "Clean, tidy cuts. No effects. Let the footage speak. Smooth, natural pacing, clear start and ending." },
-  { id: "lifestyle", name: "Lifestyle", tagline: "Soft, warm, girl-on-camera", pacing: "medium", effects: { allowed: ["punch", "glow", "leak"], maxShare: 0.15 }, captions: "clean", look: "soft",
+  { id: "lifestyle", name: "Lifestyle", tagline: "Soft, warm, girl-on-camera", pacing: "medium", effects: { allowed: ["punch", "glow", "leak", "panleft", "panright", "rise"], maxShare: 0.15 }, captions: "clean", look: "soft",
     directorNote: "Lifestyle and personal content: flattering, soft and warm. Lead with the best face shot. Keep outfits and places together, change them with intent. Gentle movement only, never shake or glitch. End on a smile or a confident pose." },
   { id: "creator", name: "Creator", tagline: "Hook fast, keep them watching", pacing: "fast", effects: { allowed: ["punch", "flash", "pulse", "drophit"], maxShare: 0.25 }, captions: "pop", look: "punchy",
     directorNote: "Short-form creator content. The first second must hook: the most interesting moment or line first. Tight cuts, remove pauses and filler. Keep every spoken sentence whole. End on a payoff or a call to action." },
@@ -27,15 +27,15 @@ export const STYLES: Style[] = [
     directorNote: "High-energy AMV / edit style. Cut hard on the beat. Use punch, shake and flash on strong beats and glitch or whip between very different shots. Fast, rhythmic, dramatic. Never repeat the same effect twice in a row." },
   { id: "gym", name: "Gym", tagline: "Power, motion, intensity", pacing: "fast", effects: { allowed: ["punch", "shake", "flash", "pulse", "grain", "steady", "drophit"], maxShare: 0.35 }, captions: "pop", look: "punchy",
     directorNote: "Workout content. Show effort and the peak of each rep. Fast cuts on movement, hit effects on the hardest moments. Finish on the strongest lift or result." },
-  { id: "travel", name: "Travel", tagline: "Scenery that breathes", pacing: "slow", effects: { allowed: ["whip", "glow", "leak", "grain", "steady"], maxShare: 0.2 }, captions: "off", look: "cinematic",
+  { id: "travel", name: "Travel", tagline: "Scenery that breathes", pacing: "slow", effects: { allowed: ["whip", "glow", "leak", "grain", "steady", "panleft", "panright", "rise"], maxShare: 0.2 }, captions: "off", look: "cinematic",
     directorNote: "Travel and scenery. Let wide, beautiful shots breathe. Whip transitions between locations. Alternate wide, medium and detail. End on the most beautiful view." },
   { id: "talking", name: "Talking head", tagline: "Clear words, clean edit", pacing: "medium", effects: { allowed: ["steady"], maxShare: 0 }, captions: "pop", look: "none",
     directorNote: "Someone talking to camera. Never cut mid-word or mid-sentence. Remove long pauses, false starts and repeats. No effects. Captions carry the message. Start on the strongest line." },
   { id: "business", name: "Business", tagline: "Credible, clear, professional", pacing: "medium", effects: { allowed: ["punch"], maxShare: 0.1 }, captions: "clean", look: "none",
     directorNote: "Business and brand content: credible, clear and confident. Open with the strongest claim, result or product moment. Keep speech whole, remove pauses, steady pacing, minimal movement. Show proof (results, product, people at work). End on a clear takeaway or call to action." },
-  { id: "cars", name: "Cars", tagline: "Speed, shine, impact", pacing: "fast", effects: { allowed: ["punch", "whip", "flash", "shake", "spin", "zoomblur", "pulse", "glow", "grain", "drophit"], maxShare: 0.4 }, captions: "off", look: "tealorange",
+  { id: "cars", name: "Cars", tagline: "Speed, shine, impact", pacing: "fast", effects: { allowed: ["punch", "whip", "flash", "shake", "spin", "zoomblur", "pulse", "glow", "grain", "drophit", "panleft", "panright", "rise"], maxShare: 0.4 }, captions: "off", look: "tealorange",
     directorNote: "Car content: open on the most striking angle (front, wheels, headlights or a launch). Cut on engine revs and motion, whip between exterior, interior and detail shots, punch or flash on the loudest moment or the burnout. Finish on a hero shot of the car." },
-  { id: "cinematic", name: "Cinematic", tagline: "Film mood, slow and deliberate", pacing: "slow", effects: { allowed: ["punch", "grain", "glow", "leak"], maxShare: 0.1 }, captions: "off", look: "cinematic",
+  { id: "cinematic", name: "Cinematic", tagline: "Film mood, slow and deliberate", pacing: "slow", effects: { allowed: ["punch", "grain", "glow", "leak", "panleft", "panright", "rise"], maxShare: 0.1 }, captions: "off", look: "cinematic",
     directorNote: "Cinematic mood: slow, deliberate, composed shots. Longer holds, fewer cuts, strong opening image and a quiet, memorable ending." },
 ];
 

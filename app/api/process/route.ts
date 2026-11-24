@@ -238,6 +238,11 @@ export async function POST(req: Request) {
         // The chosen style's own rules decide effects, captions look and colour, whatever the AI returned.
         planned.plan = applyStyleRules(addPhraseHits(planned.plan, (style?.effects.allowed ?? ["punch", "shake", "flash", "glitch", "whip", "spin", "zoomblur"]) as EffectId[]), style);
 
+        // Your handle closes every edit (set once in app_settings as "handle").
+        if (typeof settings.handle === "string" && settings.handle.trim()) {
+          planned.plan = { ...planned.plan, title: { ...planned.plan.title, endCard: settings.handle.trim().slice(0, 40) } };
+        }
+
         // Self-check: repair clear mistakes in the plan (repeated or excess effects, messy ending) before rendering.
         {
           const checked = critiquePlan(planned.plan);
