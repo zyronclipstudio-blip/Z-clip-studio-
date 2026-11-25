@@ -101,11 +101,11 @@ export async function renderPlan(
       // Photos never sit frozen: unless a motion effect was chosen, they get a slow push-in or pull-out, alternating.
       const fx = still && !(seg.effects ?? []).some((e) => ["punch", "pulse", "shake", "zoomblur", "spin", "drophit", "panleft", "panright", "rise"].includes(e)) ? [...(seg.effects ?? []), PHOTO_MOVES[i % PHOTO_MOVES.length]] : seg.effects;
       try {
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm, { x: seg.focusX, y: seg.focusY }), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, capVf, plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm, { x: seg.focusX, y: seg.focusY }, seg.zoom), LIMITS.renderTimeoutMs);
       } catch (err) {
         if (!capVf) throw err;
         // Captions are a bonus: if they cannot be drawn, the piece still renders without them.
-        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm, { x: seg.focusX, y: seg.focusY }), LIMITS.renderTimeoutMs);
+        await run(FFMPEG, segmentArgs(src, out, seg.startSec, dur, w, h, asset.hasAudio, seg.transition === "fade", seg.volume ?? 1, fx, still, "", plan.look, spd, grade, hold + tail, rev, plan.polish, seg.ramp, plan.sound?.bpm, { x: seg.focusX, y: seg.focusY }, seg.zoom), LIMITS.renderTimeoutMs);
       }
       partFiles.push(out);
       bases.push(dur / spd + hold);
@@ -319,14 +319,18 @@ function segmentArgs(
   ramp?: "up" | "down",
   bpm?: number,
   focus?: { x?: number; y?: number },
+  zoomIn?: number,
 ): string[] {
   // Speed: the source range is read as is; the piece plays shorter or longer.
   const outDur = dur / speed + hold;
   // The crop follows the subject (focus) instead of always taking the centre, so faces and the main subject stay in view.
   const fx0 = Math.min(1, Math.max(0, focus?.x ?? 0.5));
   const fy0 = Math.min(1, Math.max(0, focus?.y ?? 0.5));
-  const cropAt = fx0 === 0.5 && fy0 === 0.5 ? `crop=${w}:${h}` : `crop=${w}:${h}:'(iw-ow)*${fx0.toFixed(3)}':'(ih-oh)*${fy0.toFixed(3)}'`;
-  let vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,${cropAt},setsar=1,fps=30,format=yuv420p`;
+  const zoom = Math.min(3, Math.max(1, zoomIn ?? 1));
+  const sw = Math.round((w * zoom) / 2) * 2;
+  const sh = Math.round((h * zoom) / 2) * 2;
+  const cropAt = fx0 === 0.5 && fy0 === 0.5 && zoom === 1 ? `crop=${w}:${h}` : `crop=${w}:${h}:'(iw-ow)*${fx0.toFixed(3)}':'(ih-oh)*${fy0.toFixed(3)}'`;
+  let vf = `scale=${sw}:${sh}:force_original_aspect_ratio=increase,${cropAt},setsar=1,fps=30,format=yuv420p`;
   // A photo gets a slow push-in so it feels alive instead of frozen.
   if (still) vf += `,scale=w='2*ceil(iw*(1+0.08*t/${dur.toFixed(3)})/2)':h=-2:eval=frame,crop=${w}:${h},setsar=1,format=yuv420p`;
   if (ramp && speed === 1 && !still) {

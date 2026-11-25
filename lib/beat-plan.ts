@@ -8,6 +8,8 @@ const round = (n: number) => Math.round(n * 1000) / 1000;
  * the edit starts where the music kicks in, and the big beats (every fourth piece) get a hit effect
  * when the AI has not already chosen one.
  */
+const PHOTO_ZOOMS = [1, 1.8, 2.6];
+
 export function snapPlanToBeats(plan: EditPlan, assets: (Pick<MediaAsset, "id" | "durationSec"> & { originalName?: string })[], info: BeatInfo, soundKey: string, maxTotalSec: number): EditPlan {
   if (info.beats.length < 4 || info.bpm < 50) return plan;
   const period = 60 / info.bpm;
@@ -37,9 +39,13 @@ export function snapPlanToBeats(plan: EditPlan, assets: (Pick<MediaAsset, "id" |
     plan.segments.forEach((s, k) => {
       const a = byId.get(s.assetId);
       if (!a || used >= goal - 0.3) return;
-      // A photo shows the same picture however far in you go, so it is used once (repeating it looks like a mistake).
-      if (round_ > 0 && /\.(jpe?g|png|webp|gif|heic)$/i.test(a.originalName ?? "")) return;
-      const from = round_ === 0 ? s.startSec : cursor[k];
+      // A photo is the same picture however long it plays, so a repeat would look like a mistake. Instead each extra
+      // appearance is a different shot of it: the whole frame, then a close-up, then a tighter one, like a pro cutting one image
+      // into several shots. At most three, never the same crop twice.
+      const photo = /\.(jpe?g|png|webp|gif|heic)$/i.test(a.originalName ?? "");
+      if (photo && round_ > 2) return;
+      const zoom = photo && round_ > 0 ? PHOTO_ZOOMS[round_] : undefined;
+      const from = round_ === 0 || photo ? (photo ? 0 : s.startSec) : cursor[k];
       const have = a.durationSec - from;
       const want = PATTERN[out.length % PATTERN.length];
       let beats = Math.min(want, Math.floor(have / period + 0.05));
@@ -52,7 +58,15 @@ export function snapPlanToBeats(plan: EditPlan, assets: (Pick<MediaAsset, "id" |
         len = beats * period;
         if (beats < 1 || len < 0.5) return;
       }
-      out.push({ ...s, startSec: round(from), endSec: round(from + len), effects: round_ === 0 ? s.effects : undefined, ramp: round_ === 0 ? s.ramp : undefined, transition: "cut" });
+      out.push({
+        ...s,
+        startSec: round(from),
+        endSec: round(from + len),
+        effects: round_ === 0 ? s.effects : undefined,
+        ramp: round_ === 0 ? s.ramp : undefined,
+        transition: "cut",
+        ...(zoom ? { zoom, focusX: s.focusX ?? 0.5, focusY: s.focusY ?? (round_ === 1 ? 0.3 : 0.34) } : {}),
+      });
       cursor[k] = from + len;
       used += len;
       added = true;

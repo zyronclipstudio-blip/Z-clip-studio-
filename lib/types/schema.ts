@@ -60,6 +60,8 @@ export const CutSegmentSchema = z.object({
   /** How this piece arrives: a smooth blend from the previous piece (instead of a hard cut). */
   blend: BlendSchema.optional(),
   /** Where the subject sits in the frame (0 = left/top, 1 = right/bottom), so the vertical crop keeps faces and the main subject in view. */
+  /** Punch the shot in (1 = whole frame, up to 3 = a tight close-up of the focus point). One photo becomes several shots this way. */
+  zoom: z.number().min(1).max(3).optional(),
   focusX: z.number().min(0).max(1).optional(),
   focusY: z.number().min(0).max(1).optional(),
   /** Play this short piece backwards (only pieces up to 4 seconds). */

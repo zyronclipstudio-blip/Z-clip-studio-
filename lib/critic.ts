@@ -20,7 +20,7 @@ export function critiquePlan(input: EditPlan): CritiqueResult {
     const kept: Seg[] = [];
     for (const s of segs) {
       const len = s.endSec - s.startSec;
-      const dup = kept.some((k) => k.assetId === s.assetId && Math.min(k.endSec, s.endSec) - Math.max(k.startSec, s.startSec) > len * 0.5);
+      const dup = kept.some((k) => k.assetId === s.assetId && (k.zoom ?? 1) === (s.zoom ?? 1) && Math.min(k.endSec, s.endSec) - Math.max(k.startSec, s.startSec) > len * 0.5);
       if (!dup) kept.push(s);
     }
     const dropped = segs.length - kept.length;

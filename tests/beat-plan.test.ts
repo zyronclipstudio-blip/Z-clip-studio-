@@ -43,10 +43,13 @@ test("rhythm varies: quick bursts and longer holds, not one metronome length", (
   assert.ok(lengths.size >= 3, `only ${[...lengths].join(",")}`);
 });
 
-test("photos are used once, never repeated to fill time", () => {
+test("a photo comes back as different shots (whole frame, close-up, tighter), never the same crop twice", () => {
   const photos = [{ id: "p1", durationSec: 5, originalName: "a.jpg" }, { id: "p2", durationSec: 5, originalName: "b.jpg" }];
   const p = { ...plan, segments: [seg("p1", 0, 3), seg("p2", 0, 3)] };
   const out = snapPlanToBeats(p, photos, info, "k", 60);
-  assert.equal(out.segments.filter((s) => s.assetId === "p1").length, 1);
-  assert.equal(out.segments.filter((s) => s.assetId === "p2").length, 1);
+  for (const id of ["p1", "p2"]) {
+    const uses = out.segments.filter((s) => s.assetId === id);
+    assert.ok(uses.length >= 1 && uses.length <= 3);
+    assert.equal(new Set(uses.map((s) => s.zoom ?? 1)).size, uses.length, "same crop twice");
+  }
 });
