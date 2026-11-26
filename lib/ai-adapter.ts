@@ -5,7 +5,7 @@ import { z } from "zod";
 import { GoogleGenAI, createPartFromUri, createUserContent } from "@google/genai";
 import {
   GEMINI_API_KEY,
-  GEMINI_MODEL_CHAIN, isModelGone,
+  GEMINI_MODEL_CHAIN, isModelGone, AI_PATIENCE_MS,
   GEMINI_MODEL,
   GEMINI_PRICE_IN_PER_M,
   GEMINI_PRICE_OUT_PER_M,
@@ -200,20 +200,29 @@ Return ONLY a JSON object, with no markdown and no commentary, in exactly this s
     // Gemini sometimes answers "high demand" (503/429). Retry, then try a backup model,
     // so a busy moment does not turn a smart edit into a plain join of the clips.
     const contents = createUserContent([...parts, prompt]);
-    const attempts: string[] = GEMINI_MODEL_CHAIN.flatMap((m) => [m, m, m]);
+    // Be patient: "high demand" spikes can last a minute or two, and a plain join of the clips is a poor result. Keep
+    // trying (alternating between the models, waiting a little longer each time) until the patience window is used up.
+    // A used-up DAILY quota will not clear by waiting, so that one stops at once.
+    const deadline = Date.now() + AI_PATIENCE_MS;
+    const gone = new Set<string>();
     let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
     let usedModel = GEMINI_MODEL;
     let lastErr: unknown;
-    for (let n = 0; n < attempts.length && !res; n++) {
+    for (let n = 0; !res; n++) {
+      const live = GEMINI_MODEL_CHAIN.filter((m) => !gone.has(m));
+      if (!live.length) break;
+      usedModel = live[n % live.length];
       try {
-        usedModel = attempts[n];
         res = await ai.models.generateContent({ model: usedModel, contents, config: { responseMimeType: "application/json", temperature: 0.4 } });
       } catch (e) {
         lastErr = e;
         const msg = e instanceof Error ? e.message : "";
-        if (isModelGone(msg)) { while (n + 1 < attempts.length && attempts[n + 1] === usedModel) n++; continue; } // retired model: go straight to the next one
+        if (isModelGone(msg)) { gone.add(usedModel); continue; } // retired model: never try it again
         if (!/503|429|UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|timeout/i.test(msg)) throw e;
-        await new Promise((r) => setTimeout(r, Math.min(2500 * (n + 1), 8000)));
+        if (/PerDay|per day|daily/i.test(msg)) break;
+        const wait = Math.min(3000 * (n + 1), 15000);
+        if (Date.now() + wait > deadline) break;
+        await new Promise((r) => setTimeout(r, wait));
       }
     }
     if (!res) throw lastErr instanceof Error ? lastErr : new Error("Gemini is busy");

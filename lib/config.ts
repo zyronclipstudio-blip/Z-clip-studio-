@@ -11,6 +11,8 @@ export const FFPROBE = process.env.FFPROBE_PATH || "ffprobe";
 
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 export const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.8-flash";
+/** How long the AI step keeps retrying when Gemini is busy before the basic cut is used (seconds, env AI_PATIENCE_SEC). */
+export const AI_PATIENCE_MS = Math.max(10, Number(process.env.AI_PATIENCE_SEC) || 120) * 1000;
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 export const GEMINI_PRICE_IN_PER_M = Number(process.env.GEMINI_PRICE_IN_PER_M) || 0;
 export const GEMINI_PRICE_OUT_PER_M = Number(process.env.GEMINI_PRICE_OUT_PER_M) || 0;
